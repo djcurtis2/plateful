@@ -1,0 +1,114 @@
+@import "tailwindcss";
+
+/* Plateful palette: basil green + saffron on a cool kitchen-tile neutral. Light and dark. */
+:root {
+  --bg: #f3f5f0;
+  --surface: #ffffff;
+  --sunk: #e7ebe3;
+  --ink: #1b2a22;
+  --muted: #5e6b62;
+  --line: #d3dacf;
+  --basil: #2f6b46;
+  --basil-ink: #ffffff;
+  --saffron: #f2b630;
+  --saffron-ink: #3a2a00;
+  --chili: #c23b2a;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111813;
+    --surface: #19221c;
+    --sunk: #222d25;
+    --ink: #e6ede6;
+    --muted: #9aa89e;
+    --line: #2e3b32;
+    --basil: #6fbf8a;
+    --basil-ink: #0d1a12;
+    --saffron: #f2b630;
+    --saffron-ink: #2a1e00;
+    --chili: #f07a68;
+    color-scheme: dark;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-sunk: var(--sunk);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-basil: var(--basil);
+  --color-basil-ink: var(--basil-ink);
+  --color-saffron: var(--saffron);
+  --color-saffron-ink: var(--saffron-ink);
+  --color-chili: var(--chili);
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, Menlo, monospace;
+}
+
+@layer base {
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  :focus-visible {
+    outline: 2px solid var(--saffron);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl px-4 py-3 font-semibold transition-opacity disabled:cursor-default disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-basil text-basil-ink hover:opacity-90;
+  }
+  .btn-sun {
+    @apply bg-saffron text-saffron-ink hover:opacity-90;
+  }
+  .btn-ghost {
+    @apply border border-line bg-transparent text-ink hover:border-basil;
+  }
+  .btn-sm {
+    @apply rounded-xl px-3 py-2 text-sm;
+  }
+  .input {
+    @apply w-full rounded-xl border border-line bg-surface px-3 py-2.5 text-ink placeholder:text-muted focus:border-basil focus:outline-none;
+  }
+  .label {
+    @apply font-mono text-[11px] font-medium uppercase tracking-[0.08em] text-muted;
+  }
+  .card {
+    @apply rounded-3xl border border-line bg-surface;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@keyframes toast-in {
+  from { opacity: 0; transform: translateY(12px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  [class*="animate-[toast-in"] { animation: none; }
+}

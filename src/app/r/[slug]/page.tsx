@@ -1,0 +1,83 @@
+import type { Metadata } from "next";
+import { Suspense } from "react";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { getAttempts, getMe, getPantry, getRecipeBySlug, isSaved } from "@/lib/data";
+import { savings } from "@/lib/recipe";
+import { money } from "@/lib/format";
+import { siteUrl } from "@/lib/env";
+import { RecipeView } from "@/components/RecipeView";
+import { ReferralBeacon } from "@/components/ReferralBeacon";
+import { AttemptGallery } from "@/components/AttemptGallery";
+
+type Params = { params: Promise<{ slug: string }> };
+
+export async function generateMetadata({ params }: Params): Promise<Metadata> {
+  const { slug } = await params;
+  const r = await getRecipeBySlug(slug);
+  if (!r) return { title: "Recipe not found" };
+  const s = savings(r);
+  const title = r.restaurant ? `${r.restaurant} ${r.dish} copycat` : `${r.dish} recipe`;
+  const description = s
+    ? `${money(r.menu_price)} at ${r.restaurant}, ${money(r.plate_cost)} a plate at home. ${r.minutes ?? 30} minutes.`
+    : `Make ${r.dish} at home in ${r.minutes ?? 30} minutes.`;
+  return { title, description, alternates: { canonical: `/r/${r.slug}` }, openGraph: { title, description } };
+}
+
+export default async function RecipePage({ params }: Params) {
+  const { slug } = await params;
+  const recipe = await getRecipeBySlug(slug);
+  if (!recipe) notFound();
+
+  const me = await getMe();
+  const [pantry, savedState, attempts] = await Promise.all([
+    me ? getPantry(me.user.id) : Promise.resolve([]),
+    me ? isSaved(me.user.id, recipe.id) : Promise.resolve({ saved: false, cooked: false }),
+    getAttempts({ recipeId: recipe.id }, 12),
+  ]);
+
+  const ref = me?.profile?.referral_code;
+  const hasEntry = !!me && attempts.some((a) => a.user_id === me.user.id);
+  const shareUrl = `${siteUrl}/r/${recipe.slug}${ref ? `?ref=${ref}` : ""}`;
+
+  return (
+    <main className="flex flex-col gap-14 pt-8">
+      <Suspense>
+        <ReferralBeacon recipeId={recipe.id} />
+      </Suspense>
+      <RecipeView
+        recipe={recipe}
+        shareUrl={shareUrl}
+        signedIn={!!me}
+        pantry={pantry}
+        initiallySaved={savedState.saved}
+        initiallyCooked={savedState.cooked}
+        hasEntry={hasEntry}
+      />
+      <section className="flex flex-col gap-5">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <h2 className="font-display text-3xl font-bold tracking-tight">Who made it</h2>
+          <span className="text-sm text-muted">
+            {attempts.length ? `${attempts.length} ${attempts.length === 1 ? "cook" : "cooks"}` : "Be the first"}
+          </span>
+        </div>
+        {!hasEntry && (
+          <p className="rounded-2xl bg-sunk px-4 py-3 text-sm">
+            Made it?{" "}
+            {me ? (
+              <>Add your photo to the card above. It posts here when you share.</>
+            ) : (
+              <>
+                <Link href={`/login?next=/r/${recipe.slug}`} className="font-semibold text-basil underline">
+                  Sign in
+                </Link>{" "}
+                to post your version here.
+              </>
+            )}
+          </p>
+        )}
+        <AttemptGallery attempts={attempts} signedIn={!!me} myId={me?.user.id} recipe={recipe} shareUrl={shareUrl} />
+      </section>
+    </main>
+  );
+}

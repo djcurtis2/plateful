@@ -1,0 +1,55 @@
+import type { Metadata } from "next";
+import { getMe } from "@/lib/data";
+import { intEnv } from "@/lib/env";
+import { REFERRAL_GOAL } from "@/lib/plan";
+
+export const metadata: Metadata = { title: "Pricing" };
+
+export default async function PricingPage() {
+  const me = await getMe();
+  const free = intEnv("FREE_SCANS_PER_WEEK", 5);
+  const plusDaily = intEnv("PLUS_SCANS_PER_DAY", 40);
+  return (
+    <main className="mx-auto flex w-full max-w-4xl flex-col gap-10 pt-10">
+      <div className="flex flex-col gap-2 text-center">
+        <h1 className="font-display text-5xl font-bold tracking-tight">Cook more. Pay less than one entrée.</h1>
+        <p className="text-muted">Every recipe page, cart and share card is free. Plus is for people who cook copycats all week.</p>
+      </div>
+      <div className="grid gap-4 md:grid-cols-2">
+        <section className="card flex flex-col gap-4 p-6">
+          <h2 className="font-display text-2xl font-bold">Free</h2>
+          <p className="tabular font-mono text-4xl">$0</p>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li>{free} photo scans a week</li>
+            <li>Unlimited recipe pages, carts and share cards</li>
+            <li>Pantry that remembers what you have</li>
+            <li>Weekly cook-off entries</li>
+          </ul>
+        </section>
+        <section className="card flex flex-col gap-4 border-basil p-6">
+          <h2 className="font-display text-2xl font-bold">Plus</h2>
+          <p className="tabular font-mono text-4xl">
+            $4.99<span className="text-base text-muted">/month</span>
+          </p>
+          <ul className="flex flex-col gap-2 text-sm">
+            <li>Up to {plusDaily} photo scans a day</li>
+            <li>Everything in Free</li>
+            <li>Early access to new features</li>
+          </ul>
+          {me?.plus ? (
+            <a href="/account" className="btn btn-ghost">
+              You have Plus
+            </a>
+          ) : (
+            <form action="/api/stripe/checkout" method="post">
+              <button className="btn btn-primary w-full">{me ? "Upgrade to Plus" : "Sign in to upgrade"}</button>
+            </form>
+          )}
+        </section>
+      </div>
+      <p className="text-center text-sm text-muted">
+        Or get Plus free: every {REFERRAL_GOAL} friends who cook from your link earns you a month.
+      </p>
+    </main>
+  );
+}
