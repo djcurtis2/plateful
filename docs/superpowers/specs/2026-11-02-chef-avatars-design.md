@@ -158,7 +158,7 @@ Dan's idea: people join clubs that say who they cook as or for, like "Picky Eate
 - **No kids' clubs.** A club aimed at children invites under-13 sign-ups, which brings in COPPA. Family clubs are framed for parents ("Cooking with My Kids").
 
 **Part B, right after avatars and before daily streaks:** club pages.
-- `/clubs/[id]` per club: "Popular with Picky Eater Parents" lists the recipes club members cook (`cook_log`) and save (`saved_recipes`) most, ranked by how many distinct members did so. Shows counts, never member names, so nobody's cooking history is exposed. *(My call.)*
+- `/clubs/[id]` per club: "Popular with Picky Eater Parents" lists the recipes club members cook (`cook_log`) and save (`saved_recipes`) most, ranked by how many distinct members did so. Shows counts, never member names, and only recipes at least 3 members made or saved, so nobody's cooking history is exposed (even in a small club). *(My call.)*
 - Club members' cook-off entries can appear there too, since entries are already public.
 - Tapping a club badge anywhere opens its page.
 - The ranking query should run in the database (a SQL function or view), not by loading all logs into the app.

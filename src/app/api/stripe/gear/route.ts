@@ -34,6 +34,8 @@ export async function POST(req: NextRequest) {
 
   const session = await stripe().checkout.sessions.create({
     mode: "payment",
+    // Cards only: they settle at checkout, so nobody pays for gear that is never delivered.
+    allowed_payment_method_types: ["card"], // this SDK's name for the old payment_method_types
     customer,
     client_reference_id: me.user.id,
     line_items: [{ price_data: { currency: "usd", unit_amount: buy.cents, product_data: { name: buy.name } }, quantity: 1 }],

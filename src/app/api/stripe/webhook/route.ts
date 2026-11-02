@@ -27,8 +27,14 @@ export async function POST(req: NextRequest) {
           const sub = await stripe().subscriptions.retrieve(typeof s.subscription === "string" ? s.subscription : s.subscription.id);
           await syncSubscription(sub, s.client_reference_id);
         } else if (s.mode === "payment") {
-          await recordGearPurchase(s); // shop gear; skips unpaid sessions, safe on retries
+          await recordGearPurchase(s, "webhook"); // shop gear; skips unpaid sessions, safe on retries
         }
+        break;
+      }
+      case "checkout.session.async_payment_succeeded": {
+        // A delayed payment method that settled after checkout (gear checkout is cards only; this is a safety net).
+        const s = event.data.object as Stripe.Checkout.Session;
+        if (s.mode === "payment") await recordGearPurchase(s, "webhook");
         break;
       }
       case "customer.subscription.created":

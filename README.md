@@ -54,7 +54,7 @@ Create a key at console.anthropic.com and set `ANTHROPIC_API_KEY`. `ANTHROPIC_MO
 2. Put your secret key in `STRIPE_SECRET_KEY`.
 3. Turn on the customer portal: **Settings → Billing → Customer portal**.
 4. For local webhooks, install the Stripe CLI and run `npm run stripe:listen`. Copy the `whsec_…` it prints into `STRIPE_WEBHOOK_SECRET`.
-5. In production, add a webhook endpoint at `https://YOUR-DOMAIN/api/stripe/webhook` for `checkout.session.completed` and `customer.subscription.created / updated / deleted`.
+5. In production, add a webhook endpoint at `https://YOUR-DOMAIN/api/stripe/webhook` for `checkout.session.completed`, `checkout.session.async_payment_succeeded` and `customer.subscription.created / updated / deleted`.
 
 ### 5. Run
 

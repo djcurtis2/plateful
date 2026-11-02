@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { hasPlus, type ProfilePlanFields } from "@/lib/plan";
 import type { Ingredient, Recipe } from "@/lib/recipe";
 import { chefCards, type ChefCard } from "@/lib/avatar-server";
+import { CLUB_MIN_MEMBERS } from "@/lib/clubs";
 
 type RecipeRow = Omit<Recipe, "image_url" | "menu_price" | "plate_cost" | "out_price"> & {
   out_price: string | number | null;
@@ -284,7 +285,8 @@ export async function clubPopular(clubId: string, limit = 12): Promise<{ recipe:
   const byId = new Map(recipes.map((r) => [r.id, r]));
   return rows.flatMap((r) => {
     const recipe = byId.get(r.recipe_id);
-    return recipe ? [{ recipe, members: r.members }] : [];
+    // The SQL already requires this; checked again so an older function version never leaks one person's history.
+    return recipe && r.members >= CLUB_MIN_MEMBERS ? [{ recipe, members: r.members }] : [];
   });
 }
 

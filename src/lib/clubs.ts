@@ -16,6 +16,8 @@ export const CLUBS: Club[] = [
 ];
 
 export const MAX_CLUBS = 2;
+/** A club page lists a recipe only once this many different members made or saved it (matches 0011_club_popular.sql). */
+export const CLUB_MIN_MEMBERS = 3;
 
 // Null prototype so untrusted ids like "constructor" or "__proto__" never resolve to inherited members.
 export const CLUB_BY_ID: Record<string, Club> = Object.assign(Object.create(null), Object.fromEntries(CLUBS.map((c) => [c.id, c])));

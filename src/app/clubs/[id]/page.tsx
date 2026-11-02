@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { CLUB_BY_ID } from "@/lib/clubs";
+import { CLUB_BY_ID, CLUB_MIN_MEMBERS } from "@/lib/clubs";
 import { clubEntries, clubPopular, getRecipesByIds } from "@/lib/data";
 import { publicName } from "@/lib/game";
 import { ChefAvatar } from "@/components/ChefAvatar";
@@ -36,11 +36,11 @@ export default async function ClubPage({ params }: Params) {
       <section className="flex flex-col gap-3">
         <h2 className="font-display text-2xl font-bold">Popular with {club.name}</h2>
         {popular.length === 0 ? (
-          <p className="text-muted">No recipes yet. Join this club, then cook or save a recipe to be the first.</p>
+          <p className="text-muted">No recipes yet. A recipe shows up here once at least {CLUB_MIN_MEMBERS} members have made or saved it.</p>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {popular.map(({ recipe, members }) => (
-              <RecipeTile key={recipe.id} recipe={recipe} note={`Made or saved by ${members} ${members === 1 ? "member" : "members"}`} />
+              <RecipeTile key={recipe.id} recipe={recipe} note={`Made or saved by ${members} members`} />
             ))}
           </div>
         )}

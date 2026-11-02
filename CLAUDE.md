@@ -69,5 +69,5 @@ New schema changes: add the next numbered file (`0012_…sql`, idempotent: `if n
 - Stripe: each webhook endpoint has its own `whsec_`. Local uses the `stripe listen` secret (`.env.local`); Vercel uses the "Plateful live site" endpoint's secret.
 - Supabase auth redirect allow-list must include `<site>/auth/callback` for every site address.
 - In the SQL editor, statements with `drop … if exists` trigger a "destructive operation" confirm; that's expected.
-- The gear shop webhook branch uses `checkout.session.completed`, which `stripe:listen` already forwards.
+- The gear shop webhook branch uses `checkout.session.completed` and `checkout.session.async_payment_succeeded` (both forwarded by `stripe:listen`; add the second to the live endpoint too). Gear checkout is cards only.
 - Never commit `.env*.local`. Never paste secret keys into code or chat.

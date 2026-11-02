@@ -6,12 +6,21 @@ import { parseGearMetadata } from "@/lib/avatar";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+/** Postgres foreign key violation: the profile (and auth user) behind the session no longer exists. */
+const FK_VIOLATION = "23503";
+
 /**
  * Gives the person the gear a paid one-time Checkout session bought. Safe to run more than once
  * (webhook retries plus the success page): rows already there are skipped. Returns rows added.
- * Throws on a database error so the webhook answers 500 and Stripe retries.
+ * Throws on a database error so the webhook answers 500 and Stripe retries, except a deleted
+ * account (FK violation), which is logged and treated as handled so Stripe stops retrying.
+ * `from: "webhook"` warns when fewer rows are added than bought; the success page legitimately
+ * adds 0 after the webhook already ran, so it doesn't warn.
  */
-export async function recordGearPurchase(session: Stripe.Checkout.Session): Promise<number> {
+export async function recordGearPurchase(
+  session: Stripe.Checkout.Session,
+  from: "webhook" | "success" = "success",
+): Promise<number> {
   if (session.mode !== "payment" || session.payment_status !== "paid") return 0;
   const userId = session.client_reference_id;
   if (!userId || !UUID.test(userId)) return 0;
@@ -24,8 +33,18 @@ export async function recordGearPurchase(session: Stripe.Checkout.Session): Prom
       { onConflict: "user_id,item_id", ignoreDuplicates: true },
     )
     .select("item_id");
-  if (error) throw error;
-  return data?.length ?? 0;
+  if (error) {
+    if (error.code === FK_VIOLATION) {
+      console.error("gear purchase for a deleted account, not delivered", session.id, userId);
+      return 0;
+    }
+    throw error;
+  }
+  const added = data?.length ?? 0;
+  if (from === "webhook" && added < items.length) {
+    console.warn("gear purchase added fewer items than bought", session.id, { bought: items.length, added });
+  }
+  return added;
 }
 
 /**
@@ -37,7 +56,7 @@ export async function refreshGearPurchase(userId: string, sessionId: string): Pr
   try {
     const session = await stripe().checkout.sessions.retrieve(sessionId);
     if (session.client_reference_id !== userId || session.mode !== "payment" || session.payment_status !== "paid") return 0;
-    return await recordGearPurchase(session);
+    return await recordGearPurchase(session, "success");
   } catch (e) {
     console.error("refresh gear purchase failed", sessionId, e);
     return 0;

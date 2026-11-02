@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LEVELS } from "./game.ts";
 import {
-  BUNDLES, GEAR, GEAR_BY_ID, LOOK_OPTIONS, SLOTS, canSave, defaultAvatar, lockReason, newUnlocks, parseAvatar,
+  BUNDLES, GEAR, GEAR_BY_ID, LOOK_OPTIONS, SLOTS, canSave, cleanAvatar, defaultAvatar, lockReason, newUnlocks, parseAvatar,
   gearMetadata, parseGearMetadata, priceLabel, purchasable, starterFor, unlockedGear, visibleAvatar,
 } from "./avatar.ts";
 
@@ -152,4 +152,38 @@ test("purchase metadata round-trips known shop ids only", () => {
   assert.deepEqual(parseGearMetadata(""), []);
   assert.deepEqual(parseGearMetadata(" pizza-slice , cat-ears,pizza-slice,constructor"), [SHOP_ITEM, "cat-ears"]);
   assert.equal(gearMetadata(BUNDLES[1].items), BUNDLES[1].items.join(","));
+});
+
+test("cleanAvatar keeps only known look parts and slots", () => {
+  const base = defaultAvatar("u1");
+  const dirty = {
+    look: { ...base.look, evil: "x", __proto__x: 1 },
+    equipped: { ...base.equipped, cape: "pizza-slice", extra: { deep: true } },
+    note: "drop me",
+  } as never as Parameters<typeof cleanAvatar>[0];
+  const clean = cleanAvatar(dirty);
+  assert.deepEqual(Object.keys(clean).sort(), ["equipped", "look"]);
+  assert.deepEqual(Object.keys(clean.look).sort(), Object.keys(LOOK_OPTIONS).sort());
+  assert.deepEqual(clean.look, base.look);
+  assert.deepEqual(clean.equipped, base.equipped);
+  assert.deepEqual(cleanAvatar({ look: base.look, equipped: { hat: "paper-hat" } }).equipped, { hat: "paper-hat" });
+});
+
+test("any slot can be empty", () => {
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const base = defaultAvatar("u1");
+  assert.equal(canSave({ ...base, equipped: {} }, free).ok, true);
+  for (const s of SLOTS) {
+    const equipped = { ...base.equipped };
+    delete equipped[s];
+    assert.equal(canSave({ ...base, equipped }, free).ok, true);
+  }
+});
+
+test("gear everyone has at zero progress is never a new unlock", () => {
+  const fresh = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  assert.equal(fresh.has("bandana"), true);
+  assert.deepEqual(newUnlocks(fresh, []), []);
+  const level1 = unlockedGear({ points: LEVELS[1].min, badges: [], plus: false, owned: [] });
+  assert.deepEqual(newUnlocks(level1, []), ["prep-cap"]);
 });

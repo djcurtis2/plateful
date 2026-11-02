@@ -83,7 +83,7 @@ export const BUNDLES: Bundle[] = [
 export type LookPart = "skin" | "eyes" | "brows" | "mouth" | "hair" | "hairColor" | "facialHair" | "glasses";
 export type Look = Record<LookPart, number>; // option indices
 export const LOOK_OPTIONS: Record<LookPart, number> = { skin: 8, eyes: 6, brows: 4, mouth: 6, hair: 10, hairColor: 8, facialHair: 4, glasses: 4 };
-const LOOK_PARTS = Object.keys(LOOK_OPTIONS) as LookPart[];
+export const LOOK_PARTS = Object.keys(LOOK_OPTIONS) as LookPart[];
 
 export type Avatar = { look: Look; equipped: Partial<Record<Slot, string>> };
 export type GearContext = { points: number; badges: BadgeId[]; plus: boolean; owned: string[] };
@@ -139,6 +139,18 @@ export function parseAvatar(json: unknown, userId: string): Avatar {
   return out;
 }
 
+/** Only the known shape: look parts and slots, nothing else the client sent. Run after canSave. */
+export function cleanAvatar(avatar: Avatar): Avatar {
+  const look = {} as Look;
+  for (const p of LOOK_PARTS) look[p] = avatar.look[p];
+  const equipped: Avatar["equipped"] = {};
+  for (const s of SLOTS) {
+    const id = avatar.equipped?.[s];
+    if (typeof id === "string") equipped[s] = id;
+  }
+  return { look, equipped };
+}
+
 export function unlockedGear(ctx: GearContext): Set<string> {
   const level = levelFor(ctx.points).index;
   const out = new Set<string>();
@@ -185,10 +197,16 @@ export function visibleAvatar(avatar: Avatar, plus: boolean): Avatar {
   return { ...avatar, equipped };
 }
 
-/** Unlocked gear not yet seen, excluding starters, in catalog order. */
+/** Gear everyone has from day one (starters, plus anything unlocked at level 0 or 0 points). Never "new". */
+export function unlockedFromStart(item: GearItem): boolean {
+  const s = item.source;
+  return s.kind === "starter" || (s.kind === "level" && LEVELS[s.level]?.min === 0) || (s.kind === "points" && s.at <= 0);
+}
+
+/** Unlocked gear not yet seen, excluding what everyone starts with, in catalog order. */
 export function newUnlocks(unlocked: Set<string>, seen: string[]): string[] {
   const seenSet = new Set(seen);
-  return GEAR.filter((g) => g.source.kind !== "starter" && unlocked.has(g.id) && !seenSet.has(g.id)).map((g) => g.id);
+  return GEAR.filter((g) => !unlockedFromStart(g) && unlocked.has(g.id) && !seenSet.has(g.id)).map((g) => g.id);
 }
 
 export function priceLabel(cents: number): string {
