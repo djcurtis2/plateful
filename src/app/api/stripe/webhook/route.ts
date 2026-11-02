@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
-import { stripe, periodEnd } from "@/lib/stripe";
-import { admin } from "@/lib/supabase/admin";
+import { stripe } from "@/lib/stripe";
+import { syncSubscription } from "@/lib/billing";
 import { requireEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
@@ -40,22 +40,4 @@ export async function POST(req: NextRequest) {
   }
 
   return NextResponse.json({ received: true });
-}
-
-async function syncSubscription(sub: Stripe.Subscription, userIdHint: string | null) {
-  const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
-  const userId = userIdHint ?? (sub.metadata?.user_id || null);
-  const active = ["active", "trialing", "past_due"].includes(sub.status);
-
-  const update = {
-    plan: (active ? "plus" : "free") as "plus" | "free",
-    subscription_status: sub.status,
-    current_period_end: periodEnd(sub),
-    stripe_customer_id: customer,
-  };
-
-  const db = admin();
-  const q = userId ? db.from("profiles").update(update).eq("id", userId) : db.from("profiles").update(update).eq("stripe_customer_id", customer);
-  const { error } = await q;
-  if (error) throw error;
 }

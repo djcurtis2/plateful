@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { mySavings } from "@/lib/savings-server";
 import { cookies } from "next/headers";
 import { getMe } from "@/lib/data";
 import { headerStats } from "@/lib/game-server";
@@ -30,7 +31,8 @@ export async function Header() {
   let toast: React.ComponentProps<typeof StatusToast> | null = null;
   if (me) {
     try {
-      stats = await headerStats(me.user.id);
+      const [st, sv] = await Promise.all([headerStats(me.user.id), mySavings(me.user.id)]);
+      stats = st;
       const jar = await cookies();
       const seen = jar.get(SEEN_COOKIE)?.value?.split("|").map(Number);
       const welcome = jar.get(WELCOME_COOKIE)?.value === "1";
@@ -39,6 +41,7 @@ export async function Header() {
       toast = {
         name: publicName(me.profile?.public_name),
         points: stats.points,
+        saved: sv.saved,
         levelIndex: stats.level.index,
         levelName: stats.level.name,
         next: stats.level.next,
@@ -86,6 +89,9 @@ export async function Header() {
                   className="rounded-lg px-2 py-1.5 text-muted hover:text-ink"
                 >
                   My recipes
+                </Link>
+                <Link href="/plan" className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink md:inline">
+                  Plan
                 </Link>
                 <Link
                   href="/pantry"

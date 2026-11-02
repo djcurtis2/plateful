@@ -1,7 +1,13 @@
 import type { Metadata } from "next";
+import { DietForm } from "@/components/DietForm";
 import { BadgeIcon, LevelIcon, LevelLadder } from "@/components/GameIcons";
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/data";
+import { refreshFromStripe } from "@/lib/billing";
+import { mySavings } from "@/lib/savings-server";
+import { dollars, nextMilestone } from "@/lib/savings";
+import { SavingsCard } from "@/components/SavingsCard";
+import { FeatureMeToggle } from "@/components/FeatureMeToggle";
 import { referralStats } from "@/lib/referrals";
 import { siteUrl } from "@/lib/env";
 import { CopyField } from "@/components/CopyField";
@@ -19,15 +25,21 @@ function fmtDate(iso: string | null | undefined) {
 }
 
 export default async function AccountPage({ searchParams }: { searchParams: Promise<{ upgraded?: string }> }) {
-  const me = await getMe();
+  let me = await getMe();
   if (!me || !me.profile) redirect("/login?next=/account");
+  // Back from checkout, or a paying customer whose webhook was missed: confirm with Stripe directly.
+  if (!me.plus && me.profile.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) {
+    me = (await getMe())!;
+  }
   const { upgraded } = await searchParams;
-  const p = me.profile;
-  const [stats, game, { data: prizes }] = await Promise.all([
+  const p = me.profile!;
+  const [stats, game, { data: prizes }, savings] = await Promise.all([
     referralStats(me.user.id),
     playerStats(me.user.id, null),
     admin().from("prize_awards").select("id, kind, reason, detail, status, created_at").eq("user_id", me.user.id).order("created_at", { ascending: false }),
+    mySavings(me.user.id),
   ]);
+  const goal = nextMilestone(savings.saved);
   const earned = new Set(game.badges.map((b) => b.badge));
   const link = `${siteUrl}/?ref=${p.referral_code}`;
   const paid = p.plan === "plus";
@@ -48,6 +60,39 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       {upgraded && (
         <p className="rounded-2xl bg-basil px-4 py-3 font-medium text-basil-ink">Welcome to Plus. It can take a few seconds to show below.</p>
       )}
+
+      <section id="savings" className="card flex scroll-mt-20 flex-col gap-5 border-saffron p-6">
+        <div className="grid gap-6 sm:grid-cols-[minmax(0,1fr)_auto]">
+          <div className="flex flex-col gap-4">
+            <div>
+              <span className="label">Your savings</span>
+              <p className="tabular font-mono text-5xl font-semibold text-basil">${savings.saved.toFixed(2)}</p>
+              <p className="text-sm text-muted">
+                vs. eating out · {savings.meals} {savings.meals === 1 ? "meal" : "meals"} cooked
+                {savings.verified ? ` · ${savings.verified} with a photo` : ""} · {dollars(savings.month)} this month
+              </p>
+            </div>
+            {goal ? (
+              <div className="flex flex-col gap-1.5">
+                <div className="flex justify-between text-xs text-muted">
+                  <span>Next badge: Saved {dollars(goal.amount)}</span>
+                  <span className="tabular font-mono">${goal.toGo.toFixed(2)} to go</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-sunk" role="progressbar" aria-label="Progress to next savings badge" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(goal.progress * 100)}>
+                  <div className="h-full rounded-full bg-saffron" style={{ width: `${Math.round(goal.progress * 100)}%` }} />
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm font-semibold text-basil">You&apos;ve earned every savings badge.</p>
+            )}
+            <p className="text-xs text-muted">
+              Counted when you tap &ldquo;I made it,&rdquo; tick off a planned dinner, or post your version. Copycats compare to the restaurant&apos;s menu price; other recipes to a similar takeout dish. Estimates, one per recipe per day.
+            </p>
+            <FeatureMeToggle initial={!!p.feature_me} />
+          </div>
+          {savings.saved > 0 && <SavingsCard saved={savings.saved} meals={savings.meals} shareUrl={link} />}
+        </div>
+      </section>
 
       <section className="card flex flex-col gap-5 p-6">
         <div className="flex flex-wrap items-start justify-between gap-3">
@@ -71,6 +116,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </div>
         <LevelLadder current={game.level.index} />
         <NameForm initial={p.public_name ?? ""} />
+        <DietForm initial={p.diets ?? []} />
         <div className="flex flex-col gap-2">
           <span className="label">Badges</span>
           <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">

@@ -2,16 +2,18 @@ import { Snapper } from "@/components/Snapper";
 import { RecipeTile } from "@/components/RecipeTile";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { getCurrentChallenge, getMe, getRecentPublicRecipes, isLive } from "@/lib/data";
+import { siteSavings } from "@/lib/savings-server";
 import { timeLeft } from "@/lib/game";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
 
 export default async function Home() {
-  const [me, recent, challenge] = await Promise.all([
+  const [me, recent, challenge, community] = await Promise.all([
     getMe().catch(() => null),
     getRecentPublicRecipes(6).catch(() => []),
     getCurrentChallenge().catch(() => null),
+    siteSavings(),
   ]);
 
   return (
@@ -39,6 +41,13 @@ export default async function Home() {
               </li>
             ))}
           </ol>
+          {community.saved >= 1 && (
+            <p className="w-fit rounded-2xl border border-saffron bg-saffron/10 px-4 py-3">
+              Plateful cooks have saved{" "}
+              <b className="tabular font-mono text-lg text-basil">${Math.round(community.saved).toLocaleString("en-US")}</b> cooking{" "}
+              {community.meals.toLocaleString("en-US")} {community.meals === 1 ? "meal" : "meals"} at home instead of eating out.
+            </p>
+          )}
         </div>
         <Snapper signedIn={!!me} />
       </section>

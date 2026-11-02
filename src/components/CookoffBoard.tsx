@@ -1,10 +1,11 @@
 "use client";
+import { celebrate, here } from "@/lib/celebrate";
 import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Attempt } from "@/lib/data";
 import type { Recipe } from "@/lib/recipe";
-import { publicName, rankEntries, VOTES_PER_COOKOFF } from "@/lib/game";
+import { POINTS, publicName, rankEntries, VOTES_PER_COOKOFF } from "@/lib/game";
 import { reportAttempt, voteAttempt } from "@/app/actions";
 import { ShareCard } from "@/components/ShareCard";
 import { EntryChips } from "@/components/EntryChips";
@@ -53,9 +54,11 @@ export function CookoffBoard({ entries, recipe, myId, myVotes, open, chefPickId,
       setMsg("login");
       return;
     }
+    const at = here();
     start(async () => {
       const r = await voteAttempt(id);
       if (!r.ok) return setMsg(r.message);
+      if (r.voted) celebrate({ text: `+${POINTS.vote_cast} points`, origin: at });
       setMsg("");
       setVotes((v) => ({ ...v, [id]: r.votes }));
       setMine((m) => {

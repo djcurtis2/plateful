@@ -1,4 +1,5 @@
 "use client";
+import { celebrate, here } from "@/lib/celebrate";
 import { useState, useTransition } from "react";
 
 /** Runs an admin server action and shows its result inline. Two-step confirm for actions that can't be undone. */
@@ -7,7 +8,10 @@ export function AdminButton({
   label,
   confirm,
   className = "btn btn-ghost btn-sm",
+  cheer = false,
 }: {
+  /** Confetti on success, using the result message as the label. */
+  cheer?: boolean;
   action: () => Promise<{ ok: boolean; message?: string }>;
   label: string;
   confirm?: string;
@@ -24,8 +28,10 @@ export function AdminButton({
         onClick={() => {
           if (confirm && !arming) return setArming(true);
           setArming(false);
+          const at = here();
           start(async () => {
             const r = await action();
+            if (r.ok && cheer) celebrate({ text: r.message?.replace(/^Saved \$/, "+$").replace(/^\+\$([\d.]+)$/, "+$$$1 saved"), origin: at });
             setMsg(r.message ?? (r.ok ? "Done" : "Failed"));
           });
         }}

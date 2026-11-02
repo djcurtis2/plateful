@@ -1,4 +1,5 @@
 "use server";
+import { DIET_IDS, VERSIONS, type VersionKind } from "@/lib/diet";
 import { IMAGE_MAX, extFor, sniffImage } from "@/lib/images";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -8,7 +9,12 @@ import { recordReferralCook } from "@/lib/referrals";
 import { pantryKey } from "@/lib/format";
 import { awardPoints, onEntryPosted, onVote } from "@/lib/game-server";
 import { readReceipt } from "@/lib/claude";
+import { createOriginal, createVersion } from "@/lib/originals";
+import { logCook } from "@/lib/savings-server";
 import { RECEIPT_SCAN } from "@/lib/limits";
+import { getMe, getPantry, toRecipe } from "@/lib/data";
+import { leftoversFor, shareLabel } from "@/lib/leftovers";
+import { LEFTOVER_STYLES, type Ingredient, type LeftoverStyle } from "@/lib/recipe";
 import { POINTS, VOTE_ERRORS, receiptVerdict, validPublicName } from "@/lib/game";
 
 type Result = { ok: true } | { ok: false; code: "login" | "invalid" | "failed"; message: string };
@@ -35,7 +41,7 @@ export async function toggleSave(recipeId: string, save: boolean): Promise<Resul
 }
 
 /** "I made it" or "Build my cart": the signal that a referral turned into real cooking. */
-export async function markCooked(recipeId: string): Promise<Result> {
+export async function markCooked(recipeId: string, servings?: number): Promise<Result & { saved?: number }> {
   if (!Uuid.safeParse(recipeId).success) return { ok: false, code: "invalid", message: "Unknown recipe." };
   const { supabase, user } = await currentUser();
   if (!user) return LOGIN;
@@ -48,8 +54,18 @@ export async function markCooked(recipeId: string): Promise<Result> {
   } catch (e) {
     console.error("referral cook failed", e);
   }
+  let saved: number | undefined;
+  try {
+    const { data: row } = await admin().from("recipes").select("*").eq("id", recipeId).maybeSingle();
+    if (row) {
+      const s = await logCook({ userId: user.id, recipe: toRecipe(row as unknown as Parameters<typeof toRecipe>[0]), servings, source: "made_it" });
+      saved = s?.saved;
+    }
+  } catch (e) {
+    console.error("savings log failed", e);
+  }
   revalidatePath("/library");
-  return { ok: true };
+  return { ok: true, saved };
 }
 
 const PantryNames = z.array(z.string().trim().min(1).max(80)).max(60);
@@ -87,7 +103,7 @@ const Details = z.object({
 });
 
 type PostResult =
-  | { ok: true; attemptId: string; challengeId: string | null; receipt: { verified: boolean; message: string } | null }
+  | { ok: true; attemptId: string; challengeId: string | null; receipt: { verified: boolean; message: string } | null; points: number; saved?: number }
   | Extract<Result, { ok: false }>;
 
 /**
@@ -150,6 +166,16 @@ export async function postAttempt(formData: FormData): Promise<PostResult> {
     imagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const up = await db.storage.from("attempts").upload(imagePath, bytes, { contentType: type });
     if (up.error) return { ok: false, code: "failed", message: "Couldn't upload your photo. Try again." };
+    // Recipes without a photo (Plateful originals) take the first cook's photo as their picture.
+    const { data: rec } = await db.from("recipes").select("image_path").eq("id", recipeId).maybeSingle();
+    if (rec && !rec.image_path) {
+      const coverPath = `cooks/${recipeId}.${ext}`;
+      const cover = await db.storage.from("dishes").upload(coverPath, bytes, { contentType: type, upsert: true });
+      if (!cover.error) {
+        await db.from("recipes").update({ image_path: coverPath }).eq("id", recipeId).is("image_path", null);
+        revalidatePath("/library");
+      }
+    }
   }
 
   // An entry for this week's cook-off dish counts toward the cook-off, whichever page it was posted from.
@@ -229,10 +255,20 @@ export async function postAttempt(formData: FormData): Promise<PostResult> {
   } catch (e) {
     console.error("points for entry failed", e);
   }
+  let saved: number | undefined;
+  try {
+    // A posted photo is proof of cooking: log the savings as verified.
+    const { data: row } = await db.from("recipes").select("*").eq("id", recipeId).maybeSingle();
+    if (row) saved = (await logCook({ userId: user.id, recipe: toRecipe(row as unknown as Parameters<typeof toRecipe>[0]), source: "cookoff", verified: true }))?.saved;
+  } catch (e) {
+    console.error("savings log failed", e);
+  }
+  // Points this post earned, for the confetti: a new cook-off entry, plus a verified receipt.
+  const points = (!existing && finalChallenge ? POINTS.post : 0) + (receiptResult?.verified ? POINTS.receipt : 0);
   revalidatePath("/cookoff");
   revalidatePath("/r/[slug]", "page");
   revalidatePath(`/cookoff/e/${attemptId}`);
-  return { ok: true, attemptId, challengeId: finalChallenge, receipt: receiptResult };
+  return { ok: true, attemptId, challengeId: finalChallenge, receipt: receiptResult, points, saved };
 }
 
 async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string, challengeId: string | null, userId: string) {
@@ -322,5 +358,81 @@ export async function reportAttempt(attemptId: string, reason: string): Promise<
   await db.from("attempt_reports").upsert({ attempt_id: attemptId, user_id: user.id, reason: reason.slice(0, 200) || null });
   const { count } = await db.from("attempt_reports").select("user_id", { count: "exact", head: true }).eq("attempt_id", attemptId);
   if ((count ?? 0) >= 3) await db.from("attempts").update({ hidden: true }).eq("id", attemptId);
+  return { ok: true };
+}
+
+/**
+ * "Make something new with my leftovers": Claude writes an original recipe (not a copycat)
+ * around what's left from this one, saves it as a public recipe page and adds it to your library.
+ */
+export async function makeFromLeftovers(
+  recipeId: string,
+  style: LeftoverStyle,
+): Promise<{ ok: true; slug: string } | Extract<Result, { ok: false }>> {
+  if (!Uuid.safeParse(recipeId).success || !(style in LEFTOVER_STYLES)) return { ok: false, code: "invalid", message: "Unknown recipe." };
+  const me = await getMe();
+  if (!me) return LOGIN;
+  const { data: row } = await admin().from("recipes").select("*").eq("id", recipeId).maybeSingle();
+  if (!row) return { ok: false, code: "invalid", message: "Unknown recipe." };
+  const source = toRecipe(row as unknown as Parameters<typeof toRecipe>[0]);
+  const pantry = (await getPantry(me.user.id)).map(pantryKey);
+  const left = leftoversFor(source.ingredients as Ingredient[], pantry);
+  if (left.length < 1) return { ok: false, code: "invalid", message: "This recipe doesn't leave much over. Nothing to use up!" };
+  const r = await createOriginal({
+    userId: me.user.id,
+    plus: me.plus,
+    leftovers: left.map((l) => ({ name: l.name, share: shareLabel(l) })),
+    style,
+    avoidDish: source.dish,
+    inspiredBy: source.id,
+  });
+  if (!r.ok) return { ok: false, code: "failed", message: r.message };
+  revalidatePath("/library");
+  revalidatePath(`/r/${source.slug}`);
+  return { ok: true, slug: r.slug };
+}
+
+/** Opt in or out of being named in Plateful stories and ads (e.g. "Dan has saved $1,240"). */
+export async function setFeatureMe(on: boolean): Promise<Result> {
+  const { user } = await currentUser();
+  if (!user) return LOGIN;
+  const { error } = await admin().from("profiles").update({ feature_me: on }).eq("id", user.id);
+  if (error) return { ok: false, code: "failed", message: "Couldn't save that. Try again." };
+  revalidatePath("/account");
+  return { ok: true };
+}
+
+/** "Make it my way": open (or create) a version of this recipe. */
+export async function makeVersion(recipeId: string, kind: VersionKind): Promise<{ ok: true; slug: string } | Extract<Result, { ok: false }>> {
+  if (!Uuid.safeParse(recipeId).success || !(kind in VERSIONS)) return { ok: false, code: "invalid", message: "Unknown recipe." };
+  const me = await getMe();
+  if (!me) return LOGIN;
+  const { data: row } = await admin().from("recipes").select("*").eq("id", recipeId).maybeSingle();
+  if (!row) return { ok: false, code: "invalid", message: "Unknown recipe." };
+  let root = toRecipe(row as unknown as Parameters<typeof toRecipe>[0]);
+  if (root.variant_of) {
+    const { data: orig } = await admin().from("recipes").select("*").eq("id", root.variant_of).maybeSingle();
+    if (orig) root = toRecipe(orig as unknown as Parameters<typeof toRecipe>[0]);
+  }
+  if (root.variant_kind === null && VERSIONS[kind].diet && root.diet_tags.includes(VERSIONS[kind].diet!)) {
+    return { ok: false, code: "invalid", message: `This recipe is already ${VERSIONS[kind].label.toLowerCase()}.` };
+  }
+  const r = await createVersion({ userId: me.user.id, plus: me.plus, root, kind });
+  if (!r.ok) return { ok: false, code: "failed", message: r.message };
+  revalidatePath(`/r/${root.slug}`);
+  revalidatePath("/library");
+  return { ok: true, slug: r.slug };
+}
+
+/** Save your diets (used to filter suggestions, plans and My recipes). */
+export async function setDiets(diets: string[]): Promise<Result> {
+  const { user } = await currentUser();
+  if (!user) return LOGIN;
+  const clean = [...new Set(diets.filter((d) => (DIET_IDS as string[]).includes(d)))];
+  const { error } = await admin().from("profiles").update({ diets: clean }).eq("id", user.id);
+  if (error) return { ok: false, code: "failed", message: "Couldn't save that. Try again." };
+  revalidatePath("/account");
+  revalidatePath("/library");
+  revalidatePath("/plan");
   return { ok: true };
 }

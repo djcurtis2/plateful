@@ -86,7 +86,23 @@ export function LevelLadder({ current }: { current?: number }) {
 // ---------------------------------------------------------------------------
 // Badges
 
+// Savings milestones: a piggy bank, with a coin going in for the bigger ones.
+const piggy = (coins: number) => (
+  <>
+    <path d="M5 11.5C5 8.5 8 6.5 12 6.5c3.3 0 5.8 1.4 6.7 3.5H20a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1h-1.3c-.5 1.3-1.5 2.3-2.7 2.9V19h-2.5v-1.6a10 10 0 0 1-3 0V19H8v-2.3c-1.9-1.1-3-3-3-5.2Z" />
+    <path d="M5.5 10.5c-1.4 0-2.3-.7-2.5-1.8" />
+    <circle cx="15.5" cy="10" r=".8" fill="currentColor" />
+    {coins > 0 && <path d="M10 3.5h3" strokeWidth="2.2" />}
+    {coins > 1 && <path d="M10.5 1.5h2" strokeWidth="2" />}
+  </>
+);
+
 const BADGE_GLYPHS: Record<BadgeId, React.ReactNode> = {
+  saved_100: piggy(0),
+  saved_500: piggy(1),
+  saved_1000: piggy(1),
+  saved_5000: piggy(2),
+  saved_10000: piggy(2),
   // First copycat: camera
   first_copycat: (
     <>
@@ -146,7 +162,7 @@ const BADGE_GLYPHS: Record<BadgeId, React.ReactNode> = {
   ),
 };
 
-const WIN_BADGES: BadgeId[] = ["crowd_favorite", "chef_pick", "thriftiest"];
+const WIN_BADGES: BadgeId[] = ["crowd_favorite", "chef_pick", "thriftiest", "saved_1000", "saved_5000", "saved_10000"];
 
 export function BadgeIcon({ id, size = 36, earned = true }: P & { id: BadgeId; earned?: boolean }) {
   const tone = !earned ? "bg-sunk text-muted ring-line" : WIN_BADGES.includes(id) ? "bg-saffron text-saffron-ink ring-saffron" : "bg-basil text-basil-ink ring-basil";

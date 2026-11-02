@@ -1,4 +1,6 @@
 "use client";
+import { POINTS } from "@/lib/game";
+import { celebrate, here } from "@/lib/celebrate";
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import { voteAttempt } from "@/app/actions";
@@ -58,16 +60,18 @@ export function VoteButton({
         className={`btn text-lg ${voted ? "btn-ghost" : "btn-sun"}`}
         aria-pressed={voted}
         disabled={pending || (!voted && left === 0)}
-        onClick={() =>
+        onClick={() => {
+          const at = here();
           start(async () => {
             const r = await voteAttempt(attemptId);
             if (!r.ok) return setMsg(r.message);
+            if (r.voted) celebrate({ text: `+${POINTS.vote_cast} points`, origin: at });
             setMsg("");
             setVotes(r.votes);
             setVoted(r.voted);
             setLeft(r.remaining);
-          })
-        }
+          });
+        }}
       >
         {pending ? "Saving…" : voted ? "Voted ✓ (tap to take it back)" : left === 0 ? "No votes left" : "Vote for this one"}
       </button>

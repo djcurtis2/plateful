@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { dietTagsFrom } from "@/lib/diet";
 import { cookies } from "next/headers";
 import { admin } from "@/lib/supabase/admin";
 import { getMe } from "@/lib/data";
@@ -119,7 +120,8 @@ async function handle(req: NextRequest) {
     visitor_id: visitorId,
     dish: result.dish,
     restaurant: recipeRestaurant,
-    cuisine: result.cuisine ?? null,
+    cuisine: result.cuisine || null,
+    meals: result.meals ?? [],
     servings: result.servings ?? 2,
     minutes: result.minutes ?? null,
     difficulty: result.difficulty ?? null,
@@ -127,6 +129,10 @@ async function handle(req: NextRequest) {
     why: result.why ?? null,
     menu_price: recipeRestaurant ? (result.menu_price ?? null) : null,
     plate_cost: result.plate_cost ?? null,
+    out_price: recipeRestaurant ? null : (result.out_price ?? null),
+    menu_serves: recipeRestaurant ? (result.menu_serves ?? 1) : 1,
+    contains: result.contains ?? [],
+    diet_tags: dietTagsFrom(result.contains ?? [], !!result.low_carb),
     ingredients: result.ingredients,
     steps: result.steps,
     image_path: upload.error ? null : imagePath,

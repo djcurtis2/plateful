@@ -2,13 +2,18 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAttempts, getMe, getPantry, getRecipeBySlug, isSaved } from "@/lib/data";
-import { savings } from "@/lib/recipe";
+import { getAttempts, getMe, getPantry, getRecipeBySlug, getRecipesByIds, isSaved } from "@/lib/data";
+import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 import { siteUrl } from "@/lib/env";
 import { RecipeView } from "@/components/RecipeView";
 import { ReferralBeacon } from "@/components/ReferralBeacon";
 import { AttemptGallery } from "@/components/AttemptGallery";
+import { UseItUp } from "@/components/UseItUp";
+import { VersionMaker } from "@/components/VersionMaker";
+import { getVersions } from "@/lib/data";
+import { originalsLeft } from "@/lib/originals";
+import { VERSIONS, VERSION_IDS, dietMisses } from "@/lib/diet";
 
 type Params = { params: Promise<{ slug: string }> };
 
@@ -19,7 +24,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const s = savings(r);
   const title = r.restaurant ? `${r.restaurant} ${r.dish} copycat` : `${r.dish} recipe`;
   const description = s
-    ? `${money(r.menu_price)} at ${r.restaurant}, ${money(r.plate_cost)} a plate at home. ${r.minutes ?? 30} minutes.`
+    ? `${money(menuPlate(r))} a plate at ${r.restaurant}, ${money(r.plate_cost)} a plate at home. ${r.minutes ?? 30} minutes.`
     : `Make ${r.dish} at home in ${r.minutes ?? 30} minutes.`;
   return { title, description, alternates: { canonical: `/r/${r.slug}` }, openGraph: { title, description } };
 }
@@ -35,6 +40,18 @@ export default async function RecipePage({ params }: Params) {
     me ? isSaved(me.user.id, recipe.id) : Promise.resolve({ saved: false, cooked: false }),
     getAttempts({ recipeId: recipe.id }, 12),
   ]);
+
+  // Versions ("Make it my way"): this recipe's original and its sibling versions.
+  const rootId = recipe.variant_of ?? recipe.id;
+  const [root, versions, tries] = await Promise.all([
+    recipe.variant_of ? getRecipesByIds([recipe.variant_of]).then((r) => r[0] ?? null) : Promise.resolve(recipe),
+    getVersions(rootId),
+    me ? originalsLeft(me.user.id, me.plus) : Promise.resolve(0),
+  ]);
+  const myDiets = me?.profile?.diets ?? [];
+  const suggest = root ? VERSION_IDS.filter((k) => VERSIONS[k].diet && dietMisses(root, myDiets).includes(VERSIONS[k].diet!)) : [];
+  const versionOf =
+    recipe.variant_of && root ? { slug: root.slug, dish: root.dish, label: VERSIONS[recipe.variant_kind as keyof typeof VERSIONS]?.label ?? "New" } : null;
 
   const ref = me?.profile?.referral_code;
   const hasEntry = !!me && attempts.some((a) => a.user_id === me.user.id);
@@ -53,7 +70,24 @@ export default async function RecipePage({ params }: Params) {
         initiallySaved={savedState.saved}
         initiallyCooked={savedState.cooked}
         hasEntry={hasEntry}
+        myDiets={myDiets}
+        versionOf={versionOf}
       />
+      {root && (
+        <VersionMaker
+          recipeId={root.id}
+          signedIn={!!me}
+          plus={!!me?.plus}
+          triesLeft={tries}
+          existing={versions.map((v) => ({ kind: v.variant_kind ?? "", slug: v.slug, dish: v.dish }))}
+          suggest={suggest}
+          already={root.diet_tags}
+          next={`/r/${recipe.slug}`}
+        />
+      )}
+      <Suspense>
+        <UseItUp recipe={recipe} userId={me?.user.id ?? null} plus={!!me?.plus} pantry={pantry} cooked={savedState.cooked} diets={myDiets} />
+      </Suspense>
       <section className="flex flex-col gap-5">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <h2 className="font-display text-3xl font-bold tracking-tight">Who made it</h2>

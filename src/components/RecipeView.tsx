@@ -1,9 +1,11 @@
 "use client";
+import { DietChips } from "@/components/DietChips";
+import { celebrate, earnedText, here } from "@/lib/celebrate";
 import { useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Recipe } from "@/lib/recipe";
-import { savings } from "@/lib/recipe";
+import { menuPlate, recipeLabel, savings } from "@/lib/recipe";
 import { formatQty, money, packagesNeeded, pantryKey } from "@/lib/format";
 import { STORES, STORE_IDS, type StoreId } from "@/lib/stores";
 import { markCooked, toggleSave, updatePantry } from "@/app/actions";
@@ -17,9 +19,11 @@ type Props = {
   initiallySaved: boolean;
   initiallyCooked: boolean;
   hasEntry?: boolean;
+  myDiets?: string[];
+  versionOf?: { slug: string; dish: string; label: string } | null;
 };
 
-export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved, initiallyCooked, hasEntry = false }: Props) {
+export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved, initiallyCooked, hasEntry = false, myDiets = [], versionOf = null }: Props) {
   const [servings, setServings] = useState(recipe.servings);
   const pantrySet = useMemo(() => new Set(pantry), [pantry]);
   const [have, setHave] = useState<Set<number>>(
@@ -69,11 +73,14 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
       after?.();
       return;
     }
+    const at = here();
     start(async () => {
-      const r = await markCooked(recipe.id);
+      const r = await markCooked(recipe.id, servings);
       if (r.ok) {
         setCooked(true);
         setSaved(true);
+        celebrate({ text: earnedText(undefined, r.saved) ?? "Nice cooking!", origin: at });
+        if (r.saved) setNotice(`saved:${r.saved}`);
       }
       after?.();
     });
@@ -89,8 +96,22 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
             </div>
           )}
           <div className="flex flex-col gap-2">
-            {recipe.restaurant && <span className="label">{recipe.restaurant} copycat</span>}
+            {recipeLabel(recipe) && (
+              <span className="label">
+                {recipeLabel(recipe)}
+                {versionOf ? ` · ${versionOf.label} version` : ""}
+              </span>
+            )}
             <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">{recipe.dish}</h1>
+            {versionOf && (
+              <p className="text-sm text-muted">
+                A {versionOf.label.toLowerCase()} version of{" "}
+                <Link href={`/r/${versionOf.slug}`} className="font-semibold text-basil underline">
+                  {versionOf.dish}
+                </Link>
+              </p>
+            )}
+            <DietChips recipe={recipe} myDiets={myDiets} />
             <div className="flex flex-wrap gap-2 font-mono text-xs">
               {recipe.confidence != null && (
                 <span className="rounded-lg bg-sunk px-2 py-1 text-basil">{Math.round(recipe.confidence * 100)}% match</span>
@@ -102,10 +123,24 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
           </div>
           {(recipe.menu_price || recipe.plate_cost) && (
             <div className="grid grid-cols-[1fr_1fr_auto] items-center gap-4 rounded-2xl bg-sunk px-5 py-4">
-              <div>
-                <span className="label">{recipe.restaurant ?? "Restaurant"}</span>
-                <b className="tabular block font-mono text-2xl">{money(recipe.menu_price)}</b>
-              </div>
+              {recipe.menu_price ? (
+                <div>
+                  <span className="label">{recipe.restaurant ?? "Restaurant"}{recipe.menu_serves > 1 ? ", per plate" : ""}</span>
+                  <b className="tabular block font-mono text-2xl">{money(menuPlate(recipe))}</b>
+                  {recipe.menu_serves > 1 && (
+                    <span className="text-xs text-muted">
+                      {money(recipe.menu_price)} order serves {recipe.menu_serves}
+                    </span>
+                  )}
+                </div>
+              ) : recipe.out_price ? (
+                <div>
+                  <span className="label">Similar takeout</span>
+                  <b className="tabular block font-mono text-2xl">~{money(recipe.out_price)}</b>
+                </div>
+              ) : (
+                <span />
+              )}
               <div>
                 <span className="label">Home, per plate</span>
                 <b className="tabular block font-mono text-2xl text-basil">{money(recipe.plate_cost)}</b>
@@ -128,6 +163,13 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
                 Sign in free
               </Link>{" "}
               to save recipes, remember your pantry and post to the cook-off.
+            </p>
+          ) : notice.startsWith("saved:") ? (
+            <p className="rounded-2xl bg-basil px-4 py-2 text-sm font-semibold text-basil-ink" role="status">
+              Nice! You saved ${Number(notice.slice(6)).toFixed(2)} vs. eating out.{" "}
+              <Link href="/account#savings" className="underline">
+                See your total
+              </Link>
             </p>
           ) : notice ? (
             <p role="alert" className="text-sm text-chili">
@@ -238,7 +280,7 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
 
         <section className="flex flex-col gap-3">
           <div>
-            <h2 className="font-display text-2xl font-bold">Restaurant vs. mine</h2>
+            <h2 className="font-display text-2xl font-bold">{recipe.restaurant ? "Restaurant vs. mine" : "Show off your version"}</h2>
             <p className="text-sm text-muted">Add a photo of your version and post it. Your link earns you free months.</p>
           </div>
           <ShareCard recipe={recipe} shareUrl={shareUrl} canPost={signedIn} hasEntry={hasEntry} />

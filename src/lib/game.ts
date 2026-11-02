@@ -48,6 +48,11 @@ export const BADGES: Record<BadgeId, { label: string; blurb: string }> = {
   thriftiest: { label: "Thriftiest copy", blurb: "Cheapest receipt-verified plate of the week" },
   streak_4: { label: "4-week streak", blurb: "Entered four cook-offs in a row" },
   brought_3: { label: "Brought 3 friends", blurb: "Three friends cooked from your link" },
+  saved_100: { label: "Saved $100", blurb: "Saved $100 cooking at home instead of eating out" },
+  saved_500: { label: "Saved $500", blurb: "Saved $500 cooking at home instead of eating out" },
+  saved_1000: { label: "Saved $1,000", blurb: "Saved $1,000 cooking at home instead of eating out" },
+  saved_5000: { label: "Saved $5,000", blurb: "Saved $5,000 cooking at home instead of eating out" },
+  saved_10000: { label: "Saved $10,000", blurb: "Saved $10,000 cooking at home instead of eating out" },
 };
 
 /** Weekly prizes, applied when a cook-off is finalized. */

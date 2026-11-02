@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import Link from "next/link";
 import { getMe, getSavedRecipes } from "@/lib/data";
-import { RecipeTile } from "@/components/RecipeTile";
+import { Suspense } from "react";
+import { LibraryBrowser } from "@/components/LibraryBrowser";
 
 export const metadata: Metadata = { title: "My recipes" };
 
@@ -25,11 +26,9 @@ export default async function LibraryPage() {
           <p className="max-w-sm text-muted">Snap a restaurant dish and it lands here, with your pantry already ticked off.</p>
         </div>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {saved.map(({ recipe, cookedAt }) => (
-            <RecipeTile key={recipe.id} recipe={recipe} note={cookedAt ? "made it" : undefined} />
-          ))}
-        </div>
+        <Suspense>
+          <LibraryBrowser items={saved} myDiets={me.profile?.diets ?? []} />
+        </Suspense>
       )}
     </main>
   );

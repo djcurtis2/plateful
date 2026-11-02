@@ -7,7 +7,7 @@ import { getAttempt, getAttempts, getChallengeById, getMe, getRecipeBySlug, isLi
 import { admin } from "@/lib/supabase/admin";
 import { publicName, standing, timeLeft, VOTES_PER_COOKOFF } from "@/lib/game";
 import { money } from "@/lib/format";
-import { savings } from "@/lib/recipe";
+import { menuPlate, savings } from "@/lib/recipe";
 import { VoteButton } from "@/components/VoteButton";
 import { ReferralBeacon } from "@/components/ReferralBeacon";
 import { EntryChips } from "@/components/EntryChips";
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = `Vote for ${publicName(d.entry.name)}'s ${d.recipe.dish}`;
   const s = savings(d.recipe);
   const description = s
-    ? `Made at home for ${money(d.recipe.plate_cost)} instead of ${money(d.recipe.menu_price)} at ${d.recipe.restaurant}. Vote in the Plateful cook-off.`
+    ? `Made at home for ${money(d.recipe.plate_cost)} a plate instead of ${money(menuPlate(d.recipe))} at ${d.recipe.restaurant}. Vote in the Plateful cook-off.`
     : "Vote in the Plateful cook-off.";
   return { title, description, openGraph: { title, description, images: [d.entry.image_url] } };
 }
@@ -58,6 +58,7 @@ export default async function EntryPage({ params }: Params) {
           : null;
   const original = challenge?.reference_image_url ?? recipe.image_url;
   const homeCost = entry.cost_per_plate ?? recipe.plate_cost;
+  const outPlate = menuPlate(recipe);
 
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-8 pt-8">
@@ -77,7 +78,7 @@ export default async function EntryPage({ params }: Params) {
 
       <div className="grid gap-4 sm:grid-cols-2">
         {[
-          { tag: `The original${recipe.restaurant ? ` · ${recipe.restaurant}` : ""}`, src: original, price: recipe.menu_price, home: false },
+          { tag: `The original${recipe.restaurant ? ` · ${recipe.restaurant}` : ""}`, src: original, price: menuPlate(recipe), home: false },
           { tag: `${name}'s copy`, src: entry.image_url, price: homeCost, home: true },
         ].map((p) => (
           <figure key={p.tag} className="flex flex-col gap-2">
@@ -91,7 +92,7 @@ export default async function EntryPage({ params }: Params) {
             </div>
             <figcaption className="tabular font-mono text-lg">
               {money(p.price)}
-              {p.home ? ` a plate at home${entry.cost_per_plate == null ? " (recipe estimate)" : ""}` : " on the menu"}
+              {p.home ? ` a plate at home${entry.cost_per_plate == null ? " (recipe estimate)" : ""}` : " a plate on the menu"}
             </figcaption>
           </figure>
         ))}
@@ -121,9 +122,9 @@ export default async function EntryPage({ params }: Params) {
               #{stand.rank} of {stand.of} in this cook-off
             </p>
           )}
-          {recipe.menu_price != null && homeCost != null && homeCost < recipe.menu_price ? (
+          {outPlate != null && homeCost != null && homeCost < outPlate ? (
             <p className="text-muted">
-              Saved {money(recipe.menu_price - homeCost)} a plate, {Math.round((1 - homeCost / recipe.menu_price) * 100)}% less than {recipe.restaurant}.
+              Saved {money(outPlate - homeCost)} a plate, {Math.round((1 - homeCost / outPlate) * 100)}% less than {recipe.restaurant}.
             </p>
           ) : s ? (
             <p className="text-muted">

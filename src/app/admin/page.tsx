@@ -2,15 +2,17 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
-import { getAttempts, getChallengeById, getMe, isLive } from "@/lib/data";
+import { getAttempts, getChallengeById, getMe, isLive, recipesMissingDietTags, recipesMissingPackSizes } from "@/lib/data";
 import { admin, publicImageUrl } from "@/lib/supabase/admin";
 import { monthlyTop, publicNames } from "@/lib/game-server";
 import { publicName, rankEntries } from "@/lib/game";
-import { finalize, recordGiftCard, setChefPick, setHidden, setPrizeStatus, setReferencePhoto } from "./actions";
+import { fillDietTags, fillPackSizes, importSamples, finalize, recordGiftCard, setChefPick, setHidden, setPrizeStatus, setReferencePhoto } from "./actions";
 import { ReferencePhotoForm } from "@/components/ReferencePhotoForm";
 import { money } from "@/lib/format";
 import { AdminButton } from "@/components/AdminButton";
 import { NewChallengeForm } from "@/components/NewChallengeForm";
+import { SAMPLES } from "@/lib/samples";
+import { topSavers } from "@/lib/savings-server";
 
 export const metadata: Metadata = { title: "Cook-off admin", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -42,10 +44,13 @@ export default async function AdminPage() {
     : { data: [] };
   const reportedNames = await publicNames((reported ?? []).map((r) => r.user_id));
 
+  const missingPacks = (await recipesMissingPackSizes()).length;
+  const missingDiets = (await recipesMissingDietTags()).length;
   const thisMonth = now.toISOString().slice(0, 7);
   const lastMonthDate = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - 1, 1));
   const lastMonth = lastMonthDate.toISOString().slice(0, 7);
-  const [topLast, topThis] = await Promise.all([monthlyTop(lastMonth), monthlyTop(thisMonth)]);
+  const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const [topLast, topThis, [saverLast]] = await Promise.all([monthlyTop(lastMonth), monthlyTop(thisMonth), topSavers(lastMonthDate, 1, monthStart)]);
 
   const nextStart = new Date(now);
   nextStart.setDate(now.getDate() + ((7 - now.getDay()) % 7 || 7)); // next Sunday
@@ -171,6 +176,21 @@ export default async function AdminPage() {
               {!closed && <p className="mt-1 text-xs text-muted">Award once the month is over.</p>}
             </div>
           ))}
+          <div className="rounded-2xl bg-sunk p-4 text-sm sm:col-span-2">
+            <p className="label">Top saver gift card · {lastMonth}</p>
+            {saverLast ? (
+              <>
+                <p className="mt-1">
+                  <b>{publicName(saverLast.name)}</b> saved ${saverLast.saved.toFixed(2)} over {saverLast.meals} meals
+                </p>
+                <div className="mt-2">
+                  <AdminButton action={recordGiftCard.bind(null, saverLast.userId, lastMonth, "top_saver")} label="Award gift card" />
+                </div>
+              </>
+            ) : (
+              <p className="mt-1 text-muted">No savings logged last month.</p>
+            )}
+          </div>
         </div>
       </section>
 
@@ -197,6 +217,27 @@ export default async function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="card flex flex-col gap-3 p-5">
+        <h2 className="font-display text-2xl font-bold">Recipe data</h2>
+        <p className="text-sm text-muted">
+          {missingPacks
+            ? `${missingPacks} older ${missingPacks === 1 ? "recipe has" : "recipes have"} no package sizes, so "Use it up" can only guess what's left over.`
+            : "Every recipe has package sizes."}
+        </p>
+        {missingPacks > 0 && <AdminButton action={fillPackSizes} label="Fill in package sizes (10 at a time)" className="btn btn-primary btn-sm w-fit" />}
+        <p className="text-sm text-muted">
+          {missingDiets
+            ? `${missingDiets} ${missingDiets === 1 ? "recipe has" : "recipes have"} no diet tags yet, so they're hidden from anyone filtering by diet.`
+            : "Every recipe has diet tags."}
+        </p>
+        {missingDiets > 0 && <AdminButton action={fillDietTags} label="Tag diets (10 at a time)" className="btn btn-primary btn-sm w-fit" />}
+        <p className="text-sm text-muted">
+          Sample recipes: {SAMPLES.length} copycats and Plateful originals with free Unsplash photos, so the site doesn&apos;t look empty. Remove them with
+          supabase/demo_cleanup.sql.
+        </p>
+        <AdminButton action={importSamples} label="Add sample recipes" className="btn btn-ghost btn-sm w-fit" />
       </section>
 
       <section className="card flex flex-col gap-4 p-5">

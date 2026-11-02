@@ -1,4 +1,5 @@
 "use client";
+import { celebrate as confetti } from "@/lib/celebrate";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { BadgeId } from "@/lib/database.types";
@@ -8,6 +9,7 @@ import { BadgeIcon, LevelIcon } from "@/components/GameIcons";
 type Props = {
   name: string;
   points: number;
+  saved: number;
   levelIndex: number;
   levelName: string;
   next: string | null;
@@ -36,6 +38,7 @@ export function StatusToast(p: Props) {
     document.cookie = `pf_seen=${p.seenValue}; path=/; max-age=${YEAR}; samesite=lax`;
     if (p.welcome) document.cookie = "pf_welcome=; path=/; max-age=0; samesite=lax";
     if (celebrate || p.welcome) setOpen(true);
+    if (celebrate) confetti({ big: true, origin: { x: window.innerWidth / 2, y: window.innerHeight * 0.75 } });
   }, [p.seenValue, p.welcome, celebrate]);
 
   useEffect(() => {
@@ -74,7 +77,7 @@ export function StatusToast(p: Props) {
             <p className="text-sm text-muted">
               {newDistinct.length && !p.levelUp
                 ? BADGES[newDistinct[0]].blurb
-                : `${p.levelName} · ${p.points} points`}
+                : `${p.levelName} · ${p.points} points${p.saved >= 1 ? ` · $${Math.round(p.saved).toLocaleString("en-US")} saved` : ""}`}
             </p>
           </div>
           <button aria-label="Close" className="-mr-1 -mt-1 rounded-lg px-2 text-lg text-muted hover:text-ink" onClick={() => setOpen(false)}>

@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { hasPlus, type ProfilePlanFields } from "@/lib/plan";
 import type { Ingredient, Recipe } from "@/lib/recipe";
 
-type RecipeRow = Omit<Recipe, "image_url" | "menu_price" | "plate_cost"> & {
+type RecipeRow = Omit<Recipe, "image_url" | "menu_price" | "plate_cost" | "out_price"> & {
+  out_price: string | number | null;
   image_path: string | null;
   menu_price: string | number | null;
   plate_cost: string | number | null;
@@ -12,7 +13,7 @@ type RecipeRow = Omit<Recipe, "image_url" | "menu_price" | "plate_cost"> & {
 };
 
 const RECIPE_COLUMNS =
-  "id, slug, dish, restaurant, cuisine, servings, minutes, difficulty, confidence, why, menu_price, plate_cost, ingredients, steps, image_path, created_at, user_id";
+  "id, slug, dish, restaurant, cuisine, meals, out_price, menu_serves, contains, diet_tags, variant_of, variant_kind, source, style, servings, minutes, difficulty, confidence, why, menu_price, plate_cost, ingredients, steps, image_path, created_at, user_id";
 
 export function toRecipe(row: RecipeRow): Recipe {
   return {
@@ -21,6 +22,9 @@ export function toRecipe(row: RecipeRow): Recipe {
     dish: row.dish,
     restaurant: row.restaurant,
     cuisine: row.cuisine,
+    meals: (row.meals ?? []) as Recipe["meals"],
+    source: row.source === "leftovers" ? "leftovers" : "snap",
+    style: row.style ?? null,
     servings: row.servings,
     minutes: row.minutes,
     difficulty: row.difficulty,
@@ -28,6 +32,12 @@ export function toRecipe(row: RecipeRow): Recipe {
     why: row.why,
     menu_price: row.menu_price == null ? null : Number(row.menu_price),
     plate_cost: row.plate_cost == null ? null : Number(row.plate_cost),
+    out_price: row.out_price == null ? null : Number(row.out_price),
+    menu_serves: Math.max(1, Number(row.menu_serves ?? 1)),
+    contains: row.contains ?? [],
+    diet_tags: (row.diet_tags ?? []) as Recipe["diet_tags"],
+    variant_of: row.variant_of ?? null,
+    variant_kind: row.variant_kind ?? null,
     ingredients: (row.ingredients ?? []) as Ingredient[],
     steps: (row.steps ?? []) as string[],
     image_url: publicImageUrl("dishes", row.image_path),
@@ -52,6 +62,15 @@ export async function getRecentPublicRecipes(limit = 12): Promise<Recipe[]> {
   return ((data ?? []) as RecipeRow[]).map(toRecipe);
 }
 
+/** Recipes to suggest from: recent public copycats plus your own saved ones. */
+export async function getSuggestionPool(userId: string | null, limit = 300): Promise<Recipe[]> {
+  const [{ data: pub }, mine] = await Promise.all([
+    admin().from("recipes").select(RECIPE_COLUMNS).eq("is_public", true).order("created_at", { ascending: false }).limit(limit),
+    userId ? getSavedRecipes(userId) : Promise.resolve([]),
+  ]);
+  return [...mine.map((m) => m.recipe), ...((pub ?? []) as RecipeRow[]).map(toRecipe)];
+}
+
 export type Profile = ProfilePlanFields & {
   id: string;
   display_name: string | null;
@@ -60,6 +79,8 @@ export type Profile = ProfilePlanFields & {
   current_period_end: string | null;
   public_name: string | null;
   is_admin: boolean;
+  feature_me: boolean;
+  diets: string[];
 };
 
 export async function getMe() {
@@ -69,7 +90,7 @@ export async function getMe() {
   if (!user) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, public_name, is_admin")
+    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, public_name, is_admin, feature_me, diets")
     .eq("id", user.id)
     .maybeSingle();
   const profile = data as Profile | null;
@@ -89,9 +110,9 @@ export async function getSavedRecipes(userId: string) {
     .select(`cooked_at, created_at, recipes (${RECIPE_COLUMNS})`)
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
-  return ((data ?? []) as unknown as { cooked_at: string | null; recipes: RecipeRow | null }[])
+  return ((data ?? []) as unknown as { cooked_at: string | null; created_at: string; recipes: RecipeRow | null }[])
     .filter((r) => r.recipes)
-    .map((r) => ({ cookedAt: r.cooked_at, recipe: toRecipe(r.recipes as RecipeRow) }));
+    .map((r) => ({ cookedAt: r.cooked_at, savedAt: r.created_at, recipe: toRecipe(r.recipes as RecipeRow) }));
 }
 
 export async function isSaved(userId: string, recipeId: string) {
@@ -231,4 +252,44 @@ export async function getUpcomingChallenge(): Promise<Challenge | null> {
     .limit(1)
     .maybeSingle();
   return data ? toChallenge(data) : null;
+}
+
+/** Recipes saved before Plateful asked for package sizes (admin backfill). */
+export async function recipesMissingPackSizes() {
+  const { data } = await admin().from("recipes").select("id, ingredients").order("created_at", { ascending: false }).limit(1000);
+  return ((data ?? []) as { id: string; ingredients: unknown }[]).filter((r) => (r.ingredients as Ingredient[]).some((g) => g.pack_qty === undefined));
+}
+
+/** Recipes by id, in the order given (missing ones dropped). */
+export async function getRecipesByIds(ids: string[]): Promise<Recipe[]> {
+  if (!ids.length) return [];
+  const { data } = await admin().from("recipes").select(RECIPE_COLUMNS).in("id", ids);
+  const byId = new Map(((data ?? []) as RecipeRow[]).map((r) => [r.id, toRecipe(r)]));
+  return ids.map((id) => byId.get(id)).filter((r): r is Recipe => !!r);
+}
+
+export type MealPlanRow = { id: string; settings: import("@/lib/planner").PlanSettings; recipe_ids: string[]; swapped: string[]; created_at: string };
+
+/** This person's most recent meal plan. */
+export async function getLatestPlan(userId: string): Promise<MealPlanRow | null> {
+  const { data } = await admin()
+    .from("meal_plans")
+    .select("id, settings, recipe_ids, swapped, created_at")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return (data as MealPlanRow | null) ?? null;
+}
+
+/** Recipes that haven't been checked for diet tags yet (admin backfill). */
+export async function recipesMissingDietTags() {
+  const { data } = await admin().from("recipes").select("id, dish, servings, ingredients").filter("contains", "eq", "{}").filter("diet_tags", "eq", "{}").limit(1000);
+  return (data ?? []) as { id: string; dish: string; servings: number; ingredients: unknown }[];
+}
+
+/** "Make it my way" versions of a recipe (or of its original, if it is itself a version). */
+export async function getVersions(rootId: string): Promise<Recipe[]> {
+  const { data } = await admin().from("recipes").select(RECIPE_COLUMNS).eq("variant_of", rootId).order("created_at", { ascending: true });
+  return ((data ?? []) as RecipeRow[]).map(toRecipe);
 }

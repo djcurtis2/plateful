@@ -1,4 +1,5 @@
 "use client";
+import { celebrate, earnedText, here } from "@/lib/celebrate";
 import { useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -108,9 +109,11 @@ export function AttemptForm({
         if (!hasPhoto) fd.delete("image");
         fd.set("recipeId", recipe.id);
         if (challengeId) fd.set("challengeId", challengeId);
+        const at = here();
         start(async () => {
           const r = await postAttempt(fd);
           if (!r.ok) return setError(r.message);
+          if (r.points || r.saved) celebrate({ text: earnedText(r.points, r.saved), origin: at, big: !existing });
           setError("");
           router.refresh(); // update the board, your rank and points
           if (hasPhoto) {

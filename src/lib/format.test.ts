@@ -35,6 +35,7 @@ test("slugify and savings", () => {
   assert.deepEqual(savings({ menu_price: 10, plate_cost: 4 }), { saved: 6, pct: 60 });
   assert.equal(savings({ menu_price: 4, plate_cost: 6 }), null);
   assert.equal(savings({ menu_price: null, plate_cost: 6 }), null);
+  assert.deepEqual(savings({ menu_price: 12, menu_serves: 3, plate_cost: 2 }), { saved: 2, pct: 50 });
 });
 
 test("RecognizedSchema accepts structured-output replies, including not-food", async () => {

@@ -1,9 +1,10 @@
 "use client";
+import { celebrate, earnedText, here } from "@/lib/celebrate";
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { postAttempt } from "@/app/actions";
 import type { Recipe } from "@/lib/recipe";
-import { savings } from "@/lib/recipe";
+import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 
 const W = 1080;
@@ -98,14 +99,15 @@ async function panel(
       g.fillText("goes here", x + w / 2, y + h / 2 + 40);
     } else {
       // No restaurant photo: show the restaurant's name as the "plate".
-      const name = tag.replace(/^At /, "");
+      const isOriginal = tag === "The recipe";
+      const name = isOriginal ? "Plateful" : tag.replace(/^At /, "");
       g.font = `700 52px ${fonts.display ?? fonts.body}`;
       const lines = wrap(g, name, w - 60, 3);
       const top = y + h / 2 - ((lines.length - 1) * 58) / 2;
       lines.forEach((l, i) => g.fillText(l, x + w / 2, top + i * 58));
       g.font = `400 24px ${fonts.body}`;
       g.fillStyle = "rgba(255,255,255,.6)";
-      g.fillText("the original", x + w / 2, top + lines.length * 58);
+      g.fillText(isOriginal ? "original recipe" : "the original", x + w / 2, top + lines.length * 58);
     }
     g.textAlign = "left";
   }
@@ -160,23 +162,33 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
 
     g.fillStyle = "#F2B630";
     g.font = `600 28px ${fonts.mono}`;
-    g.fillText(`COPYCAT${recipe.restaurant ? " · " + recipe.restaurant.toUpperCase() : ""}`.slice(0, 52), 64, 100);
+    const original = !recipe.restaurant && (!!recipe.style || recipe.source === "leftovers");
+    g.fillText(
+      (original ? `PLATEFUL ORIGINAL${recipe.style ? " · " + recipe.style.toUpperCase() : ""}` : `COPYCAT${recipe.restaurant ? " · " + recipe.restaurant.toUpperCase() : ""}`).slice(0, 52),
+      64,
+      100,
+    );
     g.fillStyle = "#FFFFFF";
     g.font = `700 76px ${fonts.display}`;
     wrap(g, recipe.dish, W - 128, 2).forEach((l, i) => g.fillText(l, 64, 186 + i * 80));
 
     const py = 330, pw = 460, ph = 540, lx = 64, rx = 64 + pw + 32;
-    await panel(g, recipe.image_url, lx, py, pw, ph, `At ${(recipe.restaurant ?? "the restaurant").slice(0, 22)}`, fonts);
-    await panel(g, attempt, rx, py, pw, ph, "Mine", fonts);
+    if (original && !recipe.image_url) {
+      // A Plateful original with no photo yet: nothing to compare against, so your plate gets the whole card.
+      await panel(g, attempt, lx, py, W - 128, ph, "Mine", fonts);
+    } else {
+      await panel(g, recipe.image_url, lx, py, pw, ph, original ? "The recipe" : `At ${(recipe.restaurant ?? "the restaurant").slice(0, 22)}`, fonts);
+      await panel(g, attempt, rx, py, pw, ph, "Mine", fonts);
+    }
 
     const yL = py + ph + 58;
     g.fillStyle = "rgba(255,255,255,.7)";
     g.font = `600 24px ${fonts.mono}`;
-    g.fillText("MENU PRICE", lx, yL);
+    g.fillText(recipe.menu_price ? (recipe.menu_serves > 1 ? "MENU, PER PLATE" : "MENU PRICE") : "READY IN", lx, yL);
     g.fillText("PER PLATE AT HOME", rx, yL);
     g.fillStyle = "#FFFFFF";
     g.font = `600 64px ${fonts.mono}`;
-    g.fillText(money(recipe.menu_price), lx, yL + 72);
+    g.fillText(recipe.menu_price ? money(menuPlate(recipe)) : `${recipe.minutes ?? 30} min`, lx, yL + 72);
     g.fillText(money(recipe.plate_cost), rx, yL + 72);
 
     const s = savings(recipe);
@@ -234,8 +246,10 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
     fd.set("image", file);
     fd.set("recipeId", recipe.id);
     if (challengeId) fd.set("challengeId", challengeId);
+    const at = here();
     const r = await postAttempt(fd);
     if (r.ok) {
+      if (r.points || r.saved) celebrate({ text: earnedText(r.points, r.saved), origin: at, big: true });
       setPosted(true);
       router.refresh(); // show the new entry in "Who made it"
       return true;
@@ -245,7 +259,7 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
   }
 
   const shareText = `${recipe.restaurant ? recipe.restaurant + "-style " : ""}${recipe.dish}, made at home${
-    recipe.menu_price && recipe.plate_cost ? ` for ${money(recipe.plate_cost)} instead of ${money(recipe.menu_price)}` : ""
+    recipe.menu_price && recipe.plate_cost ? ` for ${money(recipe.plate_cost)} a plate instead of ${money(menuPlate(recipe))}` : ""
   }.`;
 
   /** Runs a share action, posting the photo to "Who made it" first when that box is ticked. */

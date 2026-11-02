@@ -4,7 +4,7 @@ import { getAttempts, getMe, getUpcomingChallenge, isLive, myVotes, type Challen
 import { playerStats } from "@/lib/game-server";
 import { POINTS, PRIZES, VOTES_PER_COOKOFF, publicName, rankEntries, standing, timeLeft } from "@/lib/game";
 import { money } from "@/lib/format";
-import { savings } from "@/lib/recipe";
+import { menuPlate, savings } from "@/lib/recipe";
 import { siteUrl } from "@/lib/env";
 import { AttemptForm } from "@/components/AttemptForm";
 import { CookoffBoard } from "@/components/CookoffBoard";
@@ -44,7 +44,7 @@ export async function CookoffView({ challenge, isCurrent }: { challenge: Challen
           {challenge.blurb && <p className="max-w-[58ch] text-lg text-muted">{challenge.blurb}</p>}
           {s && (
             <p className="tabular font-mono">
-              {money(r.menu_price)} at {r.restaurant} · {money(r.plate_cost)} a plate at home ·{" "}
+              {money(menuPlate(r))} a plate at {r.restaurant} · {money(r.plate_cost)} a plate at home ·{" "}
               <span className="rounded bg-saffron px-1.5 text-saffron-ink">{s.pct}% less</span>
             </p>
           )}

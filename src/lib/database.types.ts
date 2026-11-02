@@ -23,7 +23,19 @@ export type PointsKind =
   | "thriftiest"
   | "top10"
   | "receipt";
-export type BadgeId = "first_copycat" | "top10" | "crowd_favorite" | "chef_pick" | "thriftiest" | "streak_4" | "brought_3";
+export type BadgeId =
+  | "first_copycat"
+  | "top10"
+  | "crowd_favorite"
+  | "chef_pick"
+  | "thriftiest"
+  | "streak_4"
+  | "brought_3"
+  | "saved_100"
+  | "saved_500"
+  | "saved_1000"
+  | "saved_5000"
+  | "saved_10000";
 
 export type Database = {
   public: {
@@ -42,6 +54,8 @@ export type Database = {
           referral_rewards_granted: number;
           public_name: string | null;
           is_admin: boolean;
+          feature_me: boolean;
+          diets: string[];
           created_at: string;
         },
         "id" | "referral_code"
@@ -55,6 +69,16 @@ export type Database = {
           dish: string;
           restaurant: string | null;
           cuisine: string | null;
+          meals: string[];
+          out_price: number | null;
+          menu_serves: number;
+          contains: string[];
+          diet_tags: string[];
+          variant_of: string | null;
+          variant_kind: string | null;
+          source: "snap" | "leftovers";
+          style: string | null;
+          inspired_by: string | null;
           servings: number;
           minutes: number | null;
           difficulty: string | null;
@@ -69,6 +93,27 @@ export type Database = {
           created_at: string;
         },
         "slug" | "dish" | "ingredients" | "steps"
+      >;
+      meal_plans: Table<
+        { id: string; user_id: string; settings: Json; recipe_ids: string[]; swapped: string[]; created_at: string; updated_at: string },
+        "user_id" | "settings"
+      >;
+      cook_log: Table<
+        {
+          id: number;
+          user_id: string;
+          recipe_id: string;
+          servings: number;
+          home_cost: number;
+          out_cost: number;
+          saved: number;
+          compare: "menu" | "similar" | "average";
+          source: "made_it" | "plan" | "cookoff";
+          verified: boolean;
+          cooked_on: string;
+          created_at: string;
+        },
+        "user_id" | "recipe_id" | "servings" | "home_cost" | "out_cost" | "saved" | "compare" | "source"
       >;
       saved_recipes: Table<
         { user_id: string; recipe_id: string; cooked_at: string | null; created_at: string },
@@ -186,6 +231,9 @@ export type Database = {
     Functions: {
       cast_vote: { Args: { p_attempt: string; p_user: string }; Returns: Json };
       random_referral_code: { Args: Record<string, never>; Returns: string };
+      savings_total: { Args: Record<string, never>; Returns: Json };
+      top_savers: { Args: { p_since: string; p_limit: number; p_until?: string | null }; Returns: { user_id: string; saved: number; meals: number }[] };
+      my_savings: { Args: { p_user: string }; Returns: Json };
     };
     Enums: { [_ in never]: never };
     CompositeTypes: { [_ in never]: never };

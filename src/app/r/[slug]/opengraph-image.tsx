@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 import { getRecipeBySlug } from "@/lib/data";
-import { savings } from "@/lib/recipe";
+import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 
 export const size = { width: 1200, height: 630 };
@@ -29,7 +29,7 @@ export default async function OgImage({ params }: { params: Promise<{ slug: stri
           {s ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
               <div style={{ display: "flex", gap: 40, fontSize: 30 }}>
-                <span>{`${money(r!.menu_price)} out`}</span>
+                <span>{`${money(menuPlate(r!))} out`}</span>
                 <span style={{ color: "#B8E6C6" }}>{`${money(r!.plate_cost)} at home`}</span>
               </div>
               <div style={{ display: "flex", background: "#F2B630", color: "#3A2A00", borderRadius: 20, padding: "18px 26px", fontSize: 40, fontWeight: 700 }}>

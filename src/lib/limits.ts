@@ -9,6 +9,8 @@ export type Allowance =
 
 /** Receipt checks are logged in `scans` (for cost tracking and the site-wide cap) under this marker, not against dish-scan quotas. */
 export const RECEIPT_SCAN = "receipt";
+/** "Make something new with my leftovers" requests: same idea, their own daily limit. */
+export const LEFTOVER_SCAN = "leftovers";
 
 export function hashIp(ip: string | null): string | null {
   if (!ip) return null;
@@ -35,7 +37,7 @@ async function countScans(filter: { column: "user_id" | "visitor_id" | "ip_hash"
     .select("id", { count: "exact", head: true })
     .gte("created_at", since)
     .not("input_tokens", "is", null);
-  if (filter) q = q.eq(filter.column, filter.value).or(`ip_hash.is.null,ip_hash.neq.${RECEIPT_SCAN}`);
+  if (filter) q = q.eq(filter.column, filter.value).or(`ip_hash.is.null,ip_hash.not.in.(${RECEIPT_SCAN},${LEFTOVER_SCAN})`);
   const { count, error } = await q;
   if (error) throw new Error(`Couldn't read the scans table (${error.code ?? "no code"}): ${error.message}`);
   return count ?? 0;
@@ -123,4 +125,9 @@ export async function recordScan(row: {
       input_tokens: row.inputTokens ?? null,
       output_tokens: row.outputTokens ?? null,
     });
+}
+
+/** Site-wide daily cap on paid Claude calls (dish scans, receipts and leftover recipes together). */
+export async function siteCapReached() {
+  return (await countScans(null, startOfUtcDay())) >= intEnv("DAILY_SCAN_CAP", 2000);
 }

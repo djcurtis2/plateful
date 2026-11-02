@@ -7,6 +7,11 @@ import { finalizeChallenge } from "@/lib/game-server";
 import { PRIZES } from "@/lib/game";
 import { slugify } from "@/lib/recipe";
 import { IMAGE_MAX, extFor, sniffImage } from "@/lib/images";
+import { packSizes, tagDiet } from "@/lib/claude";
+import type { Ingredient } from "@/lib/recipe";
+import { recipesMissingDietTags, recipesMissingPackSizes } from "@/lib/data";
+import { dietTagsFrom } from "@/lib/diet";
+import { SAMPLES } from "@/lib/samples";
 
 type R = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -120,12 +125,12 @@ export async function createChallenge(formData: FormData): Promise<R> {
   return done("Cook-off scheduled.");
 }
 
-export async function recordGiftCard(userId: string, period: string): Promise<R> {
+export async function recordGiftCard(userId: string, period: string, reason: "monthly_top" | "top_saver" = "monthly_top"): Promise<R> {
   if (!(await requireAdmin())) return DENIED;
   if (!Uuid.safeParse(userId).success || !/^\d{4}-\d{2}$/.test(period)) return { ok: false, message: "Bad input." };
   const { error } = await admin()
     .from("prize_awards")
-    .insert({ user_id: userId, kind: "gift_card", reason: "monthly_top", period, detail: PRIZES.monthlyGiftCard });
+    .insert({ user_id: userId, kind: "gift_card", reason, period, detail: PRIZES.monthlyGiftCard });
   if (error?.code === "23505") return { ok: false, message: "Already recorded for that month." };
   return error ? { ok: false, message: error.message } : done("Gift card recorded. Mark it fulfilled once sent.");
 }
@@ -137,4 +142,114 @@ export async function setPrizeStatus(id: number, status: "fulfilled" | "cancelle
     .update({ status, fulfilled_at: status === "fulfilled" ? new Date().toISOString() : null })
     .eq("id", id);
   return error ? { ok: false, message: error.message } : done();
+}
+
+
+/** Asks Claude for package sizes on up to 10 older recipes per click (a fraction of a cent each). */
+export async function fillPackSizes(): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  const todo = (await recipesMissingPackSizes()).slice(0, 10);
+  if (!todo.length) return { ok: true, message: "Every recipe already has package sizes." };
+  let done = 0;
+  for (const r of todo) {
+    const ingredients = r.ingredients as Ingredient[];
+    try {
+      const { sizes } = await packSizes(ingredients);
+      const updated = ingredients.map((g, i) => ({ ...g, pack_qty: sizes[i] }));
+      const { error } = await admin().from("recipes").update({ ingredients: updated }).eq("id", r.id);
+      if (!error) done++;
+    } catch (e) {
+      console.error("pack sizes failed", r.id, e);
+    }
+  }
+  revalidatePath("/admin");
+  revalidatePath("/r/[slug]", "page");
+  const left = (await recipesMissingPackSizes()).length;
+  return { ok: true, message: `Updated ${done} of ${todo.length} recipes.${left ? ` ${left} still to do; click again.` : " All done."}` };
+}
+
+/**
+ * Adds the sample recipes (with free Unsplash photos) that aren't already in the database.
+ * Your server downloads each photo once and stores it in the "dishes" bucket under samples/.
+ */
+export async function importSamples(): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  const db = admin();
+  const { data: have } = await db.from("recipes").select("slug").in("slug", SAMPLES.map((s) => s.slug));
+  const existing = new Set((have ?? []).map((r) => r.slug));
+  const todo = SAMPLES.filter((s) => !existing.has(s.slug));
+  if (!todo.length) return { ok: true, message: "All sample recipes are already added." };
+
+  let added = 0;
+  let noPhoto = 0;
+  const one = async (s: (typeof SAMPLES)[number]) => {
+    let image_path: string | null = null;
+    try {
+      const res = await fetch(`https://images.unsplash.com/${s.photo}?w=1400&h=1050&fit=crop&q=80&fm=jpg`);
+      const bytes = new Uint8Array(await res.arrayBuffer());
+      const type = res.ok && bytes.length <= IMAGE_MAX ? sniffImage(bytes) : null;
+      if (type) {
+        const path = `samples/${s.slug}.${extFor(type)}`;
+        const up = await db.storage.from("dishes").upload(path, bytes, { contentType: type, upsert: true });
+        if (!up.error) image_path = path;
+      }
+    } catch (e) {
+      console.error("sample photo failed", s.slug, e);
+    }
+    if (!image_path) noPhoto++;
+    const { error } = await db.from("recipes").insert({
+      slug: s.slug,
+      dish: s.dish,
+      restaurant: s.restaurant,
+      style: s.style,
+      cuisine: s.cuisine,
+      meals: s.meals,
+      servings: s.servings,
+      minutes: s.minutes,
+      difficulty: s.difficulty,
+      confidence: null,
+      why: s.why,
+      menu_price: s.menu_price,
+      menu_serves: s.menu_serves ?? 1,
+      out_price: s.out_price ?? null,
+      plate_cost: s.plate_cost,
+      ingredients: s.ingredients,
+      steps: s.steps,
+      image_path,
+    });
+    if (error) console.error("sample insert failed", s.slug, error.message);
+    else added++;
+  };
+  for (let i = 0; i < todo.length; i += 5) await Promise.all(todo.slice(i, i + 5).map(one));
+
+  revalidatePath("/");
+  revalidatePath("/library");
+  revalidatePath("/r/[slug]", "page");
+  return { ok: true, message: `Added ${added} sample recipes${noPhoto ? ` (${noPhoto} without a photo)` : ""}.` };
+}
+
+/** Asks Claude what older recipes contain, then sets their diet tags. 10 per click, a fraction of a cent each. */
+export async function fillDietTags(): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  const todo = (await recipesMissingDietTags()).slice(0, 10);
+  if (!todo.length) return { ok: true, message: "Every recipe has diet tags." };
+  let done = 0;
+  await Promise.all(
+    todo.map(async (r) => {
+      try {
+        const t = await tagDiet(r.dish, r.ingredients as Ingredient[], r.servings);
+        const { error } = await admin()
+          .from("recipes")
+          .update({ contains: t.contains, diet_tags: dietTagsFrom(t.contains, t.lowCarb) })
+          .eq("id", r.id);
+        if (!error) done++;
+      } catch (e) {
+        console.error("diet tags failed", r.id, e);
+      }
+    }),
+  );
+  revalidatePath("/admin");
+  revalidatePath("/r/[slug]", "page");
+  const left = (await recipesMissingDietTags()).length;
+  return { ok: true, message: `Tagged ${done} of ${todo.length} recipes.${left ? ` ${left} still to do; click again.` : " All done."}` };
 }
