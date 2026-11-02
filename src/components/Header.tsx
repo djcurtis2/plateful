@@ -3,6 +3,8 @@ import { mySavings } from "@/lib/savings-server";
 import { cookies } from "next/headers";
 import { getMe } from "@/lib/data";
 import { headerStats } from "@/lib/game-server";
+import { chefCards, type ChefCard } from "@/lib/avatar-server";
+import { ChefAvatar } from "@/components/ChefAvatar";
 import { publicName } from "@/lib/game";
 import { SEEN_COOKIE, WELCOME_COOKIE } from "@/lib/cookies";
 import { LevelIcon } from "@/components/GameIcons";
@@ -28,11 +30,13 @@ export async function Header() {
     // Supabase not configured yet: render a signed-out header.
   }
   let stats: Awaited<ReturnType<typeof headerStats>> | null = null;
+  let chef: ChefCard | null = null;
   let toast: React.ComponentProps<typeof StatusToast> | null = null;
   if (me) {
     try {
-      const [st, sv] = await Promise.all([headerStats(me.user.id), mySavings(me.user.id)]);
+      const [st, sv, cards] = await Promise.all([headerStats(me.user.id), mySavings(me.user.id), chefCards([me.user.id])]);
       stats = st;
+      chef = cards[me.user.id] ?? null;
       const jar = await cookies();
       const seen = jar.get(SEEN_COOKIE)?.value?.split("|").map(Number);
       const welcome = jar.get(WELCOME_COOKIE)?.value === "1";
@@ -105,10 +109,15 @@ export async function Header() {
                 >
                   {me.plus ? "Plus" : "Account"}
                 </Link>
+                {chef && (
+                  <Link href="/chef" aria-label="My chef" title="My chef" className="ml-1 flex rounded-full hover:opacity-80">
+                    <ChefAvatar avatar={chef.avatar} head size={32} uid="header-chef" />
+                  </Link>
+                )}
                 {stats && (
                   <Link
                     href="/account"
-                    className="ml-1 flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-0.5 pr-2.5 hover:border-basil"
+                    className="flex items-center gap-1.5 rounded-full border border-line bg-surface py-0.5 pl-0.5 pr-2.5 hover:border-basil"
                     title={`${stats.level.name} · ${stats.points} points${stats.badges.length ? ` · ${new Set(stats.badges).size} badges` : ""}`}
                   >
                     <LevelIcon index={stats.level.index} size={26} />

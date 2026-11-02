@@ -17,6 +17,9 @@ import { admin } from "@/lib/supabase/admin";
 import { BADGES } from "@/lib/game";
 import type { BadgeId } from "@/lib/database.types";
 import Link from "next/link";
+import { ChefAvatar } from "@/components/ChefAvatar";
+import { chefCards } from "@/lib/avatar-server";
+import { CLUB_BY_ID } from "@/lib/clubs";
 
 export const metadata: Metadata = { title: "Account" };
 
@@ -33,12 +36,14 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   }
   const { upgraded } = await searchParams;
   const p = me.profile!;
-  const [stats, game, { data: prizes }, savings] = await Promise.all([
+  const [stats, game, { data: prizes }, savings, cards] = await Promise.all([
     referralStats(me.user.id),
     playerStats(me.user.id, null),
     admin().from("prize_awards").select("id, kind, reason, detail, status, created_at").eq("user_id", me.user.id).order("created_at", { ascending: false }),
     mySavings(me.user.id),
+    chefCards([me.user.id]),
   ]);
+  const chef = cards[me.user.id];
   const goal = nextMilestone(savings.saved);
   const earned = new Set(game.badges.map((b) => b.badge));
   const link = `${siteUrl}/?ref=${p.referral_code}`;
@@ -95,6 +100,21 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       </section>
 
       <section className="card flex flex-col gap-5 p-6">
+        <div className="flex flex-wrap items-center gap-4">
+          <ChefAvatar avatar={chef.avatar} size={150} uid="account-chef" title="Your chef" />
+          <div className="flex flex-col items-start gap-2">
+            {!!chef.clubs.length && (
+              <ul className="flex flex-wrap gap-1.5">
+                {chef.clubs.map((id) => (
+                  <li key={id} className="rounded-full border border-line px-2.5 py-0.5 text-xs font-semibold">{CLUB_BY_ID[id].name}</li>
+                ))}
+              </ul>
+            )}
+            <Link href="/chef" className="btn btn-ghost btn-sm">
+              {p.avatar ? "Edit my chef" : "Make my chef"}
+            </Link>
+          </div>
+        </div>
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
             <span className="label">Cook profile</span>
