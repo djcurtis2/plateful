@@ -21,6 +21,7 @@ test("catalog rules", () => {
     assert.ok(b.cents >= 399 && b.cents <= 499);
     for (const id of b.items) assert.equal(GEAR_BY_ID[id]?.source.kind, "shop", id);
   }
+  for (const g of GEAR.filter((g) => g.source.kind === "shop" || g.source.kind === "plus")) assert.notEqual(g.rarity, "legendary", g.id);
   assert.equal(GEAR_BY_ID[SHOP_ITEM]?.source.kind, "shop");
   assert.equal(GEAR_BY_ID[PLUS_HAT]?.source.kind, "plus");
   assert.equal(GEAR_BY_ID[PLUS_HAT]?.slot, "hat");
@@ -102,4 +103,13 @@ test("labels", () => {
   assert.equal(newUnlocks(new Set([starterFor("hat").id, "x"]), []).includes(starterFor("hat").id), false);
   assert.deepEqual(newUnlocks(new Set([starterFor("hat").id, LEVEL_HAT_2]), [LEVEL_HAT_2]), []);
   assert.deepEqual(newUnlocks(new Set([LEVEL_HAT_2]), []), [LEVEL_HAT_2]);
+});
+
+test("prototype keys from untrusted input are ignored", () => {
+  assert.equal(purchasable({ item: "constructor" }, []), null);
+  assert.equal(purchasable({ bundle: "toString" }, []), null);
+  assert.doesNotThrow(() => unlockedGear({ points: 0, badges: [], plus: false, owned: ["constructor", "__proto__"] }));
+  assert.equal(parseAvatar({ equipped: { hat: "__proto__" } }, "u1").equipped.hat, undefined);
+  assert.equal(canSave({ ...defaultAvatar("u1"), equipped: { hat: "constructor" } }, new Set()).ok, false);
+  assert.doesNotThrow(() => visibleAvatar({ look: defaultAvatar("u1").look, equipped: { hat: "toString" } }, false));
 });

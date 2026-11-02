@@ -72,7 +72,8 @@ export const GEAR: GearItem[] = [
   gear("disco-floor", "background", "Disco floor", "epic", { kind: "shop", cents: SHOP }),
 ];
 
-export const GEAR_BY_ID: Record<string, GearItem> = Object.fromEntries(GEAR.map((g) => [g.id, g]));
+// Null prototype so untrusted ids like "constructor" or "__proto__" never resolve to inherited members.
+export const GEAR_BY_ID: Record<string, GearItem> = Object.assign(Object.create(null), Object.fromEntries(GEAR.map((g) => [g.id, g])));
 
 export const BUNDLES: Bundle[] = [
   { id: "party-night", name: "Party night", cents: 399, items: ["disco-floor", "tuxedo", "cat-ears"] },
