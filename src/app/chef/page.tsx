@@ -22,7 +22,7 @@ export default async function ChefPage({ searchParams }: { searchParams: Promise
           {chef.saved ? "Dress your chef, pick your clubs." : "Make your chef. It takes a minute."}
         </p>
       </div>
-      <ChefEditor initial={chef.avatar} unlocked={[...chef.unlocked]} clubs={chef.clubs} saved={chef.saved} tab={active} />
+      <ChefEditor initial={chef.avatar} unlocked={[...chef.unlocked]} clubs={chef.clubs} saved={chef.saved} plus={chef.ctx.plus} tab={active} />
     </main>
   );
 }

@@ -7,7 +7,7 @@ import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
 import { CLUBS, MAX_CLUBS } from "@/lib/clubs";
 import {
-  GEAR, LOOK_OPTIONS, SLOTS, lockReason,
+  GEAR, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason,
   type Avatar, type GearItem, type LookPart, type Rarity, type Slot,
 } from "@/lib/avatar";
 
@@ -37,10 +37,11 @@ type Props = {
   unlocked: string[];
   clubs: string[];
   saved: boolean;
+  plus: boolean;
   tab: ChefTab;
 };
 
-export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, tab }: Props) {
+export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, tab }: Props) {
   const router = useRouter();
   const [avatar, setAvatar] = useState<Avatar>(initial);
   const [base, setBase] = useState<Avatar>(initial);
@@ -85,7 +86,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, tab 
   return (
     <div className="flex flex-col gap-6">
       <div className="card flex flex-col items-center gap-3 p-6">
-        <ChefAvatar avatar={avatar} size={260} uid="editor" title="Your chef" />
+        <ChefAvatar avatar={visibleAvatar(avatar, plus)} size={260} uid="editor" title="Your chef" />
         {!everSaved && (
           <p className="text-sm text-muted">This chef was picked for you. Make it yours, then save.</p>
         )}
@@ -163,7 +164,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, tab 
                           )}
                         </span>
                         <span className="text-xs capitalize text-muted">{g.rarity}</span>
-                        <span className="text-xs text-muted">{on ? "Wearing" : isOpen ? "Tap to wear" : lockReason(g)}</span>
+                        <span className="text-xs text-muted">{!isOpen ? lockReason(g) : on ? "Wearing" : "Tap to wear"}</span>
                       </button>
                     </li>
                   );

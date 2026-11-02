@@ -156,7 +156,11 @@ export function unlockedGear(ctx: GearContext): Set<string> {
   return out;
 }
 
-export function canSave(avatar: Avatar, unlocked: Set<string>): { ok: true } | { ok: false; message: string } {
+/** `saved`: the currently saved avatar. Gear unchanged from it stays allowed even if no longer unlocked (e.g. lapsed Plus). */
+export function canSave(avatar: Avatar, unlocked: Set<string>, saved?: Avatar): { ok: true } | { ok: false; message: string } {
+  if (!avatar || typeof avatar !== "object" || !avatar.look || typeof avatar.look !== "object" || (avatar.equipped != null && typeof avatar.equipped !== "object")) {
+    return { ok: false, message: "That look isn't available." };
+  }
   for (const p of LOOK_PARTS) {
     if (!validIndex(p, avatar.look?.[p])) return { ok: false, message: "That look isn't available." };
   }
@@ -164,7 +168,7 @@ export function canSave(avatar: Avatar, unlocked: Set<string>): { ok: true } | {
     if (id === undefined) continue;
     const g = GEAR_BY_ID[id];
     if (!g || g.slot !== slot) return { ok: false, message: "That gear doesn't exist." };
-    if (!unlocked.has(id)) return { ok: false, message: "That gear is locked." };
+    if (!unlocked.has(id) && saved?.equipped?.[slot as Slot] !== id) return { ok: false, message: "That gear is locked." };
   }
   return { ok: true };
 }

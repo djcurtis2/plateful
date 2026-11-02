@@ -126,3 +126,21 @@ test("prototype keys from untrusted input are ignored", () => {
   assert.equal(canSave({ ...defaultAvatar("u1"), equipped: { hat: "constructor" } }, new Set()).ok, false);
   assert.doesNotThrow(() => visibleAvatar({ look: defaultAvatar("u1").look, equipped: { hat: "toString" } }, false));
 });
+
+test("lapsed Plus keeps an unchanged saved Plus item but cannot pick new locked gear", () => {
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const base = defaultAvatar("u1");
+  const saved = { ...base, equipped: { ...base.equipped, hat: PLUS_HAT } };
+  const edited = { ...saved, look: { ...saved.look, hair: (saved.look.hair + 1) % LOOK_OPTIONS.hair } };
+  assert.equal(canSave(edited, free, saved).ok, true);
+  assert.equal(canSave(edited, free).ok, false);
+  assert.equal(canSave({ ...edited, equipped: { ...edited.equipped, hat: LEVEL_HAT_2 } }, free, saved).ok, false);
+  assert.equal(canSave({ ...edited, equipped: { ...edited.equipped, outfit: "no-such-item" } }, free, saved).ok, false);
+});
+
+test("canSave returns not-ok for malformed avatars instead of throwing", () => {
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  for (const bad of [null, undefined, 5, "x", {}, { look: null }, { look: {}, equipped: 3 }]) {
+    assert.equal(canSave(bad as never, free).ok, false);
+  }
+});

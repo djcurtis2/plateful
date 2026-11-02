@@ -25,7 +25,7 @@ export async function saveChef(avatar: Avatar): Promise<Result> {
   const user = await signedIn();
   if (!user) return LOGIN;
   const chef = await myChef(user.id);
-  const check = canSave(avatar, chef.unlocked);
+  const check = canSave(avatar, chef.unlocked, chef.avatar);
   if (!check.ok) return { ok: false, code: "invalid", message: check.message };
   // Store only the known shape, never extra fields from the client.
   const clean: Avatar = { look: { ...avatar.look }, equipped: {} };
