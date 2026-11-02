@@ -56,9 +56,23 @@ export type Database = {
           is_admin: boolean;
           feature_me: boolean;
           diets: string[];
+          avatar: Json | null;
+          gear_seen: string[];
+          clubs: string[];
           created_at: string;
         },
         "id" | "referral_code"
+      >;
+      user_gear: Table<
+        {
+          id: number;
+          user_id: string;
+          item_id: string;
+          source: "shop" | "grant";
+          stripe_session_id: string | null;
+          created_at: string;
+        },
+        "user_id" | "item_id" | "source"
       >;
       recipes: Table<
         {

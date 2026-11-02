@@ -3,6 +3,7 @@ import { admin, publicImageUrl } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 import { hasPlus, type ProfilePlanFields } from "@/lib/plan";
 import type { Ingredient, Recipe } from "@/lib/recipe";
+import { chefCards, type ChefCard } from "@/lib/avatar-server";
 
 type RecipeRow = Omit<Recipe, "image_url" | "menu_price" | "plate_cost" | "out_price"> & {
   out_price: string | number | null;
@@ -81,6 +82,9 @@ export type Profile = ProfilePlanFields & {
   is_admin: boolean;
   feature_me: boolean;
   diets: string[];
+  avatar: unknown;
+  gear_seen: string[];
+  clubs: string[];
 };
 
 export async function getMe() {
@@ -90,7 +94,7 @@ export async function getMe() {
   if (!user) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, public_name, is_admin, feature_me, diets")
+    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
     .eq("id", user.id)
     .maybeSingle();
   const profile = data as Profile | null;
@@ -136,6 +140,7 @@ export type Attempt = {
   votes: number;
   created_at: string;
   name: string | null; // public name of the cook; null = "A Plateful cook"
+  chef: ChefCard;
   cost_per_plate: number | null;
   cost_source: "self" | "receipt" | null;
   receipt_store: string | null;
@@ -147,17 +152,16 @@ export type Attempt = {
 
 const ATTEMPT_COLUMNS =
   "id, user_id, recipe_id, challenge_id, image_path, caption, votes, created_at, cost_per_plate, cost_source, receipt_store, receipt_verified_at, minutes, swaps, notes";
-type AttemptRow = Omit<Attempt, "image_url" | "name" | "cost_per_plate"> & { image_path: string; cost_per_plate: string | number | null };
+type AttemptRow = Omit<Attempt, "image_url" | "name" | "chef" | "cost_per_plate"> & { image_path: string; cost_per_plate: string | number | null };
 
 async function withNames(rows: AttemptRow[]): Promise<Attempt[]> {
-  const ids = [...new Set(rows.map((r) => r.user_id))];
-  const { data } = ids.length ? await admin().from("profiles").select("id, public_name").in("id", ids) : { data: [] };
-  const names = Object.fromEntries((data ?? []).map((p) => [p.id, p.public_name]));
+  const chefs = await chefCards(rows.map((r) => r.user_id));
   return rows.map(({ image_path, cost_per_plate, ...a }) => ({
     ...a,
     cost_per_plate: cost_per_plate == null ? null : Number(cost_per_plate),
     image_url: publicImageUrl("attempts", image_path)!,
-    name: names[a.user_id] ?? null,
+    name: chefs[a.user_id]?.name ?? null,
+    chef: chefs[a.user_id],
   }));
 }
 

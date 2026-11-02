@@ -1,5 +1,6 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
+import { chefCards } from "@/lib/avatar-server";
 import type { BadgeId, Database, PointsKind } from "@/lib/database.types";
 import {
   BADGES,
@@ -153,7 +154,7 @@ export async function leaderboard(scope: { challengeId: string } | "all", limit 
   for (const e of data ?? []) totals.set(e.user_id, (totals.get(e.user_id) ?? 0) + e.points);
   const rows = [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, limit);
   const ids = rows.map(([id]) => id);
-  const names = await publicNames(ids);
+  const chefs = await chefCards(ids);
   // Levels always come from all-time points, even on the weekly board.
   let lifetime = totals;
   if (scope !== "all" && ids.length) {
@@ -175,7 +176,8 @@ export async function leaderboard(scope: { challengeId: string } | "all", limit 
       rank: i + 1,
       userId,
       points,
-      name: names[userId] ?? null,
+      name: chefs[userId]?.name ?? null,
+      chef: chefs[userId],
       level: level.name,
       levelIndex: level.index,
       badges: order.filter((b) => badgesBy.get(userId)?.has(b)),

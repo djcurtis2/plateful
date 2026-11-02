@@ -1,6 +1,7 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
-import { awardBadge, publicNames } from "@/lib/game-server";
+import { awardBadge } from "@/lib/game-server";
+import { chefCards } from "@/lib/avatar-server";
 import { SAVINGS_MILESTONES, savingsFor } from "@/lib/savings";
 import type { Recipe } from "@/lib/recipe";
 
@@ -70,8 +71,8 @@ export async function topSavers(since: Date, limit = 25, until: Date | null = nu
     p_until: until ? until.toISOString().slice(0, 10) : null,
   });
   const rows = (data ?? []) as { user_id: string; saved: number | string; meals: number | string }[];
-  const names = await publicNames(rows.map((r) => r.user_id));
-  return rows.map((r, i) => ({ rank: i + 1, userId: r.user_id, saved: Number(r.saved), meals: Number(r.meals), name: names[r.user_id] ?? null }));
+  const chefs = await chefCards(rows.map((r) => r.user_id));
+  return rows.map((r, i) => ({ rank: i + 1, userId: r.user_id, saved: Number(r.saved), meals: Number(r.meals), name: chefs[r.user_id]?.name ?? null, chef: chefs[r.user_id] }));
 }
 
 /** Which of these recipes this person has logged as cooked since a date (for plan check-offs). */
