@@ -43,7 +43,7 @@ export function AttemptGallery({ attempts, signedIn, voting = false, myId = null
             </button>
           </div>
           <div className="mx-auto w-full max-w-sm">
-            <ShareCard key={sharing.id} recipe={recipe} shareUrl={shareUrl} initialAttempt={sharing.image_url} />
+            <ShareCard key={sharing.id} recipe={recipe} shareUrl={shareUrl} initialAttempt={sharing.image_url} chef={sharing.chef.avatar} />
           </div>
         </div>
       )}

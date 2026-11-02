@@ -19,6 +19,9 @@ Next.js 16 (App Router) · Tailwind CSS 4 · Supabase (Postgres, auth, storage) 
 | Cook-off | `src/app/cookoff` | Weekly challenge, photo entries, 3 votes per person, points, badges and prizes. |
 | Accounts | `src/app/login`, `src/app/auth` | Magic link and Google sign-in via Supabase. |
 | Library, pantry, account | `src/app/library`, `pantry`, `account` | Saved recipes, pantry editor, plan and referral progress. |
+| Chef avatars | `src/components/ChefAvatar.tsx`, `src/lib/avatar.ts`, `src/app/chef` | Build a cartoon chef, unlock gear with points and badges, and show it beside your name on boards, entries and share cards. |
+| Gear shop | `src/app/api/stripe/gear`, `src/lib/gear-billing.ts` | One-time Stripe checkout for shop gear; purchases recorded by the webhook and success page. |
+| Chef clubs | `src/lib/clubs.ts`, `src/components/ClubBadge.tsx`, `src/app/clubs` | Pick up to two clubs; badges show next to your name and club pages show counts only. |
 | Payments | `src/app/api/stripe/*` | Checkout, billing portal, webhook that keeps `profiles.plan` in sync. |
 | Email list | `src/app/api/waitlist` | "Weekly copycat" sign-ups with referral attribution. |
 

@@ -4,6 +4,8 @@ import { getCurrentChallenge, getMe, isLive } from "@/lib/data";
 import { leaderboard } from "@/lib/game-server";
 import { topSavers } from "@/lib/savings-server";
 import { POINTS, publicName, streakBonus } from "@/lib/game";
+import { ChefAvatar } from "@/components/ChefAvatar";
+import { ClubBadge } from "@/components/ClubBadge";
 import { BadgeIcon, LevelIcon, LevelLadder } from "@/components/GameIcons";
 
 export const metadata: Metadata = { title: "Leaderboard" };
@@ -53,15 +55,19 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
               {savers.map((r) => {
                 const isMe = me?.user.id === r.userId;
                 return (
-                  <li key={r.userId} className={`grid grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 ${isMe ? "bg-sunk" : ""}`}>
+                  <li key={r.userId} className={`grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 ${isMe ? "bg-sunk" : ""}`}>
                     <span className={`tabular font-mono text-lg font-semibold ${r.rank <= 3 ? "text-basil" : "text-muted"}`}>#{r.rank}</span>
+                    <ChefAvatar avatar={r.chef.avatar} head size={36} uid={`${r.userId}-savers`} />
                     <span className="min-w-0">
                       <span className="block truncate font-semibold">
                         {publicName(r.name)}
                         {isMe && <span className="ml-2 text-xs font-normal text-muted">you</span>}
                       </span>
-                      <span className="text-xs text-muted">
+                      <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
                         {r.meals} {r.meals === 1 ? "meal" : "meals"} cooked
+                        {r.chef.clubs.slice(0, 2).map((c) => (
+                          <ClubBadge key={c} id={c} />
+                        ))}
                       </span>
                     </span>
                     <span className="tabular font-mono text-lg text-basil">${r.saved.toFixed(2)}</span>
@@ -80,14 +86,18 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             return (
               <li key={r.userId} className={`grid grid-cols-[2.5rem_auto_minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 ${isMe ? "bg-sunk" : ""}`}>
                 <span className={`tabular font-mono text-lg font-semibold ${r.rank <= 3 ? "text-basil" : "text-muted"}`}>#{r.rank}</span>
-                <LevelIcon index={r.levelIndex} size={36} />
+                <ChefAvatar avatar={r.chef.avatar} head size={36} uid={`${r.userId}-lb`} />
                 <span className="min-w-0">
                   <span className="block truncate font-semibold">
                     {publicName(r.name)}
                     {isMe && <span className="ml-2 text-xs font-normal text-muted">you</span>}
                   </span>
                   <span className="flex flex-wrap items-center gap-1.5 text-xs text-muted">
+                    <LevelIcon index={r.levelIndex} size={16} />
                     {r.level}
+                    {r.chef.clubs.slice(0, 2).map((c) => (
+                      <ClubBadge key={c} id={c} />
+                    ))}
                     {r.badges.length > 0 && (
                       <span className="flex gap-1">
                         {r.badges.map((b) => (

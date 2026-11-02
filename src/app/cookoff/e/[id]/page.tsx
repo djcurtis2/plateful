@@ -10,6 +10,8 @@ import { money } from "@/lib/format";
 import { menuPlate, savings } from "@/lib/recipe";
 import { VoteButton } from "@/components/VoteButton";
 import { ReferralBeacon } from "@/components/ReferralBeacon";
+import { ChefAvatar } from "@/components/ChefAvatar";
+import { ClubBadge } from "@/components/ClubBadge";
 import { EntryChips } from "@/components/EntryChips";
 
 type Params = { params: Promise<{ id: string }> };
@@ -69,6 +71,13 @@ export default async function EntryPage({ params }: Params) {
         <span className="label">
           {challenge ? `${challenge.title} cook-off${open ? ` · ${timeLeft(challenge.ends_at)}` : " · ended"}` : "Who made it"}
         </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <ChefAvatar avatar={entry.chef.avatar} head size={36} uid={`${entry.user_id}-entry`} />
+          <span className="font-semibold">{name}</span>
+          {entry.chef.clubs.slice(0, 2).map((c) => (
+            <ClubBadge key={c} id={c} />
+          ))}
+        </div>
         <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
           {name}&apos;s {recipe.dish}
         </h1>

@@ -9,6 +9,8 @@ import { siteUrl } from "@/lib/env";
 import { AttemptForm } from "@/components/AttemptForm";
 import { CookoffBoard } from "@/components/CookoffBoard";
 import { NameForm } from "@/components/NameForm";
+import { ChefAvatar } from "@/components/ChefAvatar";
+import { ClubBadge } from "@/components/ClubBadge";
 import { LevelIcon } from "@/components/GameIcons";
 
 /** One cook-off: live (enter, vote, rally) or ended (results). Used by /cookoff and past cook-off pages. */
@@ -110,7 +112,17 @@ export async function CookoffView({ challenge, isCurrent }: { challenge: Challen
                       </Link>
                       <div className="flex min-w-0 flex-col justify-center gap-1">
                         <span className="w-fit rounded-md bg-saffron px-2 py-0.5 font-mono text-xs font-semibold text-saffron-ink">{label}</span>
-                        <p className="truncate font-display text-xl font-bold">{publicName(e.name)}</p>
+                        <p className="flex min-w-0 items-center gap-2 font-display text-xl font-bold">
+                          <ChefAvatar avatar={e.chef.avatar} head size={36} uid={`${e.user_id}-win-${label.charAt(0)}`} />
+                          <span className="truncate">{publicName(e.name)}</span>
+                        </p>
+                        {e.chef.clubs.length > 0 && (
+                          <span className="flex flex-wrap gap-1">
+                            {e.chef.clubs.slice(0, 2).map((c) => (
+                              <ClubBadge key={c} id={c} />
+                            ))}
+                          </span>
+                        )}
                         <p className="tabular font-mono text-sm text-muted">
                           {label === "Thriftiest copy" ? `${money(e.cost_per_plate)} a plate ✓ Receipt` : `▲ ${e.votes} votes`}
                         </p>

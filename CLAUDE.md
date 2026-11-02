@@ -26,7 +26,7 @@ Run typecheck + tests before every commit. In PowerShell, quote comma lists (e.g
 
 ## Database
 
-Migrations in `supabase/migrations/0001…0009` are all applied to the one Supabase project (used by both local and live).
+Migrations in `supabase/migrations/0001…0010` are applied (0011 is coming) to the one Supabase project (used by both local and live).
 New schema changes: add the next numbered file (`0010_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
 `supabase/demo_*.sql` add demo data; `demo_cleanup.sql` removes it (slugs ending `-demo`, `@demo.plateful.test` users, `samples/` photos).
 
@@ -44,6 +44,9 @@ New schema changes: add the next numbered file (`0010_…sql`, idempotent: `if n
 | Savings | `lib/savings.ts` (pure), `lib/savings-server.ts` (`cook_log`, badges, totals) |
 | Diets + versions | `lib/diet.ts` (pure), `components/VersionMaker.tsx`, `DietChips.tsx`, `DietForm.tsx` |
 | Payments | `app/api/stripe/*`, `lib/billing.ts` (`syncSubscription`, `refreshFromStripe` fallback) |
+| Avatars | `lib/avatar.ts` (pure: catalog, rarity, unlock rules), `lib/avatar-server.ts` (`chefCards`, `chefFrom`, `ownedGear`), `components/ChefAvatar.tsx` + `components/chef/*` (art), `/chef` page. `ChefCard` rows ride on leaderboard, savers and `Attempt`; names show with `ChefAvatar head` + `ClubBadge`. Share card draws the chef by serializing a hidden SVG. |
+| Gear shop | `app/api/stripe/gear` (one-time checkout), `lib/gear-billing.ts` (records purchases from the webhook and success page), admin grants |
+| Clubs | `lib/clubs.ts` (fixed list, `CLUB_BY_ID`, `cleanClubs`), `components/ClubBadge.tsx`, `/clubs/[id]` |
 | Admin | `app/admin` (only `profiles.is_admin`): judging, prizes, reference photos, backfills (package sizes, diet tags), sample recipes |
 
 ## Product rules (keep these)
@@ -57,6 +60,7 @@ New schema changes: add the next numbered file (`0010_…sql`, idempotent: `if n
 - **Receipts are never stored:** read once by Claude, only the result (price, store, date) is kept.
 - **Names in ads need opt-in:** `profiles.feature_me`. Site-wide totals need no names.
 - **Cook-off:** one entry per person per dish; 3 votes per person per cook-off, no self-votes; winners: Crowd favorite, Chef's pick, Thriftiest copy (receipt-verified only).
+- **Chef avatars:** legendary gear is earned only (points, badges), never sold or Plus-gated. Shop items carry a Shop tag and Plus items a Plus tag. Points are never spent: gear unlocks, it doesn't cost points. No clubs aimed at kids (COPPA); family clubs are written for parents. Club pages show counts only (no member lists).
 - **Sample/stock photos:** Unsplash only, no visible brand logos.
 
 ## Gotchas
@@ -65,4 +69,5 @@ New schema changes: add the next numbered file (`0010_…sql`, idempotent: `if n
 - Stripe: each webhook endpoint has its own `whsec_`. Local uses the `stripe listen` secret (`.env.local`); Vercel uses the "Plateful live site" endpoint's secret.
 - Supabase auth redirect allow-list must include `<site>/auth/callback` for every site address.
 - In the SQL editor, statements with `drop … if exists` trigger a "destructive operation" confirm; that's expected.
+- The gear shop webhook branch uses `checkout.session.completed`, which `stripe:listen` already forwards.
 - Never commit `.env*.local`. Never paste secret keys into code or chat.

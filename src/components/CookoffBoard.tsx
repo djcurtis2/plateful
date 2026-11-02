@@ -8,6 +8,8 @@ import type { Recipe } from "@/lib/recipe";
 import { POINTS, publicName, rankEntries, VOTES_PER_COOKOFF } from "@/lib/game";
 import { reportAttempt, voteAttempt } from "@/app/actions";
 import { ShareCard } from "@/components/ShareCard";
+import { ChefAvatar } from "@/components/ChefAvatar";
+import { ClubBadge } from "@/components/ClubBadge";
 import { EntryChips } from "@/components/EntryChips";
 
 type Props = {
@@ -86,7 +88,7 @@ export function CookoffBoard({ entries, recipe, myId, myVotes, open, chefPickId,
             </button>
           </div>
           <div className="mx-auto w-full max-w-sm">
-            <ShareCard key={sharing.id} recipe={recipe} shareUrl={entryUrl(siteUrl, sharing.id, refCode)} initialAttempt={sharing.image_url} cta="Vote for me" />
+            <ShareCard key={sharing.id} recipe={recipe} shareUrl={entryUrl(siteUrl, sharing.id, refCode)} initialAttempt={sharing.image_url} cta="Vote for me" chef={sharing.chef.avatar} />
           </div>
         </div>
       )}
@@ -162,10 +164,20 @@ export function CookoffBoard({ entries, recipe, myId, myVotes, open, chefPickId,
                 </span>
               </Link>
               <div className="flex flex-col gap-2 p-3">
-                <div className="min-w-0">
-                  <p className="truncate text-sm font-semibold">{publicName(a.name)}</p>
-                  {a.caption && <p className="truncate text-xs text-muted">{a.caption}</p>}
+                <div className="flex min-w-0 items-center gap-2">
+                  <ChefAvatar avatar={a.chef.avatar} head size={36} uid={`${a.user_id}-board`} />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold">{publicName(a.name)}</p>
+                    {a.caption && <p className="truncate text-xs text-muted">{a.caption}</p>}
+                  </div>
                 </div>
+                {a.chef.clubs.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {a.chef.clubs.slice(0, 2).map((c) => (
+                      <ClubBadge key={c} id={c} />
+                    ))}
+                  </div>
+                )}
                 <EntryChips e={a} />
                 <div className="flex items-center justify-between gap-1.5">
                   {isMine ? (

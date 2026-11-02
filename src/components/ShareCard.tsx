@@ -6,6 +6,8 @@ import { postAttempt } from "@/app/actions";
 import type { Recipe } from "@/lib/recipe";
 import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
+import type { Avatar } from "@/lib/avatar";
+import { ChefAvatar } from "@/components/ChefAvatar";
 
 const W = 1080;
 const H = 1350;
@@ -22,6 +24,8 @@ type Props = {
   /** Words before the link on the card, e.g. "Vote for me" on a cook-off entry. */
   cta?: string;
   challengeId?: string;
+  /** The cook's chef, drawn full-body in a lower corner of the card. */
+  chef?: Avatar;
 };
 
 async function loadImage(src: string): Promise<HTMLImageElement> {
@@ -49,6 +53,30 @@ function wrap(g: CanvasRenderingContext2D, text: string, maxW: number, maxLines:
     lines[maxLines - 1] = lines[maxLines - 1].replace(/\s*\S*$/, "") + "…";
   }
   return lines;
+}
+
+/** Draws the hidden chef SVG in the card's lower right. If it can't load, the card simply has no chef. */
+async function drawChef(g: CanvasRenderingContext2D, box: HTMLElement | null) {
+  const svg = box?.querySelector("svg");
+  if (!svg) return;
+  let url: string | null = null;
+  try {
+    const h = 150;
+    const w = Math.round((h * 120) / 170);
+    const clone = svg.cloneNode(true) as SVGSVGElement;
+    clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
+    clone.setAttribute("width", String(w * 2));
+    clone.setAttribute("height", String(h * 2));
+    url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml;charset=utf-8" }));
+    const im = new Image();
+    im.src = url;
+    await im.decode();
+    g.drawImage(im, W - 64 - w, H - 16 - h, w, h);
+  } catch {
+    /* the card is fine without the chef */
+  } finally {
+    if (url) URL.revokeObjectURL(url);
+  }
 }
 
 async function panel(
@@ -123,7 +151,8 @@ async function panel(
 }
 
 /** The "restaurant vs. mine" image people post. Rendered on a canvas so it saves as a real PNG. */
-export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = false, hasEntry = false, challengeId, cta = "Cook it" }: Props) {
+export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = false, hasEntry = false, challengeId, cta = "Cook it", chef }: Props) {
+  const chefBox = useRef<HTMLDivElement>(null);
   const canvas = useRef<HTMLCanvasElement>(null);
   const [attempt, setAttempt] = useState<string | null>(initialAttempt);
   const [file, setFile] = useState<File | null>(null);
@@ -205,6 +234,7 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
       g.fillText(`${s.pct}% less`, W - 100, 1136);
       g.textAlign = "left";
     }
+    await drawChef(g, chefBox.current);
     g.beginPath();
     g.arc(78, 1240, 14, 0, Math.PI * 2);
     g.fillStyle = "#F2B630";
@@ -215,7 +245,7 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
     g.fillStyle = "rgba(255,255,255,.85)";
     g.font = `500 24px ${fonts.mono}`;
     g.fillText(`${cta} → ${displayUrl}`.slice(0, 70), 64, 1302);
-  }, [recipe, attempt, displayUrl, cta]);
+  }, [recipe, attempt, displayUrl, cta, chef]);
 
   useEffect(() => {
     draw();
@@ -352,6 +382,11 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
 
   return (
     <div className="flex flex-col gap-3">
+      {chef && (
+        <div ref={chefBox} aria-hidden className="pointer-events-none absolute -left-[9999px] top-0 h-0 w-0 overflow-hidden">
+          <ChefAvatar avatar={chef} size={340} uid="sharecard-chef" />
+        </div>
+      )}
       <canvas
         ref={canvas}
         width={W}
