@@ -8,6 +8,7 @@ import { ShareCard } from "@/components/ShareCard";
 import { POINTS } from "@/lib/game";
 import type { Recipe } from "@/lib/recipe";
 import type { Attempt } from "@/lib/data";
+import type { Avatar } from "@/lib/avatar";
 
 type Existing = Pick<Attempt, "id" | "caption" | "cost_per_plate" | "cost_source" | "minutes" | "swaps" | "notes">;
 
@@ -24,6 +25,7 @@ export function AttemptForm({
   existing = null,
   next,
   shareUrl,
+  chef,
 }: {
   recipe: Recipe;
   challengeId?: string;
@@ -31,6 +33,8 @@ export function AttemptForm({
   existing?: Existing | null;
   next: string;
   shareUrl: string;
+  /** The poster's chef, drawn on the share card. */
+  chef?: Avatar;
 }) {
   const form = useRef<HTMLFormElement>(null);
   const [open, setOpen] = useState(!existing);
@@ -71,6 +75,7 @@ export function AttemptForm({
             shareUrl={challengeId ? shareUrl.replace(/\/r\/[^?]+/, `/cookoff/e/${done.id}`) : shareUrl}
             initialAttempt={preview}
             cta={challengeId ? "Vote for me" : "Cook it"}
+            chef={chef}
           />
         </div>
       </div>

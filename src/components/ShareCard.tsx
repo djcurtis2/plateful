@@ -9,6 +9,8 @@ import { money } from "@/lib/format";
 import type { Avatar } from "@/lib/avatar";
 import { ChefAvatar } from "@/components/ChefAvatar";
 
+const CHEF_H = 150;
+const CHEF_W = Math.round((CHEF_H * 120) / 170); // the chef canvas is 120x170
 const W = 1080;
 const H = 1350;
 
@@ -61,8 +63,8 @@ async function drawChef(g: CanvasRenderingContext2D, box: HTMLElement | null) {
   if (!svg) return;
   let url: string | null = null;
   try {
-    const h = 150;
-    const w = Math.round((h * 120) / 170);
+    const h = CHEF_H;
+    const w = CHEF_W;
     const clone = svg.cloneNode(true) as SVGSVGElement;
     clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     clone.setAttribute("width", String(w * 2));
@@ -244,7 +246,11 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
     g.fillText("Plateful", 104, 1254);
     g.fillStyle = "rgba(255,255,255,.85)";
     g.font = `500 24px ${fonts.mono}`;
-    g.fillText(`${cta} → ${displayUrl}`.slice(0, 70), 64, 1302);
+    // Keep the footer clear of the chef (lower right): measure it and cut with an ellipsis to the room left of the chef.
+    const footerMax = (chef ? W - 64 - CHEF_W - 24 : W - 128) - 64;
+    let footer = `${cta} → ${displayUrl}`;
+    while (footer.length > 1 && g.measureText(footer).width > footerMax) footer = footer.slice(0, -2).trimEnd() + "…";
+    g.fillText(footer, 64, 1302);
   }, [recipe, attempt, displayUrl, cta, chef]);
 
   useEffect(() => {

@@ -6,6 +6,7 @@ import { POINTS, PRIZES, VOTES_PER_COOKOFF, publicName, rankEntries, standing, t
 import { money } from "@/lib/format";
 import { menuPlate, savings } from "@/lib/recipe";
 import { siteUrl } from "@/lib/env";
+import { parseAvatar, visibleAvatar } from "@/lib/avatar";
 import { AttemptForm } from "@/components/AttemptForm";
 import { CookoffBoard } from "@/components/CookoffBoard";
 import { NameForm } from "@/components/NameForm";
@@ -210,6 +211,7 @@ export async function CookoffView({ challenge, isCurrent }: { challenge: Challen
             existing={mineEntry}
             next="/cookoff"
             shareUrl={recipeShare}
+            chef={me ? mineEntry?.chef.avatar ?? visibleAvatar(parseAvatar(me.profile?.avatar ?? null, me.user.id), me.plus) : undefined}
           />
         )}
         <CookoffBoard
