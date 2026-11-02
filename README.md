@@ -1,5 +1,7 @@
 # Plateful
 
+See `CLAUDE.md` for architecture, product rules and gotchas.
+
 Snap a restaurant dish. Get the copycat recipe, see what you save per plate, shop the ingredients, and post "restaurant vs. mine."
 
 Next.js 16 (App Router) · Tailwind CSS 4 · Supabase (Postgres, auth, storage) · Claude API (vision) · Stripe (subscriptions)
@@ -8,13 +10,13 @@ Next.js 16 (App Router) · Tailwind CSS 4 · Supabase (Postgres, auth, storage) 
 
 | Area | Where | Notes |
 | --- | --- | --- |
-| Photo → copycat recipe | `src/app/api/recognize/route.ts`, `src/lib/claude.ts` | Claude vision with a forced tool call, so results are always structured JSON. Validated with zod. |
+| Photo → copycat recipe | `src/app/api/recognize/route.ts`, `src/lib/claude.ts` | Claude vision with structured output (JSON schema), so results are always valid JSON. Validated with zod. |
 | Cost and abuse controls | `src/lib/limits.ts` | Site-wide daily cap, per-visitor / per-IP / per-plan limits, file-type sniffing, 5 MB cap, client-side downscaling to 1280px. |
 | Recipe pages | `src/app/r/[slug]` | Public, shareable, with a generated social preview image (`opengraph-image.tsx`). |
 | Servings, pantry, cart | `src/components/RecipeView.tsx` | Scales quantities, remembers ticked items in your pantry, groups the cart by aisle, links each item to Instacart, Walmart or Kroger search. |
 | Share card | `src/components/ShareCard.tsx` | 1080×1350 "restaurant vs. mine" PNG with price gap and referral link. Uses the native share sheet on phones. |
 | Referrals | `src/lib/referrals.ts`, `src/proxy.ts` | `?ref=` codes stored for 30 days. Friends get 7 days of Plus on sign-up. Every 3 friends who cook earns the referrer a free month. Rewards count cooks, never visits. |
-| Cook-off | `src/app/cookoff` | Weekly challenge, photo entries, one vote per person. |
+| Cook-off | `src/app/cookoff` | Weekly challenge, photo entries, 3 votes per person, points, badges and prizes. |
 | Accounts | `src/app/login`, `src/app/auth` | Magic link and Google sign-in via Supabase. |
 | Library, pantry, account | `src/app/library`, `pantry`, `account` | Saved recipes, pantry editor, plan and referral progress. |
 | Payments | `src/app/api/stripe/*` | Checkout, billing portal, webhook that keeps `profiles.plan` in sync. |
