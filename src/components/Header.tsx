@@ -122,11 +122,19 @@ export async function Header() {
                 >
                   {me.plus ? "Plus" : "Account"}
                 </Link>
-                {chef && (
-                  <Link href="/chef" aria-label="My chef" title="My chef" className="ml-1 flex rounded-full hover:opacity-80">
-                    <ChefAvatar avatar={chef.avatar} head size={32} uid="header-chef" />
-                  </Link>
-                )}
+                {chef && (() => {
+                  // Never saved a chef: nudge with a dot until they make one.
+                  const nudge = me.profile?.avatar == null;
+                  const label = nudge ? "Make your chef" : "My chef";
+                  return (
+                    <Link href="/chef" aria-label={label} title={label} className="relative ml-1 flex rounded-full hover:opacity-80">
+                      <ChefAvatar avatar={chef.avatar} head size={32} uid="header-chef" />
+                      {nudge && (
+                        <span aria-hidden className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-chili ring-2 ring-bg" />
+                      )}
+                    </Link>
+                  );
+                })()}
                 {stats && (
                   <Link
                     href="/account"

@@ -7,7 +7,7 @@ import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
 import { CLUBS, MAX_CLUBS } from "@/lib/clubs";
 import {
-  BUNDLES, GEAR, GEAR_BY_ID, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable,
+  BUNDLES, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable,
   type Avatar, type GearItem, type LookPart, type Rarity, type Slot,
 } from "@/lib/avatar";
 
@@ -32,6 +32,25 @@ const RARITY_BORDER: Record<Rarity, string> = {
   legendary: "border-chili border-2",
 };
 
+/** The avatar wearing these items on top (or with a slot emptied when the id is null). */
+function wearing(avatar: Avatar, items: (GearItem | { slot: Slot; id: null })[]): Avatar {
+  const equipped = { ...avatar.equipped };
+  for (const g of items) {
+    if (g.id === null) delete equipped[g.slot];
+    else equipped[g.slot] = g.id;
+  }
+  return { ...avatar, equipped };
+}
+
+/** A small chef wearing one item, so gear is never picked or bought sight-unseen. Hats read best as a head crop. */
+function TileChef({ avatar, slot, uid }: { avatar: Avatar; slot: Slot; uid: string }) {
+  return (
+    <span className="flex h-16 w-full items-center justify-center rounded-xl bg-sunk">
+      <ChefAvatar avatar={avatar} head={slot === "hat"} size={slot === "hat" ? 56 : 60} uid={uid} />
+    </span>
+  );
+}
+
 type Props = {
   initial: Avatar;
   unlocked: string[];
@@ -52,13 +71,36 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
   const [msg, setMsg] = useState("");
   const [clubMsg, setClubMsg] = useState("");
   const [pending, start] = useTransition();
+  // Locked gear tried on the big chef only. Never part of `avatar`, so it can't be saved.
+  const [preview, setPreview] = useState<string[]>([]);
   const open = new Set(unlocked);
+  const previewItems = preview.map((id) => GEAR_BY_ID[id]).filter((g): g is GearItem => !!g);
+  const previewing = previewItems.length > 0;
+  // What others see; tiles and the preview draw on top of this.
+  const shown = visibleAvatar(avatar, plus);
+  // Same rule as the server: gear must be unlocked or unchanged from the saved chef.
+  const allowed = canSave(avatar, open, everSaved ? base : undefined).ok;
 
   const dirty = JSON.stringify(avatar) !== JSON.stringify(base) || !everSaved;
   const clubsDirty = clubs.join("|") !== clubBase.join("|");
 
   const setLook = (part: LookPart, i: number) => setAvatar((a) => ({ ...a, look: { ...a.look, [part]: i } }));
-  const equip = (g: GearItem) => setAvatar((a) => ({ ...a, equipped: { ...a.equipped, [g.slot]: g.id } }));
+  const equip = (g: GearItem) => {
+    setPreview([]);
+    setAvatar((a) => ({ ...a, equipped: { ...a.equipped, [g.slot]: g.id } }));
+  };
+  const empty = (slot: Slot) => {
+    setPreview([]);
+    setAvatar((a) => {
+      const equipped = { ...a.equipped };
+      delete equipped[slot];
+      return { ...a, equipped };
+    });
+  };
+  const tryOn = (ids: string[]) => {
+    setPreview((p) => (p.join("|") === ids.join("|") ? [] : ids));
+    document.getElementById("chef-stage")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  };
 
   const save = () =>
     start(async () => {
@@ -86,16 +128,30 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="card flex flex-col items-center gap-3 p-6">
-        <ChefAvatar avatar={visibleAvatar(avatar, plus)} size={260} uid="editor" title="Your chef" />
+      <div id="chef-stage" className="card flex flex-col items-center gap-3 p-6">
+        <ChefAvatar
+          avatar={previewing ? wearing(shown, previewItems) : shown}
+          size={260}
+          uid="editor"
+          title={previewing ? `Your chef previewing ${previewItems.map((g) => g.name).join(", ")}` : "Your chef"}
+        />
+        {previewing && (
+          <p className="flex flex-wrap items-center justify-center gap-2 text-sm">
+            <span className="rounded-full bg-saffron px-2 py-0.5 text-xs font-bold uppercase text-saffron-ink">Previewing — locked</span>
+            <span className="text-muted">{previewItems.map((g) => g.name).join(", ")}</span>
+            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview([])}>End preview</button>
+          </p>
+        )}
         {!everSaved && (
           <p className="text-sm text-muted">This chef was picked for you. Make it yours, then save.</p>
         )}
         <div className="flex flex-col items-center gap-1">
-          <button className="btn btn-primary" onClick={save} disabled={pending || !dirty}>
+          <button className="btn btn-primary" onClick={save} disabled={pending || !dirty || previewing || !allowed}>
             {pending ? "Saving..." : everSaved ? "Save chef" : "Save my chef"}
           </button>
-          <p role="status" className={`min-h-5 text-sm ${msg === "Saved." ? "text-basil" : "text-chili"}`}>{msg}</p>
+          <p role="status" className={`min-h-5 text-sm ${msg === "Saved." ? "text-basil" : "text-chili"}`}>
+            {previewing ? "End the preview to save. Locked gear can't be saved." : !allowed ? "Some gear is locked. Pick gear you have to save." : msg}
+          </p>
         </div>
       </div>
 
@@ -143,19 +199,37 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
             <div key={slot} className="card flex flex-col gap-3 p-6">
               <span className="label">{SLOT_LABELS[slot]}</span>
               <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <li>
+                  <button
+                    type="button"
+                    aria-pressed={avatar.equipped[slot] === undefined}
+                    onClick={() => empty(slot)}
+                    className={`flex h-full w-full flex-col items-start gap-1 rounded-2xl border border-dashed border-line p-3 text-left hover:bg-sunk ${avatar.equipped[slot] === undefined ? "bg-basil/10 ring-2 ring-basil" : ""}`}
+                  >
+                    <TileChef avatar={wearing(shown, [{ slot, id: null }])} slot={slot} uid={`tile-${slot}-none`} />
+                    <span className="text-sm font-semibold">None</span>
+                    <span className="text-xs text-muted">{avatar.equipped[slot] === undefined ? "Nothing on" : "Tap to go without"}</span>
+                  </button>
+                </li>
                 {GEAR.filter((g) => g.slot === slot).map((g) => {
                   const isOpen = open.has(g.id);
+                  // Unchanged saved gear (e.g. a lapsed Plus item) can still be worn.
+                  const canWear = isOpen || (everSaved && base.equipped[slot] === g.id);
                   const on = avatar.equipped[slot] === g.id;
+                  const trying = preview.length === 1 && preview[0] === g.id;
                   const tag = g.source.kind === "shop" ? "Shop" : g.source.kind === "plus" ? "Plus" : null;
                   return (
                     <li key={g.id}>
                       <button
                         type="button"
-                        disabled={!isOpen}
-                        aria-pressed={on}
-                        onClick={() => equip(g)}
-                        className={`flex h-full w-full flex-col items-start gap-1 rounded-2xl border p-3 text-left ${RARITY_BORDER[g.rarity]} ${on ? "bg-basil/10 ring-2 ring-basil" : ""} ${isOpen ? "hover:bg-sunk" : "opacity-50"}`}
+                        aria-pressed={canWear ? on : trying}
+                        aria-label={canWear ? undefined : `Preview ${g.name} (locked: ${lockReason(g)})`}
+                        onClick={() => (canWear ? equip(g) : tryOn([g.id]))}
+                        className={`flex h-full w-full flex-col items-start gap-1 rounded-2xl border p-3 text-left hover:bg-sunk ${RARITY_BORDER[g.rarity]} ${on ? "bg-basil/10 ring-2 ring-basil" : trying ? "ring-2 ring-saffron" : ""}`}
                       >
+                        <span className={`w-full ${canWear ? "" : "opacity-60"}`}>
+                          <TileChef avatar={wearing(shown, [g])} slot={slot} uid={`tile-${g.id}`} />
+                        </span>
                         <span className="flex w-full items-start justify-between gap-2">
                           <span className="text-sm font-semibold">{g.name}</span>
                           {tag && (
@@ -165,7 +239,9 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                           )}
                         </span>
                         <span className="text-xs capitalize text-muted">{g.rarity}</span>
-                        <span className="text-xs text-muted">{!isOpen ? lockReason(g) : on ? "Wearing" : "Tap to wear"}</span>
+                        <span className="text-xs text-muted">
+                          {!canWear ? `${lockReason(g)} · ${trying ? "Previewing" : "Tap to preview"}` : on ? "Wearing" : "Tap to wear"}
+                        </span>
                       </button>
                     </li>
                   );
@@ -226,6 +302,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                       {b.items.map((id) => GEAR_BY_ID[id]?.name).filter(Boolean).join(", ")}
                       {buy.items.length < b.items.length && ` (you get the ${buy.items.length} you don't have)`}
                     </span>
+                    <PreviewButton on={preview.join("|") === b.items.join("|")} onClick={() => tryOn(b.items)} />
                     <ShopBuy field="bundle" id={b.id} />
                   </li>
                 );
@@ -239,6 +316,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                 const have = owned.includes(g.id);
                 return (
                   <li key={g.id} className={`flex flex-col gap-1 rounded-2xl border p-3 ${RARITY_BORDER[g.rarity]}`}>
+                    <TileChef avatar={wearing(shown, [g])} slot={g.slot} uid={`shop-${g.id}`} />
                     <span className="text-sm font-semibold">{g.name}</span>
                     <span className="text-xs capitalize text-muted">
                       {SLOT_LABELS[g.slot].replace(/s$/, "")} · {g.rarity}
@@ -248,6 +326,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                     ) : (
                       <>
                         <span className="tabular font-mono text-sm">{g.source.kind === "shop" && priceLabel(g.source.cents)}</span>
+                        <PreviewButton on={preview.length === 1 && preview[0] === g.id} onClick={() => tryOn([g.id])} />
                         <ShopBuy field="item" id={g.id} />
                       </>
                     )}
@@ -263,6 +342,14 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
         </section>
       )}
     </div>
+  );
+}
+
+function PreviewButton({ on, onClick }: { on: boolean; onClick: () => void }) {
+  return (
+    <button type="button" aria-pressed={on} onClick={onClick} className="btn btn-ghost btn-sm w-full">
+      {on ? "End preview" : "Preview on my chef"}
+    </button>
   );
 }
 
