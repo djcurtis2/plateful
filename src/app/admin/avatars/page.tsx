@@ -4,6 +4,7 @@ import { getMe } from "@/lib/data";
 import { GEAR, LOOK_OPTIONS, SLOTS, defaultAvatar, type Avatar, type LookPart, type Rarity } from "@/lib/avatar";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
+import { hasGearArt } from "@/components/chef/gear";
 
 export const metadata: Metadata = { title: "Avatar art sheet", robots: { index: false } };
 export const dynamic = "force-dynamic";
@@ -75,7 +76,10 @@ export default async function AvatarArtPage() {
               {GEAR.filter((g) => g.slot === slot).map((g) => (
                 <div key={g.id} className={tile}>
                   <ChefAvatar avatar={{ ...DEFAULT_CHEF, equipped: { ...DEFAULT_CHEF.equipped, [slot]: g.id } }} size={200} uid={`gear-${g.id}`} title={g.name} />
-                  <span className="text-sm font-semibold">{g.name}</span>
+                  <span className="text-sm font-semibold">
+                    {g.name}
+                    {!hasGearArt(slot, g.id) && <span className="font-normal text-chili"> (no art)</span>}
+                  </span>
                   <span className={`rounded-full px-2 py-0.5 text-xs font-semibold capitalize ${RARITY_STYLES[g.rarity]}`}>{g.rarity}</span>
                 </div>
               ))}

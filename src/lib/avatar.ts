@@ -101,9 +101,18 @@ function hash(s: string): number {
 const validIndex = (part: LookPart, v: unknown): v is number =>
   typeof v === "number" && Number.isInteger(v) && v >= 0 && v < LOOK_OPTIONS[part];
 
+/** Percent of default chefs with option 0 ("none") for the optional extras. */
+const NONE_SHARE = { facialHair: 75, glasses: 75 };
+
 export function defaultAvatar(userId: string): Avatar {
   const look = {} as Look;
-  for (const p of LOOK_PARTS) look[p] = hash(`${p}:${userId}`) % LOOK_OPTIONS[p];
+  for (const p of LOOK_PARTS) {
+    const h = hash(`${p}:${userId}`);
+    // Facial hair and glasses are extras: most new chefs start without them (option 0 = none).
+    look[p] = p in NONE_SHARE
+      ? (h % 100 < NONE_SHARE[p as "facialHair" | "glasses"] ? 0 : 1 + (Math.floor(h / 100) % (LOOK_OPTIONS[p] - 1)))
+      : h % LOOK_OPTIONS[p];
+  }
   const equipped: Avatar["equipped"] = {};
   for (const s of SLOTS) equipped[s] = starterFor(s).id;
   return { look, equipped };

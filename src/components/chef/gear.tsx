@@ -471,6 +471,8 @@ export const TOOLS: Record<string, Draw> = {
 
 const W = 120;
 const H = 170;
+// Head crops start above y 0 (headroom for tall hats), so base fills reach up past the canvas.
+const TOP = 10;
 
 export const BACKGROUNDS: Record<string, Draw> = {
   "kitchen-tile": (c) => (
@@ -480,7 +482,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
           <path d="M0 .75h20 M0 10.75h20 M.75 0v10 M10.75 10v10" stroke={WHITE} strokeWidth={1.5} />
         </pattern>
       </defs>
-      <rect width={W} height={H} fill="#DCEBE0" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#DCEBE0" />
       <rect width={W} height={150} fill={`url(#${c.id("tile")})`} />
       <rect y={148} width={W} height={22} fill="#B9D3C1" />
       <path d="M0 148h120" stroke="#8FB49C" strokeWidth={2} />
@@ -495,7 +497,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
           <stop offset="1" stopColor="#FFB347" stopOpacity={0} />
         </radialGradient>
       </defs>
-      <rect width={W} height={H} fill="#2F343B" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#2F343B" />
       <path d="M20 0v120 M60 0v120 M100 0v120" stroke="#3A4048" strokeWidth={2} />
       <ellipse cx={18} cy={56} rx={26} ry={34} fill={`url(#${c.id("lamp")})`} />
       <ellipse cx={102} cy={56} rx={26} ry={34} fill={`url(#${c.id("lamp")})`} />
@@ -520,7 +522,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
           <stop offset="1" stopColor={GOLD_LIGHT} stopOpacity={0.25} />
         </linearGradient>
       </defs>
-      <rect width={W} height={H} fill="#1B1630" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#1B1630" />
       <path d="M46 0h28l38 160H8z" fill={`url(#${c.id("beam")})`} />
       <ellipse cx={60} cy={161} rx={50} ry={9} fill={GOLD} opacity={0.55} />
       <g fill={GOLD_LIGHT}>
@@ -533,7 +535,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
 
   "dinner-party": () => (
     <g>
-      <rect width={W} height={H} fill="#7A3B4B" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#7A3B4B" />
       <path d="M0 0v170 M24 0v170 M48 0v170 M72 0v170 M96 0v170" stroke="#84455A" strokeWidth={10} />
       <path d="M-2 10q31 22 62 4t62 4" fill="none" stroke={OUTLINE} strokeWidth={1.4} />
       {[[8, 15, "#FFE066"], [22, 22, "#F25F7A"], [38, 22, "#7FD1AE"], [84, 19, "#7FD1AE"], [98, 17, "#F25F7A"], [112, 16, "#FFE066"]].map(([x, y, f]) => (
@@ -553,7 +555,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
 
   "marble-counter": () => (
     <g>
-      <rect width={W} height={H} fill="#F3F1EC" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#F3F1EC" />
       <path d="M-5 30q30 10 45-6t50 8 40-10 M-5 90q20-14 40-2t35 0 55 10 M10 0q8 20 2 40t10 50 M100 0q-6 30 6 60" fill="none" stroke="#C9C4BA" strokeWidth={1.4} />
       <path d="M30 60q14 4 22-4 M76 120q10-8 26-2" fill="none" stroke="#DAD5CC" strokeWidth={1} />
       <rect y={146} width={W} height={24} fill="#E3DFD7" />
@@ -564,7 +566,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
 
   "beach-day": () => (
     <g>
-      <rect width={W} height={H} fill="#8FD3F4" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#8FD3F4" />
       <circle cx={100} cy={22} r={12} fill="#FFD166" stroke={OUTLINE} strokeWidth={2} />
       <path d="M12 30q4-6 10-2 4-5 10 0 5 0 4 4H12z" fill={WHITE} stroke={OUTLINE} strokeWidth={1.4} />
       <rect y={108} width={W} height={24} fill="#3BA6D9" />
@@ -584,7 +586,7 @@ export const BACKGROUNDS: Record<string, Draw> = {
           <rect x={12} y={8} width={12} height={8} fill="#8E5BD8" />
         </pattern>
       </defs>
-      <rect width={W} height={H} fill="#2E1747" />
+      <rect y={-TOP} width={W} height={H + TOP} fill="#2E1747" />
       <path d="M20 22 0 100V60z M20 22l40 90h-24z M20 22l100 40v30z" fill="#FFFFFF" opacity={0.12} />
       <path d="M20 22 120 120V96z" fill="#F25F9A" opacity={0.18} />
       <path d="M20 0v11" stroke="#9AA4AE" strokeWidth={1.4} />
@@ -604,3 +606,10 @@ export const SPARKLES: Record<Slot, [number, number, number][]> = {
   tool: [[113, 62, 4.5], [114, 98, 3]],
   background: [[24, 8, 4], [104, 46, 3], [12, 118, 3.5]],
 };
+
+const ART_BY_SLOT: Record<Slot, Record<string, unknown>> = { hat: HATS, outfit: OUTFITS, tool: TOOLS, background: BACKGROUNDS };
+
+/** Whether a catalog item has art (ids without art draw nothing). */
+export function hasGearArt(slot: Slot, id: string): boolean {
+  return Object.hasOwn(ART_BY_SLOT[slot], id);
+}

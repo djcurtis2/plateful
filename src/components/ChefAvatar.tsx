@@ -20,7 +20,8 @@ type Props = {
 };
 
 const FULL_BOX = "0 0 120 170";
-const HEAD_BOX = "14 0 92 92";
+// Headroom above y 0 so the tall toques, their outline, the legendary glow and top sparkle all fit.
+const HEAD_BOX = "10 -8 100 100";
 
 const pick = <T,>(list: T[], i: number): T => list[Number.isInteger(i) && i >= 0 && i < list.length ? i : 0];
 

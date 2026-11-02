@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LEVELS } from "./game.ts";
 import {
-  BUNDLES, GEAR, GEAR_BY_ID, SLOTS, canSave, defaultAvatar, lockReason, newUnlocks, parseAvatar,
+  BUNDLES, GEAR, GEAR_BY_ID, LOOK_OPTIONS, SLOTS, canSave, defaultAvatar, lockReason, newUnlocks, parseAvatar,
   priceLabel, purchasable, starterFor, unlockedGear, visibleAvatar,
 } from "./avatar.ts";
 
@@ -82,6 +82,19 @@ test("default avatar is steady per user and wears starter gear", () => {
   assert.deepEqual(defaultAvatar("abc"), defaultAvatar("abc"));
   assert.notDeepEqual(defaultAvatar("abc").look, defaultAvatar("xyz").look);
   for (const s of SLOTS) assert.equal(defaultAvatar("abc").equipped[s], starterFor(s).id);
+});
+
+test("most default chefs have no facial hair or glasses; other parts spread out", () => {
+  const looks = Array.from({ length: 200 }, (_, i) => defaultAvatar(`synthetic-user-${i}`).look);
+  assert.deepEqual(defaultAvatar("synthetic-user-7"), defaultAvatar("synthetic-user-7"));
+  const share = (f: (l: (typeof looks)[number]) => boolean) => looks.filter(f).length / looks.length;
+  assert.ok(share((l) => l.facialHair === 0) >= 0.6);
+  assert.ok(share((l) => l.glasses === 0) >= 0.6);
+  // Every non-none extra still shows up, and every skin tone and hair style is used.
+  for (let i = 1; i < LOOK_OPTIONS.facialHair; i++) assert.ok(looks.some((l) => l.facialHair === i));
+  for (let i = 1; i < LOOK_OPTIONS.glasses; i++) assert.ok(looks.some((l) => l.glasses === i));
+  for (let i = 0; i < LOOK_OPTIONS.skin; i++) assert.ok(looks.some((l) => l.skin === i));
+  for (let i = 0; i < LOOK_OPTIONS.hair; i++) assert.ok(looks.some((l) => l.hair === i));
 });
 
 test("buying: owned items and fully owned bundles can't be bought", () => {

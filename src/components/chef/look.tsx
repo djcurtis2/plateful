@@ -6,7 +6,8 @@ import type { LookPart } from "@/lib/avatar";
 export const OUTLINE = "#2b2b2b";
 export const STROKE = 3;
 
-export type Skin = { name: string; fill: string; shade: string };
+/** `halo`: a lighter tone drawn under the eyes on the deepest skins so they stay readable. */
+export type Skin = { name: string; fill: string; shade: string; halo?: string };
 export type HairColor = { name: string; fill: string; brow: string };
 type Named = { name: string };
 type Part<A> = Named & { draw: (a: A) => React.ReactNode };
@@ -22,8 +23,8 @@ export const SKINS: Skin[] = [
   { name: "Honey", fill: "#D19A69", shade: "#B07A4C" },
   { name: "Caramel", fill: "#B67B4C", shade: "#935D34" },
   { name: "Chestnut", fill: "#965F38", shade: "#784727" },
-  { name: "Cocoa", fill: "#774A2C", shade: "#5C351D" },
-  { name: "Espresso", fill: "#57341F", shade: "#3E2414" },
+  { name: "Cocoa", fill: "#774A2C", shade: "#5C351D", halo: "#B88762" },
+  { name: "Espresso", fill: "#57341F", shade: "#3E2414", halo: "#A27352" },
 ];
 
 export const HAIR_COLORS: HairColor[] = [
@@ -103,64 +104,77 @@ export function FaceBase({ skin }: { skin: Skin }) {
 
 const EYE_X = [48, 72];
 const EYE_Y = 61;
-const dot = (x: number, r = 5.4) => (
-  <>
-    <circle cx={x} cy={EYE_Y} r={r} fill={OUTLINE} />
-    <circle cx={x + r * 0.35} cy={EYE_Y - r * 0.35} r={r * 0.33} fill="#fff" />
-  </>
-);
-const happy = (x: number) => <path d={`M${x - 5} ${EYE_Y + 1.5}q5-7 10 0`} fill="none" {...o} />;
 
-export const EYES: Part<LookCtx>[] = [
-  { name: "Round", draw: () => <>{EYE_X.map((x) => <g key={x}>{dot(x)}</g>)}</> },
+/**
+ * Each eye style draws its dark ink shapes with `ink(color, grow)`. On the deepest skins (`skin.halo`) the
+ * same shapes are drawn first, wider, in a lighter tone, so lines and closed eyes keep their contrast.
+ * Lighter skins have no halo and draw exactly as before. `shine` adds the white highlights on top.
+ */
+type Eye = Named & { ink: (color: string, grow: number) => React.ReactNode; shine?: React.ReactNode };
+
+const line = (d: string, color: string, grow: number, w = STROKE) => (
+  <path d={d} fill="none" stroke={color} strokeWidth={w + grow} strokeLinecap="round" strokeLinejoin="round" />
+);
+const ball = (x: number, r: number, color: string, grow: number) => <circle cx={x} cy={EYE_Y} r={r + grow / 2} fill={color} />;
+const glint = (x: number, r: number) => <circle cx={x + r * 0.35} cy={EYE_Y - r * 0.35} r={r * 0.33} fill="#fff" />;
+const happyD = (x: number) => `M${x - 5} ${EYE_Y + 1.5}q5-7 10 0`;
+
+const EYE_STYLES: Eye[] = [
+  { name: "Round", ink: (c, g) => EYE_X.map((x) => <g key={x}>{ball(x, 5.4, c, g)}</g>), shine: EYE_X.map((x) => <g key={x}>{glint(x, 5.4)}</g>) },
   {
     name: "Sparkly",
-    draw: () => (
-      <>
-        {EYE_X.map((x) => (
-          <g key={x}>
-            <circle cx={x} cy={EYE_Y} r={6.6} fill={OUTLINE} />
-            <circle cx={x + 2.2} cy={EYE_Y - 2.2} r={2.3} fill="#fff" />
-            <circle cx={x - 2.2} cy={EYE_Y + 2.4} r={1.1} fill="#fff" />
-          </g>
-        ))}
-      </>
-    ),
+    ink: (c, g) => EYE_X.map((x) => <g key={x}>{ball(x, 6.6, c, g)}</g>),
+    shine: EYE_X.map((x) => (
+      <g key={x} fill="#fff">
+        <circle cx={x + 2.2} cy={EYE_Y - 2.2} r={2.3} />
+        <circle cx={x - 2.2} cy={EYE_Y + 2.4} r={1.1} />
+      </g>
+    )),
   },
-  { name: "Happy", draw: () => <>{EYE_X.map((x) => <g key={x}>{happy(x)}</g>)}</> },
+  { name: "Happy", ink: (c, g) => EYE_X.map((x) => <g key={x}>{line(happyD(x), c, g)}</g>) },
   {
     name: "Sleepy",
-    draw: () => (
-      <>
-        {EYE_X.map((x) => (
-          <g key={x}>
-            <path d={`M${x - 5.5} ${EYE_Y - 0.5}a5.5 5.5 0 0 0 11 0z`} fill={OUTLINE} />
-            <path d={`M${x - 6.5} ${EYE_Y - 0.5}h13`} {...o} strokeWidth={2.6} />
-          </g>
-        ))}
-      </>
-    ),
+    ink: (c, g) =>
+      EYE_X.map((x) => (
+        <g key={x}>
+          <path d={`M${x - 5.5} ${EYE_Y - 0.5}a5.5 5.5 0 0 0 11 0z`} fill={c} stroke={g ? c : "none"} strokeWidth={g} strokeLinejoin="round" />
+          {line(`M${x - 6.5} ${EYE_Y - 0.5}h13`, c, g, 2.6)}
+        </g>
+      )),
   },
   {
     name: "Wink",
-    draw: () => (
+    ink: (c, g) => (
       <>
-        {dot(48)}
-        <path d={`M67 ${EYE_Y}q5 4 10 0`} fill="none" {...o} />
+        {ball(48, 5.4, c, g)}
+        {line(`M67 ${EYE_Y}q5 4 10 0`, c, g)}
       </>
     ),
+    shine: glint(48, 5.4),
   },
   {
     name: "Lashes",
-    draw: () => (
+    ink: (c, g) => (
       <>
-        {dot(48, 5)}
-        {dot(72, 5)}
-        <path d="M44 57.5l-3.5-3 M45.8 55.8l-2-3.6 M76 57.5l3.5-3 M74.2 55.8l2-3.6" {...o} strokeWidth={2} />
+        {ball(48, 5, c, g)}
+        {ball(72, 5, c, g)}
+        {line("M44 57.5l-3.5-3 M45.8 55.8l-2-3.6 M76 57.5l3.5-3 M74.2 55.8l2-3.6", c, g, 2)}
       </>
     ),
+    shine: [48, 72].map((x) => <g key={x}>{glint(x, 5)}</g>),
   },
 ];
+
+export const EYES: Part<LookCtx>[] = EYE_STYLES.map((e) => ({
+  name: e.name,
+  draw: ({ skin }) => (
+    <>
+      {skin.halo && <g opacity={0.9}>{e.ink(skin.halo, 2.6)}</g>}
+      {e.ink(OUTLINE, 0)}
+      {e.shine}
+    </>
+  ),
+}));
 
 // ---------------------------------------------------------------------------
 // Brows (in the hair color's darker brow tone).
