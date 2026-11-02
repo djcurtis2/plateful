@@ -12,6 +12,8 @@ import type { Ingredient } from "@/lib/recipe";
 import { recipesMissingDietTags, recipesMissingPackSizes } from "@/lib/data";
 import { dietTagsFrom } from "@/lib/diet";
 import { SAMPLES } from "@/lib/samples";
+import { GEAR_BY_ID, starterFor } from "@/lib/avatar";
+import type { Json } from "@/lib/database.types";
 
 type R = { ok: true; message?: string } | { ok: false; message: string };
 
@@ -252,4 +254,50 @@ export async function fillDietTags(): Promise<R> {
   revalidatePath("/r/[slug]", "page");
   const left = (await recipesMissingDietTags()).length;
   return { ok: true, message: `Tagged ${done} of ${todo.length} recipes.${left ? ` ${left} still to do; click again.` : " All done."}` };
+}
+
+function gearDone(message: string): R {
+  for (const p of ["/admin", "/chef", "/account", "/leaderboard", "/cookoff"]) revalidatePath(p);
+  return { ok: true, message };
+}
+
+/** Gives someone a shop item for free (e.g. a make-good). Only shop items: earned and Plus gear unlock on their own. */
+export async function grantGear(userId: string, itemId: string): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  if (!Uuid.safeParse(userId).success) return { ok: false, message: "Bad user id." };
+  const g = GEAR_BY_ID[itemId];
+  if (g?.source.kind !== "shop") return { ok: false, message: "Pick a shop item." };
+  const { data, error } = await admin()
+    .from("user_gear")
+    .upsert({ user_id: userId, item_id: g.id, source: "grant", stripe_session_id: null }, { onConflict: "user_id,item_id", ignoreDuplicates: true })
+    .select("item_id");
+  if (error?.code === "23503") return { ok: false, message: "No profile with that user id." };
+  if (error) return { ok: false, message: error.message };
+  return gearDone(data?.length ? `Granted ${g.name}.` : `They already own ${g.name}.`);
+}
+
+/** Takes an item back (e.g. after a refund in the Stripe dashboard) and unequips it so boards stop showing it. */
+export async function removeGear(userId: string, itemId: string): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  if (!Uuid.safeParse(userId).success) return { ok: false, message: "Bad user id." };
+  const g = GEAR_BY_ID[itemId];
+  if (!g) return { ok: false, message: "Unknown item." };
+  const db = admin();
+  const { data, error } = await db.from("user_gear").delete().eq("user_id", userId).eq("item_id", g.id).select("item_id");
+  if (error) return { ok: false, message: error.message };
+  if (!data?.length) return { ok: false, message: `They don't own ${g.name}.` };
+
+  // Swap it for the slot's starter in the saved avatar, keeping everything else as saved.
+  const { data: profile } = await db.from("profiles").select("avatar").eq("id", userId).maybeSingle();
+  const saved = profile?.avatar;
+  if (saved && typeof saved === "object" && !Array.isArray(saved)) {
+    const equipped = saved.equipped;
+    if (equipped && typeof equipped === "object" && !Array.isArray(equipped) && equipped[g.slot] === g.id) {
+      const avatar = { ...saved, equipped: { ...equipped, [g.slot]: starterFor(g.slot).id } } as Json;
+      const { error: e2 } = await db.from("profiles").update({ avatar }).eq("id", userId);
+      if (e2) return { ok: false, message: `Removed ${g.name}, but couldn't unequip it: ${e2.message}` };
+      return gearDone(`Removed ${g.name} and put the starter back on.`);
+    }
+  }
+  return gearDone(`Removed ${g.name}.`);
 }

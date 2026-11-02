@@ -6,10 +6,11 @@ import { getAttempts, getChallengeById, getMe, isLive, recipesMissingDietTags, r
 import { admin, publicImageUrl } from "@/lib/supabase/admin";
 import { monthlyTop, publicNames } from "@/lib/game-server";
 import { publicName, rankEntries } from "@/lib/game";
-import { fillDietTags, fillPackSizes, importSamples, finalize, recordGiftCard, setChefPick, setHidden, setPrizeStatus, setReferencePhoto } from "./actions";
+import { fillDietTags, fillPackSizes, grantGear, importSamples, finalize, recordGiftCard, removeGear, setChefPick, setHidden, setPrizeStatus, setReferencePhoto } from "./actions";
 import { ReferencePhotoForm } from "@/components/ReferencePhotoForm";
 import { money } from "@/lib/format";
 import { AdminButton } from "@/components/AdminButton";
+import { AdminGearForm } from "@/components/AdminGearForm";
 import { NewChallengeForm } from "@/components/NewChallengeForm";
 import { SAMPLES } from "@/lib/samples";
 import { topSavers } from "@/lib/savings-server";
@@ -217,6 +218,14 @@ export default async function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="card flex flex-col gap-3 p-5">
+        <h2 className="font-display text-2xl font-bold">Gear</h2>
+        <p className="text-sm text-muted">
+          Give someone a shop item, or take one back after refunding them in the Stripe dashboard (it&apos;s unequipped too).
+        </p>
+        <AdminGearForm grant={grantGear} remove={removeGear} />
       </section>
 
       <section className="card flex flex-col gap-3 p-5">

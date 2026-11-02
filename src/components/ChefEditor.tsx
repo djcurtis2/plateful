@@ -7,7 +7,7 @@ import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
 import { CLUBS, MAX_CLUBS } from "@/lib/clubs";
 import {
-  GEAR, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason,
+  BUNDLES, GEAR, GEAR_BY_ID, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable,
   type Avatar, type GearItem, type LookPart, type Rarity, type Slot,
 } from "@/lib/avatar";
 
@@ -38,10 +38,11 @@ type Props = {
   clubs: string[];
   saved: boolean;
   plus: boolean;
+  owned: string[];
   tab: ChefTab;
 };
 
-export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, tab }: Props) {
+export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, owned, tab }: Props) {
   const router = useRouter();
   const [avatar, setAvatar] = useState<Avatar>(initial);
   const [base, setBase] = useState<Avatar>(initial);
@@ -205,11 +206,72 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
       )}
 
       {tab === "shop" && (
-        <section className="card p-6 text-center">
-          <p className="font-display text-xl font-bold">Coming soon</p>
-          <p className="text-sm text-muted">Extra gear and bundles are on the way.</p>
+        <section className="flex flex-col gap-6">
+          <p className="text-sm text-muted">
+            Just for fun: shop gear changes how your chef looks, nothing else. Paid once with Stripe, yours to keep on this account.
+          </p>
+          <div className="card flex flex-col gap-3 p-6">
+            <span className="label">Bundles</span>
+            <ul className="grid gap-2 sm:grid-cols-2">
+              {BUNDLES.map((b) => {
+                const buy = purchasable({ bundle: b.id }, owned);
+                if (!buy) return null; // already own everything in it
+                return (
+                  <li key={b.id} className="flex flex-col gap-2 rounded-2xl border border-saffron p-3">
+                    <span className="flex items-start justify-between gap-2">
+                      <span className="text-sm font-semibold">{b.name}</span>
+                      <span className="tabular font-mono text-sm">{priceLabel(b.cents)}</span>
+                    </span>
+                    <span className="text-xs text-muted">
+                      {b.items.map((id) => GEAR_BY_ID[id]?.name).filter(Boolean).join(", ")}
+                      {buy.items.length < b.items.length && ` (you get the ${buy.items.length} you don't have)`}
+                    </span>
+                    <ShopBuy field="bundle" id={b.id} />
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <div className="card flex flex-col gap-3 p-6">
+            <span className="label">Single items</span>
+            <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {GEAR.filter((g) => g.source.kind === "shop").map((g) => {
+                const have = owned.includes(g.id);
+                return (
+                  <li key={g.id} className={`flex flex-col gap-1 rounded-2xl border p-3 ${RARITY_BORDER[g.rarity]}`}>
+                    <span className="text-sm font-semibold">{g.name}</span>
+                    <span className="text-xs capitalize text-muted">
+                      {SLOT_LABELS[g.slot].replace(/s$/, "")} · {g.rarity}
+                    </span>
+                    {have ? (
+                      <span className="text-xs font-semibold text-basil">Owned</span>
+                    ) : (
+                      <>
+                        <span className="tabular font-mono text-sm">{g.source.kind === "shop" && priceLabel(g.source.cents)}</span>
+                        <ShopBuy field="item" id={g.id} />
+                      </>
+                    )}
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+          <p className="text-xs text-muted">
+            Digital items have no cash value and can&apos;t be transferred. See the{" "}
+            <Link href="/terms" className="underline">terms</Link>.
+          </p>
         </section>
       )}
     </div>
+  );
+}
+
+/** A plain form so checkout works without client JS; the server works out the price. */
+function ShopBuy({ field, id }: { field: "item" | "bundle"; id: string }) {
+  return (
+    <form action="/api/stripe/gear" method="post">
+      <input type="hidden" name={field} value={id} />
+      <button type="submit" className="btn btn-primary btn-sm w-full">Buy</button>
+    </form>
   );
 }

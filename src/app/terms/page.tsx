@@ -11,6 +11,11 @@ export default function TermsPage() {
       <p>Prices shown are estimates of typical US prices and are not offers. Grocery links go to third-party stores whose terms apply.</p>
       <p>You keep rights to photos you upload and give Plateful permission to display them with the recipe and in the cook-off. Don&apos;t upload photos of other people without permission.</p>
       <p>Plus is billed monthly through Stripe and can be cancelled anytime from your account; it stays active until the end of the paid period.</p>
+      <h2 className="font-display text-2xl font-bold">Digital items</h2>
+      <p>
+        Chef gear bought in the shop is a digital item that only changes how your chef looks. It is tied to your Plateful account, has no cash value,
+        can&apos;t be transferred, sold or exchanged, and is paid once through Stripe. Refunds are at our discretion; contact us if something went wrong.
+      </p>
     </main>
   );
 }

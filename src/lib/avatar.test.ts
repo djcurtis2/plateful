@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { LEVELS } from "./game.ts";
 import {
   BUNDLES, GEAR, GEAR_BY_ID, LOOK_OPTIONS, SLOTS, canSave, defaultAvatar, lockReason, newUnlocks, parseAvatar,
-  priceLabel, purchasable, starterFor, unlockedGear, visibleAvatar,
+  gearMetadata, parseGearMetadata, priceLabel, purchasable, starterFor, unlockedGear, visibleAvatar,
 } from "./avatar.ts";
 
 const SHOP_ITEM = "pizza-slice";
@@ -143,4 +143,13 @@ test("canSave returns not-ok for malformed avatars instead of throwing", () => {
   for (const bad of [null, undefined, 5, "x", {}, { look: null }, { look: {}, equipped: 3 }]) {
     assert.equal(canSave(bad as never, free).ok, false);
   }
+});
+
+test("purchase metadata round-trips known shop ids only", () => {
+  assert.deepEqual(parseGearMetadata(gearMetadata([SHOP_ITEM, "nope", PLUS_HAT])), [SHOP_ITEM]);
+  assert.deepEqual(parseGearMetadata(null), []);
+  assert.deepEqual(parseGearMetadata(undefined), []);
+  assert.deepEqual(parseGearMetadata(""), []);
+  assert.deepEqual(parseGearMetadata(" pizza-slice , cat-ears,pizza-slice,constructor"), [SHOP_ITEM, "cat-ears"]);
+  assert.equal(gearMetadata(BUNDLES[1].items), BUNDLES[1].items.join(","));
 });

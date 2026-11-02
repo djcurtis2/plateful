@@ -109,7 +109,7 @@ Cart items link to each store's search today. Instacart's Developer Platform off
 
 ## Before launch
 
-- Have a lawyer review `/terms`, `/privacy`, and the use of restaurant names ("-style" naming, no logos or menu photos).
+- Have a lawyer review `/terms`, `/privacy`, the digital items terms (shop gear), and the use of restaurant names ("-style" naming, no logos or menu photos).
 - Set a custom SMTP sender in Supabase (**Authentication → Emails**). The built-in sender is rate-limited and meant for testing.
 - Add a moderation path for cook-off photos (the `hidden` column is there; an admin page is not).
 - Label menu prices as typical estimates: they come from the model and vary by city.

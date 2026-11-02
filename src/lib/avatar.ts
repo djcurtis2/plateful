@@ -222,3 +222,19 @@ export function purchasable(
   const items = b.items.filter((id) => !owned.includes(id));
   return items.length ? { items, cents: b.cents, name: b.name } : null;
 }
+
+/** Item ids for Stripe Checkout metadata ("id1,id2"). Stripe caps a metadata value at 500 characters. */
+export function gearMetadata(items: string[]): string {
+  return items.join(",");
+}
+
+/** Reads purchase metadata back. Only known shop items survive, each once; never throws. */
+export function parseGearMetadata(s: string | null | undefined): string[] {
+  if (typeof s !== "string") return [];
+  const out: string[] = [];
+  for (const raw of s.split(",")) {
+    const id = raw.trim();
+    if (GEAR_BY_ID[id]?.source.kind === "shop" && !out.includes(id)) out.push(id);
+  }
+  return out;
+}

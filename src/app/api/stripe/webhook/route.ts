@@ -2,11 +2,12 @@ import { NextResponse, type NextRequest } from "next/server";
 import type Stripe from "stripe";
 import { stripe } from "@/lib/stripe";
 import { syncSubscription } from "@/lib/billing";
+import { recordGearPurchase } from "@/lib/gear-billing";
 import { requireEnv } from "@/lib/env";
 
 export const runtime = "nodejs";
 
-/** Keeps profiles.plan in sync with Stripe. Configure this URL in Stripe > Developers > Webhooks. */
+/** Keeps profiles.plan in sync with Stripe and delivers shop gear. Configure this URL in Stripe > Developers > Webhooks. */
 export async function POST(req: NextRequest) {
   const sig = req.headers.get("stripe-signature");
   if (!sig) return NextResponse.json({ error: "missing signature" }, { status: 400 });
@@ -25,6 +26,8 @@ export async function POST(req: NextRequest) {
         if (s.mode === "subscription" && s.subscription) {
           const sub = await stripe().subscriptions.retrieve(typeof s.subscription === "string" ? s.subscription : s.subscription.id);
           await syncSubscription(sub, s.client_reference_id);
+        } else if (s.mode === "payment") {
+          await recordGearPurchase(s); // shop gear; skips unpaid sessions, safe on retries
         }
         break;
       }
