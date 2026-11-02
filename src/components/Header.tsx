@@ -3,7 +3,9 @@ import { mySavings } from "@/lib/savings-server";
 import { cookies } from "next/headers";
 import { getMe } from "@/lib/data";
 import { headerStats } from "@/lib/game-server";
-import { chefCards, type ChefCard } from "@/lib/avatar-server";
+import { chefCards, myChef, type ChefCard } from "@/lib/avatar-server";
+import { GEAR_BY_ID, newUnlocks, type Avatar, type GearItem } from "@/lib/avatar";
+import { GearUnlock } from "@/components/GearUnlock";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { publicName } from "@/lib/game";
 import { SEEN_COOKIE, WELCOME_COOKIE } from "@/lib/cookies";
@@ -32,9 +34,15 @@ export async function Header() {
   let stats: Awaited<ReturnType<typeof headerStats>> | null = null;
   let chef: ChefCard | null = null;
   let toast: React.ComponentProps<typeof StatusToast> | null = null;
+  let gear: { item: GearItem; avatar: Avatar } | null = null;
   if (me) {
     try {
-      const [st, sv, cards] = await Promise.all([headerStats(me.user.id), mySavings(me.user.id), chefCards([me.user.id])]);
+      const [st, sv, cards, mine] = await Promise.all([
+        headerStats(me.user.id),
+        mySavings(me.user.id),
+        chefCards([me.user.id]),
+        myChef(me.user.id).catch(() => null),
+      ]);
       stats = st;
       chef = cards[me.user.id] ?? null;
       const jar = await cookies();
@@ -62,6 +70,10 @@ export async function Header() {
         seenValue: `${stats.points}|${stats.badges.length}|${stats.level.index}`,
         hasBaseline: !!seen,
       };
+      // Gear can wait a load if the level/badge/welcome toast is showing.
+      const busyToast = toast.levelUp || toast.newBadges.length > 0 || toast.welcome;
+      const first = mine && !busyToast ? newUnlocks(mine.unlocked, mine.seen)[0] : undefined;
+      if (mine && first && GEAR_BY_ID[first]) gear = { item: GEAR_BY_ID[first], avatar: mine.avatar };
     } catch (e) {
       console.error("header stats failed", e);
     }
@@ -136,6 +148,7 @@ export async function Header() {
         </div>
       </header>
       {toast && <StatusToast {...toast} />}
+      {gear && <GearUnlock key={gear.item.id} item={gear.item} avatar={gear.avatar} uid={me!.user.id.slice(0, 8)} />}
     </>
   );
 }
