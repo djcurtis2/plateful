@@ -247,6 +247,7 @@ export type Database = {
       random_referral_code: { Args: Record<string, never>; Returns: string };
       savings_total: { Args: Record<string, never>; Returns: Json };
       top_savers: { Args: { p_since: string; p_limit: number; p_until?: string | null }; Returns: { user_id: string; saved: number; meals: number }[] };
+      club_popular: { Args: { club: string; max_rows: number }; Returns: { recipe_id: string; members: number }[] };
       my_savings: { Args: { p_user: string }; Returns: Json };
     };
     Enums: { [_ in never]: never };

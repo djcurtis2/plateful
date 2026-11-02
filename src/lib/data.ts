@@ -272,6 +272,31 @@ export async function getRecipesByIds(ids: string[]): Promise<Recipe[]> {
   return ids.map((id) => byId.get(id)).filter((r): r is Recipe => !!r);
 }
 
+/** Public recipes a club's members cook and save most. Counts only. Empty list if the SQL function isn't installed yet. */
+export async function clubPopular(clubId: string, limit = 12): Promise<{ recipe: Recipe; members: number }[]> {
+  const { data, error } = await admin().rpc("club_popular", { club: clubId, max_rows: limit });
+  if (error) {
+    console.error("club_popular failed", error.message);
+    return [];
+  }
+  const rows = (data ?? []) as { recipe_id: string; members: number }[];
+  const recipes = await getRecipesByIds(rows.map((r) => r.recipe_id));
+  const byId = new Map(recipes.map((r) => [r.id, r]));
+  return rows.flatMap((r) => {
+    const recipe = byId.get(r.recipe_id);
+    return recipe ? [{ recipe, members: r.members }] : [];
+  });
+}
+
+/** Recent cook-off entries from a club's members (two queries: members, then their attempts). */
+export async function clubEntries(clubId: string, limit = 12): Promise<Attempt[]> {
+  const { data: members } = await admin().from("profiles").select("id").contains("clubs", [clubId]).limit(500);
+  const ids = (members ?? []).map((m) => m.id);
+  if (!ids.length) return [];
+  const { data } = await admin().from("attempts").select(ATTEMPT_COLUMNS).eq("hidden", false).in("user_id", ids).order("created_at", { ascending: false }).limit(limit);
+  return withNames((data ?? []) as AttemptRow[]);
+}
+
 export type MealPlanRow = { id: string; settings: import("@/lib/planner").PlanSettings; recipe_ids: string[]; swapped: string[]; created_at: string };
 
 /** This person's most recent meal plan. */

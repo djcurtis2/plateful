@@ -26,8 +26,8 @@ Run typecheck + tests before every commit. In PowerShell, quote comma lists (e.g
 
 ## Database
 
-Migrations in `supabase/migrations/0001…0010` are applied (0011 is coming) to the one Supabase project (used by both local and live).
-New schema changes: add the next numbered file (`0010_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
+Migrations in `supabase/migrations/0001…0010` are applied to the one Supabase project (used by both local and live); `0011_club_popular.sql` is pending until Dan runs it in the SQL editor.
+New schema changes: add the next numbered file (`0012_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
 `supabase/demo_*.sql` add demo data; `demo_cleanup.sql` removes it (slugs ending `-demo`, `@demo.plateful.test` users, `samples/` photos).
 
 ## Where things live
