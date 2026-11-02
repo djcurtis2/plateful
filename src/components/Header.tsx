@@ -3,8 +3,8 @@ import { mySavings } from "@/lib/savings-server";
 import { cookies } from "next/headers";
 import { getMe } from "@/lib/data";
 import { headerStats } from "@/lib/game-server";
-import { chefCards, myChef, type ChefCard } from "@/lib/avatar-server";
-import { GEAR_BY_ID, newUnlocks, type Avatar, type GearItem } from "@/lib/avatar";
+import { chefFrom, ownedGear, type ChefCard } from "@/lib/avatar-server";
+import { GEAR_BY_ID, newUnlocks, visibleAvatar, type Avatar, type GearItem } from "@/lib/avatar";
 import { GearUnlock } from "@/components/GearUnlock";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { publicName } from "@/lib/game";
@@ -37,14 +37,15 @@ export async function Header() {
   let gear: { item: GearItem; avatar: Avatar } | null = null;
   if (me) {
     try {
-      const [st, sv, cards, mine] = await Promise.all([
+      const [st, sv, owned] = await Promise.all([
         headerStats(me.user.id),
         mySavings(me.user.id),
-        chefCards([me.user.id]),
-        myChef(me.user.id).catch(() => null),
+        ownedGear(me.user.id).catch(() => [] as string[]),
       ]);
+      // Built from the profile getMe already read plus points/badges from headerStats: no repeat queries.
+      const mine = chefFrom(me.user.id, me.profile, { points: st.points, badges: st.badges, owned });
       stats = st;
-      chef = cards[me.user.id] ?? null;
+      chef = { name: me.profile?.public_name ?? null, avatar: visibleAvatar(mine.avatar, mine.ctx.plus), clubs: mine.clubs };
       const jar = await cookies();
       const seen = jar.get(SEEN_COOKIE)?.value?.split("|").map(Number);
       const welcome = jar.get(WELCOME_COOKIE)?.value === "1";
@@ -72,8 +73,8 @@ export async function Header() {
       };
       // Gear can wait a load if the level/badge/welcome toast is showing.
       const busyToast = toast.levelUp || toast.newBadges.length > 0 || toast.welcome;
-      const first = mine && !busyToast ? newUnlocks(mine.unlocked, mine.seen)[0] : undefined;
-      if (mine && first && GEAR_BY_ID[first]) gear = { item: GEAR_BY_ID[first], avatar: mine.avatar };
+      const first = !busyToast ? newUnlocks(mine.unlocked, mine.seen)[0] : undefined;
+      if (first && GEAR_BY_ID[first]) gear = { item: GEAR_BY_ID[first], avatar: mine.avatar };
     } catch (e) {
       console.error("header stats failed", e);
     }

@@ -46,6 +46,32 @@ export async function gearContext(userId: string, plus: boolean): Promise<GearCo
   };
 }
 
+type ProfileChefFields = Parameters<typeof hasPlus>[0] & { avatar?: unknown; clubs?: unknown; gear_seen?: string[] | null };
+
+/** What a person owns outside points and badges (shop buys, grants). */
+export async function ownedGear(userId: string): Promise<string[]> {
+  const { data } = await admin().from("user_gear").select("item_id").eq("user_id", userId);
+  return (data ?? []).map((g) => g.item_id);
+}
+
+/** Build the chef data from a profile row and points/badges/owned the caller already has. No queries. */
+export function chefFrom(
+  userId: string,
+  profile: ProfileChefFields | null | undefined,
+  have: { points: number; badges: string[]; owned: string[] },
+) {
+  const plus = hasPlus(profile);
+  const ctx: GearContext = { points: have.points, badges: [...new Set(have.badges)] as GearContext["badges"], plus, owned: have.owned };
+  return {
+    avatar: parseAvatar(profile?.avatar ?? null, userId),
+    saved: profile?.avatar != null,
+    clubs: cleanClubs(profile?.clubs),
+    seen: profile?.gear_seen ?? [],
+    ctx,
+    unlocked: unlockedGear(ctx),
+  };
+}
+
 /** The signed-in person's own avatar editor data. */
 export async function myChef(userId: string) {
   const { data } = await admin()
@@ -53,14 +79,6 @@ export async function myChef(userId: string) {
     .select("avatar, clubs, gear_seen, plan, subscription_status, bonus_until")
     .eq("id", userId)
     .maybeSingle();
-  const plus = hasPlus(data);
-  const ctx = await gearContext(userId, plus);
-  return {
-    avatar: parseAvatar(data?.avatar ?? null, userId),
-    saved: data?.avatar != null,
-    clubs: cleanClubs(data?.clubs),
-    seen: data?.gear_seen ?? [],
-    ctx,
-    unlocked: unlockedGear(ctx),
-  };
+  const ctx = await gearContext(userId, hasPlus(data));
+  return chefFrom(userId, data, ctx);
 }

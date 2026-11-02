@@ -6,10 +6,13 @@ import { ChefAvatar } from "@/components/ChefAvatar";
 import { saveChef, markGearSeen } from "@/app/chef/actions";
 import type { Avatar, GearItem } from "@/lib/avatar";
 
+// Once one celebration has closed, no other mounts until a real page load (module state resets on reload).
+let shownThisLoad = false;
+
 /** One-time "you unlocked something" moment: your chef wearing the new gear, Equip it or Later. */
 export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avatar; uid: string }) {
   const router = useRouter();
-  const [open, setOpen] = useState(true);
+  const [open, setOpen] = useState(() => !shownThisLoad);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const equipRef = useRef<HTMLButtonElement>(null);
@@ -17,6 +20,7 @@ export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avat
   const wearing: Avatar = { ...avatar, equipped: { ...avatar.equipped, [item.slot]: item.id } };
 
   useEffect(() => {
+    if (shownThisLoad) return;
     equipRef.current?.focus();
     celebrate({ big: true, origin: { x: window.innerWidth / 2, y: window.innerHeight * 0.4 } });
   }, []);
@@ -28,6 +32,7 @@ export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avat
     } catch {
       // Not marking it seen just means it shows again next load.
     }
+    shownThisLoad = true;
     setOpen(false);
     router.refresh();
   }
