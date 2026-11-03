@@ -20,7 +20,7 @@ export function Logo() {
         aria-hidden
         className="inline-block size-5 rounded-full bg-saffron shadow-[inset_0_0_0_5px_var(--basil)]"
       />
-      Plateful
+      Dupe Kitchen
     </span>
   );
 }
@@ -85,7 +85,7 @@ export async function Header() {
     <>
       <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-          <Link href="/" aria-label="Plateful home">
+          <Link href="/" aria-label="Dupe Kitchen home">
             <Logo />
           </Link>
           <nav className="flex items-center gap-1 text-sm font-medium sm:gap-3">

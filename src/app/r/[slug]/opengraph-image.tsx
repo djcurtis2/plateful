@@ -5,7 +5,7 @@ import { money } from "@/lib/format";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Plateful copycat recipe";
+export const alt = "Dupe Kitchen copycat recipe";
 
 /** The preview card shown when a recipe link is pasted into a chat or social app. */
 export default async function OgImage({ params }: { params: Promise<{ slug: string }> }) {
@@ -24,7 +24,7 @@ export default async function OgImage({ params }: { params: Promise<{ slug: stri
             <div style={{ color: "#F2B630", fontSize: 26, letterSpacing: 2 }}>
               {`COPYCAT${r?.restaurant ? " · " + r.restaurant.toUpperCase() : ""}`}
             </div>
-            <div style={{ fontSize: 64, fontWeight: 700, lineHeight: 1.05 }}>{r?.dish ?? "Plateful"}</div>
+            <div style={{ fontSize: 64, fontWeight: 700, lineHeight: 1.05 }}>{r?.dish ?? "Dupe Kitchen"}</div>
           </div>
           {s ? (
             <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
@@ -39,7 +39,7 @@ export default async function OgImage({ params }: { params: Promise<{ slug: stri
           ) : (
             <div style={{ fontSize: 32 }}>Snap a dish. Make it at home.</div>
           )}
-          <div style={{ fontSize: 34, fontWeight: 700 }}>Plateful</div>
+          <div style={{ fontSize: 34, fontWeight: 700 }}>Dupe Kitchen</div>
         </div>
       </div>
     ),

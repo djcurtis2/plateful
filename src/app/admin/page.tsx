@@ -243,7 +243,7 @@ export default async function AdminPage() {
         </p>
         {missingDiets > 0 && <AdminButton action={fillDietTags} label="Tag diets (10 at a time)" className="btn btn-primary btn-sm w-fit" />}
         <p className="text-sm text-muted">
-          Sample recipes: {SAMPLES.length} copycats and Plateful originals with free Unsplash photos, so the site doesn&apos;t look empty. Remove them with
+          Sample recipes: {SAMPLES.length} copycats and Dupe Kitchen originals with free Unsplash photos, so the site doesn&apos;t look empty. Remove them with
           supabase/demo_cleanup.sql.
         </p>
         <AdminButton action={importSamples} label="Add sample recipes" className="btn btn-ghost btn-sm w-fit" />

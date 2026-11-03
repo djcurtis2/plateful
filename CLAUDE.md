@@ -1,7 +1,8 @@
-# Plateful: notes for Claude
+# Dupe Kitchen (formerly Plateful): notes for Claude
 
 Snap a restaurant dish → copycat recipe, cost per plate vs. the menu, grocery list, and "restaurant vs. mine" sharing.
 Owner: Dan. Live at https://plateful-amber.vercel.app (Vercel, deploys on every push to `main`).
+The app was renamed from Plateful to Dupe Kitchen (2026-11-02). Internal names (the repo, the Vercel project, the Supabase project, the `plateful` IP salt, the `@demo.plateful.test` demo users, old migrations) still say plateful on purpose; user-facing text says Dupe Kitchen.
 Dan likes explanations with a real-life analogy, short summaries, and no jargon dumps.
 
 ## Stack

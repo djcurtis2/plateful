@@ -37,7 +37,7 @@ export default async function PlanPage({ searchParams }: Search) {
         <Intro />
         <section className="card flex flex-col gap-4 border-saffron p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="label">Plateful Plus</span>
+            <span className="label">Dupe Kitchen Plus</span>
             <p className="font-display text-2xl font-bold">Plan a week of dinners that share groceries</p>
             <p className="text-muted">One shopping list, nothing wasted, and new recipes for whatever&apos;s left. Here&apos;s an example week.</p>
           </div>
@@ -141,7 +141,7 @@ export default async function PlanPage({ searchParams }: Search) {
             Only {recipes.length} {recipes.length === 1 ? "dinner fits" : "dinners fit"} your choices
           </p>
           <p className="text-sm text-muted">
-            Plateful can write {missing === 1 ? "a new dinner" : `${missing} new dinners`} built on this week&apos;s leftovers. Each one takes about 15 seconds.
+            Dupe Kitchen can write {missing === 1 ? "a new dinner" : `${missing} new dinners`} built on this week&apos;s leftovers. Each one takes about 15 seconds.
           </p>
           <AdminButton action={fillPlanGap.bind(null, plan.id)} label="Add a new recipe" className="btn btn-primary btn-sm w-fit" />
         </section>

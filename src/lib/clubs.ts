@@ -1,4 +1,4 @@
-// Chef clubs: who people cook as or for. Run by Plateful, not created by users, so there are no
+// Chef clubs: who people cook as or for. Run by Dupe Kitchen, not created by users, so there are no
 // names to moderate. Pure functions, shared by server and client; covered by clubs.test.ts.
 // No clubs aimed at children (COPPA); family clubs are framed for parents.
 

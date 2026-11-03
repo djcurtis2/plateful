@@ -87,7 +87,7 @@ export type Recipe = {
   /** Set when this is a "Make it my way" version of another recipe. */
   variant_of: string | null;
   variant_kind: string | null;
-  /** "snap" = from a photo; "leftovers" = a Plateful original written to use up leftovers. */
+  /** "snap" = from a photo; "leftovers" = a Dupe Kitchen original written to use up leftovers. */
   source: "snap" | "leftovers";
   style: string | null;
   servings: number;
@@ -229,10 +229,10 @@ export function slugify(dish: string, restaurant?: string | null) {
   return base || "dish";
 }
 
-/** Label above a recipe's name: "Chipotle copycat" or "Grandma-style · Plateful original". */
+/** Label above a recipe's name: "Chipotle copycat" or "Grandma-style · Dupe Kitchen original". */
 export function recipeLabel(r: Pick<Recipe, "restaurant" | "style" | "source">): string | null {
   if (r.restaurant) return `${r.restaurant} copycat`;
-  if (r.style || r.source === "leftovers") return `${r.style ? `${r.style} · ` : ""}Plateful original`;
+  if (r.style || r.source === "leftovers") return `${r.style ? `${r.style} · ` : ""}Dupe Kitchen original`;
   return null;
 }
 
@@ -240,6 +240,6 @@ export const LEFTOVER_STYLES = {
   weeknight: { label: "Weeknight easy", style: "Weeknight", brief: "a fast weeknight dinner: 30 minutes or less, one pan or pot where possible, minimal prep" },
   grandma: { label: "Grandma's kitchen", style: "Grandma-style", brief: "cozy, from-scratch home cooking in an old-fashioned family style, the kind of dish passed down on a recipe card" },
   chef: { label: "Chef-style", style: "Chef-style", brief: "a restaurant-quality plate with one technique or finishing touch that makes it special, still doable for a home cook" },
-  surprise: { label: "Surprise me", style: "Plateful kitchen", brief: "any cuisine or style that makes the best use of these leftovers" },
+  surprise: { label: "Surprise me", style: "House style", brief: "any cuisine or style that makes the best use of these leftovers" },
 } as const;
 export type LeftoverStyle = keyof typeof LEFTOVER_STYLES;

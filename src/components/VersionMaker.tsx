@@ -44,8 +44,8 @@ export function VersionMaker({
           Want a different version?
         </h2>
         <p className="text-sm text-muted">
-          Plateful rewrites the recipe with real swaps and keeps it close to the original. Versions other cooks already made open instantly.
-          {signedIn && !plus && triesLeft > 0 ? " Try one free; it's part of Plateful Plus." : ""}
+          Dupe Kitchen rewrites the recipe with real swaps and keeps it close to the original. Versions other cooks already made open instantly.
+          {signedIn && !plus && triesLeft > 0 ? " Try one free; it's part of Dupe Kitchen Plus." : ""}
         </p>
       </div>
       <div className="flex flex-wrap gap-2">

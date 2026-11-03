@@ -10,7 +10,7 @@ import { shareLabel } from "@/lib/leftovers";
 import { logCook } from "@/lib/savings-server";
 
 type R = { ok: true; message?: string } | { ok: false; message: string };
-const PLUS_ONLY: R = { ok: false, message: "Plan my week is part of Plateful Plus." };
+const PLUS_ONLY: R = { ok: false, message: "Plan my week is part of Dupe Kitchen Plus." };
 
 const Settings = z.object({
   dinners: z.coerce.number().int().min(3).max(7),
@@ -97,7 +97,7 @@ export async function removePlanMeal(planId: string, index: number): Promise<R> 
 }
 
 /**
- * Not enough recipes fit? Claude writes new Plateful originals built on this week's leftovers,
+ * Not enough recipes fit? Claude writes new Dupe Kitchen originals built on this week's leftovers,
  * one per click (each takes ~15 seconds), until the plan is full.
  */
 export async function fillPlanGap(planId: string): Promise<R> {

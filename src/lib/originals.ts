@@ -6,7 +6,7 @@ import { LEFTOVER_STYLES, slugify, type LeftoverStyle } from "@/lib/recipe";
 import { VERSIONS, dietTagsFrom, type VersionKind } from "@/lib/diet";
 import type { Recipe } from "@/lib/recipe";
 
-/** New Plateful originals: Plus gets 15 a day; free accounts get 1 to try the feature. */
+/** New Dupe Kitchen originals: Plus gets 15 a day; free accounts get 1 to try the feature. */
 export const ORIGINALS_LIMIT = { plusPerDay: 15, freeLifetime: 1 };
 
 /** How many more originals this person can make right now. */
@@ -36,7 +36,7 @@ export async function createOriginal(input: {
       ok: false,
       message: input.plus
         ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Plateful Plus makes new recipes from your leftovers every day.",
+        : "You've used your free try. Dupe Kitchen Plus makes new recipes from your leftovers every day.",
     };
   }
   const pick = LEFTOVER_STYLES[input.style];
@@ -110,7 +110,7 @@ export async function createVersion(input: { userId: string; plus: boolean; root
       ok: false,
       message: input.plus
         ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Plateful Plus makes any recipe your way, every day.",
+        : "You've used your free try. Dupe Kitchen Plus makes any recipe your way, every day.",
     };
   }
   const v = VERSIONS[input.kind];

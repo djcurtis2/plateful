@@ -7,7 +7,7 @@ export default function GlobalError({ reset }: { error: Error & { digest?: strin
       <body style={{ fontFamily: "system-ui, sans-serif", display: "grid", placeItems: "center", minHeight: "100vh", margin: 0, textAlign: "center" }}>
         <div>
           <h1>Something burned</h1>
-          <p>Plateful hit a snag. Try again in a moment.</p>
+          <p>Dupe Kitchen hit a snag. Try again in a moment.</p>
           <button type="button" onClick={reset} style={{ padding: "8px 16px", cursor: "pointer" }}>
             Try again
           </button>

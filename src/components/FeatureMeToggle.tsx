@@ -2,7 +2,7 @@
 import { useState, useTransition } from "react";
 import { setFeatureMe } from "@/app/actions";
 
-/** Opt in to being named in Plateful stories and ads. Off by default. */
+/** Opt in to being named in Dupe Kitchen stories and ads. Off by default. */
 export function FeatureMeToggle({ initial }: { initial: boolean }) {
   const [on, setOn] = useState(initial);
   const [pending, start] = useTransition();
@@ -24,7 +24,7 @@ export function FeatureMeToggle({ initial }: { initial: boolean }) {
       />
       <span>
         <b>Feature me</b>
-        <span className="block text-muted">Plateful may share my public name and savings in stories and ads, like &ldquo;Dan has saved $1,240 cooking at home.&rdquo; Off unless you tick it.</span>
+        <span className="block text-muted">Dupe Kitchen may share my public name and savings in stories and ads, like &ldquo;Dan has saved $1,240 cooking at home.&rdquo; Off unless you tick it.</span>
       </span>
     </label>
   );

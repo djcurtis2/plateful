@@ -31,8 +31,8 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const title = `Vote for ${publicName(d.entry.name)}'s ${d.recipe.dish}`;
   const s = savings(d.recipe);
   const description = s
-    ? `Made at home for ${money(d.recipe.plate_cost)} a plate instead of ${money(menuPlate(d.recipe))} at ${d.recipe.restaurant}. Vote in the Plateful cook-off.`
-    : "Vote in the Plateful cook-off.";
+    ? `Made at home for ${money(d.recipe.plate_cost)} a plate instead of ${money(menuPlate(d.recipe))} at ${d.recipe.restaurant}. Vote in the Dupe Kitchen cook-off.`
+    : "Vote in the Dupe Kitchen cook-off.";
   return { title, description, openGraph: { title, description, images: [d.entry.image_url] } };
 }
 
@@ -112,7 +112,7 @@ export default async function EntryPage({ params }: Params) {
           <EntryChips e={entry} size="md" showSwaps />
           {entry.cost_source === "receipt" && (
             <p className="text-xs text-muted">
-              Price worked out by Plateful from {entry.receipt_store ? `a ${entry.receipt_store} receipt` : "a grocery receipt"}. The receipt itself isn&apos;t kept.
+              Price worked out by Dupe Kitchen from {entry.receipt_store ? `a ${entry.receipt_store} receipt` : "a grocery receipt"}. The receipt itself isn&apos;t kept.
             </p>
           )}
           {entry.notes && (

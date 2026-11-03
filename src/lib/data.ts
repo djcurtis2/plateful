@@ -26,7 +26,7 @@ export function toRecipe(row: RecipeRow): Recipe {
     cuisine: row.cuisine,
     meals: (row.meals ?? []) as Recipe["meals"],
     source: row.source === "leftovers" ? "leftovers" : "snap",
-    style: row.style ?? null,
+    style: row.style === "Plateful kitchen" ? "House style" : (row.style ?? null), // old name for "Surprise me" recipes
     servings: row.servings,
     minutes: row.minutes,
     difficulty: row.difficulty,
@@ -140,7 +140,7 @@ export type Attempt = {
   caption: string | null;
   votes: number;
   created_at: string;
-  name: string | null; // public name of the cook; null = "A Plateful cook"
+  name: string | null; // public name of the cook; null = "A Dupe Kitchen cook"
   chef: ChefCard;
   cost_per_plate: number | null;
   cost_source: "self" | "receipt" | null;
@@ -259,7 +259,7 @@ export async function getUpcomingChallenge(): Promise<Challenge | null> {
   return data ? toChallenge(data) : null;
 }
 
-/** Recipes saved before Plateful asked for package sizes (admin backfill). */
+/** Recipes saved before Dupe Kitchen asked for package sizes (admin backfill). */
 export async function recipesMissingPackSizes() {
   const { data } = await admin().from("recipes").select("id, ingredients").order("created_at", { ascending: false }).limit(1000);
   return ((data ?? []) as { id: string; ingredients: unknown }[]).filter((r) => (r.ingredients as Ingredient[]).some((g) => g.pack_qty === undefined));

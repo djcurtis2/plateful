@@ -105,7 +105,7 @@ export function standing<T extends { id: string; votes: number; created_at: stri
 
 export function publicName(name: string | null | undefined): string {
   const n = name?.trim();
-  return n ? n : "A Plateful cook";
+  return n ? n : "A Dupe Kitchen cook";
 }
 
 export function validPublicName(name: string): string | null {

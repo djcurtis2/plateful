@@ -247,7 +247,7 @@ export async function finalizeChallenge(challengeId: string): Promise<FinalizeRe
       { user_id: entry.user_id, kind: "plus_months", reason, challenge_id: challengeId, detail: months, status: "fulfilled", fulfilled_at: new Date().toISOString() },
     ];
     if (reason !== "thriftiest") {
-      rows.push({ user_id: entry.user_id, kind: "social_feature", reason, challenge_id: challengeId, detail: "Feature on homepage and Plateful socials", status: "pending" });
+      rows.push({ user_id: entry.user_id, kind: "social_feature", reason, challenge_id: challengeId, detail: "Feature on homepage and Dupe Kitchen socials", status: "pending" });
     }
     const { error } = await db.from("prize_awards").insert(rows);
     if (!error) await grantPlusMonths(entry.user_id, prize.plusMonths);

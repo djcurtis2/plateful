@@ -31,7 +31,7 @@ export default async function Home() {
             Snap the restaurant plate. <span className="text-basil">Make it for less.</span>
           </h1>
           <p className="max-w-[58ch] text-lg text-muted">
-            Upload a photo of a dish you ate out. Plateful identifies it, writes a copycat recipe for your table, shows what you
+            Upload a photo of a dish you ate out. Dupe Kitchen identifies it, writes a copycat recipe for your table, shows what you
             save per plate, and builds the grocery list. Then post your version next to the original.
           </p>
           <ol className="grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
@@ -49,7 +49,7 @@ export default async function Home() {
           </ol>
           {community.saved >= 1 && (
             <p className="w-fit rounded-2xl border border-saffron bg-saffron/10 px-4 py-3">
-              Plateful cooks have saved{" "}
+              Dupe Kitchen cooks have saved{" "}
               <b className="tabular font-mono text-lg text-basil">${Math.round(community.saved).toLocaleString("en-US")}</b> cooking{" "}
               {community.meals.toLocaleString("en-US")} {community.meals === 1 ? "meal" : "meals"} at home instead of eating out.
             </p>
@@ -108,7 +108,7 @@ export default async function Home() {
         <section className="flex flex-col gap-5">
           <div className="flex items-end justify-between gap-4">
             <h2 className="font-display text-3xl font-bold tracking-tight">Fresh copycats</h2>
-            <span className="text-sm text-muted">Made by Plateful cooks</span>
+            <span className="text-sm text-muted">Made by Dupe Kitchen cooks</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {recent.map((r) => (

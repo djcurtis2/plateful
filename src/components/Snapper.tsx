@@ -55,7 +55,7 @@ export function Snapper({ signedIn }: { signedIn: boolean }) {
       }
       router.push(`/r/${json.slug}`);
     } catch {
-      setPhase({ kind: "error", message: "Couldn't reach Plateful. Check your connection and try again." });
+      setPhase({ kind: "error", message: "Couldn't reach Dupe Kitchen. Check your connection and try again." });
     } finally {
       URL.revokeObjectURL(preview);
       if (input.current) input.current.value = "";
