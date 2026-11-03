@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { celebrate } from "@/lib/celebrate";
 import { ChefAvatar } from "@/components/ChefAvatar";
@@ -9,8 +10,10 @@ import type { Avatar, GearItem } from "@/lib/avatar";
 // Once one celebration has closed, no other mounts until a real page load (module state resets on reload).
 let shownThisLoad = false;
 
-/** One-time "you unlocked something" moment: your chef wearing the new gear, Equip it or Later. */
-export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avatar; uid: string }) {
+/** One-time "you unlocked something" moment: your chef wearing the first new item, Equip it or Later. Closing marks every listed item seen. */
+export function GearUnlock({ items, avatar, uid }: { items: GearItem[]; avatar: Avatar; uid: string }) {
+  const item = items[0];
+  const more = items.length - 1;
   const router = useRouter();
   const [open, setOpen] = useState(() => !shownThisLoad);
   const [busy, setBusy] = useState(false);
@@ -28,7 +31,7 @@ export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avat
   async function close() {
     setBusy(true);
     try {
-      await markGearSeen([item.id]);
+      await markGearSeen(items.map((i) => i.id));
     } catch {
       // Not marking it seen just means it shows again next load.
     }
@@ -74,7 +77,9 @@ export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avat
         aria-labelledby="gear-unlock-title"
         className="w-full max-w-sm rounded-2xl border border-line bg-surface p-6 text-center shadow-xl"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-muted">New gear unlocked</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-muted">
+          {more ? `${items.length} new gear items unlocked` : "New gear unlocked"}
+        </p>
         <div className="mx-auto mt-3 flex justify-center">
           <ChefAvatar avatar={wearing} size={160} uid={`gear-unlock-${uid}`} title={`Your chef wearing ${item.name}`} />
         </div>
@@ -84,6 +89,14 @@ export function GearUnlock({ item, avatar, uid }: { item: GearItem; avatar: Avat
         <p className="text-sm capitalize text-muted">
           {item.rarity} {item.slot}
         </p>
+        {more > 0 && (
+          <p className="mt-2 text-sm">
+            Plus {more} more:{" "}
+            <Link href="/chef?tab=wardrobe" className="font-semibold text-basil underline" onClick={() => void close()}>
+              see them in your Wardrobe
+            </Link>
+          </p>
+        )}
         {error && (
           <p role="alert" className="mt-3 text-sm text-red-700">
             {error}

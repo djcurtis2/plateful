@@ -34,7 +34,7 @@ export async function Header() {
   let stats: Awaited<ReturnType<typeof headerStats>> | null = null;
   let chef: ChefCard | null = null;
   let toast: React.ComponentProps<typeof StatusToast> | null = null;
-  let gear: { item: GearItem; avatar: Avatar } | null = null;
+  let gear: { items: GearItem[]; avatar: Avatar } | null = null;
   if (me) {
     try {
       const [st, sv, owned] = await Promise.all([
@@ -73,8 +73,9 @@ export async function Header() {
       };
       // Gear can wait a load if the level/badge/welcome toast is showing.
       const busyToast = toast.levelUp || toast.newBadges.length > 0 || toast.welcome;
-      const first = !busyToast ? newUnlocks(mine.unlocked, mine.seen)[0] : undefined;
-      if (first && GEAR_BY_ID[first]) gear = { item: GEAR_BY_ID[first], avatar: mine.avatar };
+      // All unseen gear shows in one celebration, so a backlog doesn't drip out one item per page load.
+      const fresh = !busyToast ? newUnlocks(mine.unlocked, mine.seen).map((id) => GEAR_BY_ID[id]).filter(Boolean) : [];
+      if (fresh.length) gear = { items: fresh, avatar: mine.avatar };
     } catch (e) {
       console.error("header stats failed", e);
     }
@@ -157,7 +158,7 @@ export async function Header() {
         </div>
       </header>
       {toast && <StatusToast {...toast} />}
-      {gear && <GearUnlock key={gear.item.id} item={gear.item} avatar={gear.avatar} uid={me!.user.id.slice(0, 8)} />}
+      {gear && <GearUnlock key={gear.items[0].id} items={gear.items} avatar={gear.avatar} uid={me!.user.id.slice(0, 8)} />}
     </>
   );
 }
