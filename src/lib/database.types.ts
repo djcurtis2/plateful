@@ -225,7 +225,7 @@ export type Database = {
         "referrer_id" | "kind"
       >;
       waitlist: Table<
-        { id: number; email: string; referred_by_code: string | null; source: string | null; created_at: string },
+        { id: number; email: string; referred_by_code: string | null; source: string | null; ip_hash: string | null; created_at: string },
         "email"
       >;
       scans: Table<

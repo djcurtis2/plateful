@@ -12,3 +12,6 @@ export function intEnv(name: string, fallback: number): number {
   const n = Number.parseInt(process.env[name] ?? "", 10);
   return Number.isFinite(n) && n >= 0 ? n : fallback;
 }
+
+/** Where people reach a human (shown on Terms, Privacy and Rules). Set NEXT_PUBLIC_CONTACT_EMAIL in Vercel; hidden until then. */
+export const contactEmail = process.env.NEXT_PUBLIC_CONTACT_EMAIL?.trim() || null;

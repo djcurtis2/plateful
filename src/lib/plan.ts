@@ -14,3 +14,5 @@ export function hasPlus(p: ProfilePlanFields | null | undefined, now = new Date(
 
 export const REFERRAL_GOAL = 3; // friends who cook from your link
 export const REFERRAL_BONUS_DAYS = 30;
+/** Most free months one person can earn from referrals, so throwaway-email farming has a ceiling. */
+export const REFERRAL_MAX_REWARDS = 6;

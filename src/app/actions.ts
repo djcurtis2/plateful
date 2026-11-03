@@ -347,9 +347,10 @@ export async function voteAttempt(
 export async function setPublicName(name: string): Promise<Result> {
   const problem = validPublicName(name);
   if (problem) return { ok: false, code: "invalid", message: problem };
-  const { supabase, user } = await currentUser();
+  const { user } = await currentUser();
   if (!user) return LOGIN;
-  const { error } = await supabase.from("profiles").update({ public_name: name.trim().replace(/\s+/g, " ") }).eq("id", user.id);
+  // Server-side write: browsers can no longer update profiles directly (0012), so every name passes validPublicName.
+  const { error } = await admin().from("profiles").update({ public_name: name.trim().replace(/\s+/g, " ") }).eq("id", user.id);
   if (error) return { ok: false, code: "failed", message: "Couldn't save your name. Try again." };
   revalidatePath("/cookoff");
   revalidatePath("/account");

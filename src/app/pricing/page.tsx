@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getMe } from "@/lib/data";
 import { intEnv } from "@/lib/env";
-import { REFERRAL_GOAL } from "@/lib/plan";
+import { REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 
 export const metadata: Metadata = { title: "Pricing" };
 
@@ -54,7 +54,7 @@ export default async function PricingPage() {
         </section>
       </div>
       <p className="text-center text-sm text-muted">
-        Or get Plus free: every {REFERRAL_GOAL} friends who cook from your link earns you a month.
+        Or get Plus free: every {REFERRAL_GOAL} friends who cook from your link earns you a month (up to {REFERRAL_MAX_REWARDS}).
       </p>
     </main>
   );

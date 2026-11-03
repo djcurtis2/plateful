@@ -1,3 +1,4 @@
+import { ContactLine } from "@/components/ContactLine";
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Terms" };
 
@@ -16,6 +17,7 @@ export default function TermsPage() {
         Chef gear bought in the shop is a digital item that only changes how your chef looks. It is tied to your Plateful account, has no cash value,
         can&apos;t be transferred, sold or exchanged, and is paid once through Stripe. Refunds are at our discretion; contact us if something went wrong.
       </p>
+      <ContactLine about="these terms or a purchase" />
     </main>
   );
 }

@@ -1,3 +1,4 @@
+import { ContactLine } from "@/components/ContactLine";
 import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Privacy" };
 
@@ -11,7 +12,8 @@ export default function PrivacyPage() {
       <p>If you add a grocery receipt to a cook-off entry, the image is sent to Anthropic&apos;s Claude API once to read prices, then discarded. We keep only the result: your cost per plate, the store name and when it was checked. We never keep card numbers, names or addresses from a receipt.</p>
       <p>To prevent abuse we keep a one-way hash of your IP address and a random browser ID with each scan. We never store raw IP addresses.</p>
       <p>Payments are handled by Stripe; we never see your card number. Referral links record when they&apos;re opened and when invited friends sign up and cook.</p>
-      <p>Email us to delete your account and data.</p>
+      <p>You can download a copy of your data or delete your account at any time from your Account page. Deleting removes your account and everything tied to it; recipes you made stay public without your name.</p>
+      <ContactLine about="your data" />
     </main>
   );
 }

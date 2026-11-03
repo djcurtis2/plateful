@@ -1,6 +1,6 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
-import { REFERRAL_BONUS_DAYS, REFERRAL_GOAL } from "@/lib/plan";
+import { REFERRAL_BONUS_DAYS, REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 import { REFERRAL_CODE_RE } from "@/lib/cookies";
 import { onReferralCook, onReferralSignup } from "@/lib/game-server";
 
@@ -26,9 +26,21 @@ export async function referrerIdForCode(code: string | null | undefined): Promis
 
 /** A link with ?ref= was opened. Counted for the referrer's stats only; never rewarded. */
 export async function recordReferralVisit(code: string, visitorId: string | null, recipeId: string | null) {
+  // Counted once per browser per referrer per day, so replaying the request can't pump the numbers.
+  if (!visitorId) return;
   const referrer = await referrerIdForCode(code);
   if (!referrer) return;
-  await admin().from("referral_events").insert({ referrer_id: referrer, visitor_id: visitorId, recipe_id: recipeId, kind: "visit" });
+  const db = admin();
+  const since = new Date(Date.now() - 86_400_000).toISOString();
+  const { count } = await db
+    .from("referral_events")
+    .select("id", { count: "exact", head: true })
+    .eq("referrer_id", referrer)
+    .eq("visitor_id", visitorId)
+    .eq("kind", "visit")
+    .gte("created_at", since);
+  if ((count ?? 0) > 0) return;
+  await db.from("referral_events").insert({ referrer_id: referrer, visitor_id: visitorId, recipe_id: recipeId, kind: "visit" });
 }
 
 /**
@@ -60,7 +72,7 @@ export async function attributeSignup(userId: string, code: string | null | unde
 
 /**
  * A signed-in, referred user cooked or carted a recipe. Counts once per friend.
- * Every REFERRAL_GOAL friends who cook earns the referrer a free month of Plus.
+ * Every REFERRAL_GOAL friends who cook earns the referrer a free month of Plus, up to REFERRAL_MAX_REWARDS months.
  */
 export async function recordReferralCook(userId: string, recipeId: string) {
   const db = admin();
@@ -89,7 +101,7 @@ export async function recordReferralCook(userId: string, recipeId: string) {
   const ref = refRow as ProfileRow | null;
   if (!ref) return;
 
-  const earned = Math.floor((count ?? 0) / REFERRAL_GOAL);
+  const earned = Math.min(Math.floor((count ?? 0) / REFERRAL_GOAL), REFERRAL_MAX_REWARDS);
   const owed = earned - ref.referral_rewards_granted;
   if (owed > 0) {
     await db

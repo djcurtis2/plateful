@@ -5,6 +5,7 @@ export function WaitlistForm({ source = "home" }: { source?: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "done" | "error">("idle");
   const [message, setMessage] = useState("");
+  const [website, setWebsite] = useState(""); // honeypot: hidden from people, bots fill it
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -17,11 +18,11 @@ export function WaitlistForm({ source = "home" }: { source?: string }) {
     const res = await fetch("/api/waitlist", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ email, source }),
+      body: JSON.stringify({ email, source, website }),
     }).catch(() => null);
     if (!res || !res.ok) {
       setState("error");
-      setMessage("We couldn't add you just now. Try again.");
+      setMessage(res?.status === 429 ? "That's a lot of sign-ups from here today. Try again tomorrow." : "We couldn't add you just now. Try again.");
       return;
     }
     setState("done");
@@ -34,6 +35,16 @@ export function WaitlistForm({ source = "home" }: { source?: string }) {
       <label htmlFor="wl-email" className="sr-only">
         Email
       </label>
+      <input
+        type="text"
+        name="website"
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden="true"
+        className="hidden"
+        value={website}
+        onChange={(e) => setWebsite(e.target.value)}
+      />
       <div className="flex flex-col gap-2 sm:flex-row">
         <input
           id="wl-email"

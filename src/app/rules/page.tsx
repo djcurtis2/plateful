@@ -1,3 +1,4 @@
+import { ContactLine } from "@/components/ContactLine";
 import type { Metadata } from "next";
 import { POINTS, PRIZES, VOTES_PER_COOKOFF } from "@/lib/game";
 
@@ -24,6 +25,7 @@ export default function RulesPage() {
       </p>
       <h2 className="font-display text-xl font-bold">Your photos</h2>
       <p>By entering, you let Plateful show your photo, public name and caption on Plateful and its social accounts. Plateful isn&apos;t affiliated with any restaurant named in a cook-off.</p>
+      <ContactLine about="the cook-off" />
     </main>
   );
 }

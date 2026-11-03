@@ -1,5 +1,7 @@
+import { REFERRAL_MAX_REWARDS } from "@/lib/plan";
 import type { Metadata } from "next";
 import { DietForm } from "@/components/DietForm";
+import { DeleteAccount } from "@/components/DeleteAccount";
 import { BadgeIcon, LevelIcon, LevelLadder } from "@/components/GameIcons";
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/data";
@@ -200,7 +202,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <div>
           <span className="label">Invite friends</span>
           <h2 className="font-display text-2xl font-bold">Earn a free month for every {stats.goal} friends who cook</h2>
-          <p className="text-sm text-muted">Friends get a week of Plus when they sign up from your link. Recipe pages you share carry your code too.</p>
+          <p className="text-sm text-muted">Friends get a week of Plus when they sign up from your link. Recipe pages you share carry your code too. Up to {REFERRAL_MAX_REWARDS} free months in all.</p>
         </div>
         <CopyField value={link} label="Your invite link" />
         <div className="flex flex-col gap-1.5">
@@ -226,6 +228,17 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             </div>
           ))}
         </dl>
+      </section>
+      <section className="card flex flex-col gap-4 p-6">
+        <div>
+          <span className="label">Your data</span>
+          <h2 className="font-display text-2xl font-bold">Download or delete</h2>
+          <p className="text-sm text-muted">Get a copy of everything Plateful stores about you, or delete your account for good.</p>
+        </div>
+        <a href="/api/account/export" className="btn btn-ghost btn-sm self-start" download>
+          Download my data
+        </a>
+        <DeleteAccount plus={me.plus} />
       </section>
     </main>
   );
