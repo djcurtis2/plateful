@@ -35,7 +35,7 @@ export default async function PricingPage() {
           </p>
           <ul className="flex flex-col gap-2 text-sm">
             <li>Up to {plusDaily} photo scans a day</li>
-            <li>Plan my week: dinners that share groceries, one shopping list</li>
+            <li>Plan my week: every meal and snack, sharing groceries, one shopping list</li>
             <li>Every recipe that uses up your leftovers</li>
             <li>New recipes written around your leftovers, up to 15 a day</li>
             <li>Make any recipe your way: vegetarian, gluten-free, lighter, air fryer and more</li>

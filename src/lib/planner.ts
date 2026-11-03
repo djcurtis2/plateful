@@ -132,10 +132,14 @@ export function legacySlots(ids: string[]): PlanSlot[] {
   return ids.map((id, day) => ({ day, meal: "dinner", id }));
 }
 
-/** Is this recipe tagged for the meal? A dinner isn't really a side, snack, dessert or drink (garlic bread can be "snack, dinner"). */
+/**
+ * Is this recipe tagged for the meal? A dinner isn't really a side, snack, dessert or drink (garlic bread can be "snack, dinner").
+ * A drink is never a whole breakfast or lunch (an iced latte can be tagged "breakfast, drink"); it can be a snack if tagged one.
+ */
 export function fitsMeal(r: Pick<PlanRecipe, "meals">, meal: PlanMeal): boolean {
   if (meal === "dinner") return !r.meals.length || (r.meals.includes("dinner") && !r.meals.some((m) => m === "snack" || m === "dessert" || m === "drink"));
-  return r.meals.includes(meal);
+  if (meal === "snack") return r.meals.includes("snack");
+  return r.meals.includes(meal) && !r.meals.includes("drink");
 }
 
 /** Recipes that suit a meal. Cuisine choices apply to lunches and dinners; breakfasts and snacks are too few to narrow. */

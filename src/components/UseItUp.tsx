@@ -95,7 +95,7 @@ export async function UseItUp({
       <Link href={`/plan?new=1&include=${recipe.slug}`} className="card flex flex-wrap items-center justify-between gap-3 p-4 hover:border-basil">
         <span>
           <span className="block font-display text-lg font-bold">Plan a week around this dish</span>
-          <span className="text-sm text-muted">Dinners that share its groceries, one shopping list.{plus ? "" : " Dupe Kitchen Plus."}</span>
+          <span className="text-sm text-muted">Meals that share its groceries, one shopping list.{plus ? "" : " Dupe Kitchen Plus."}</span>
         </span>
         <span className="btn btn-ghost btn-sm">Plan my week</span>
       </Link>

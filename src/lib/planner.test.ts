@@ -48,6 +48,9 @@ test("sides aren't dinners, and older recipes without package sizes are priced s
   const side = { ...pool[0], id: "side", dish: "Garlic bread", meals: ["snack", "dinner"] as PlanRecipe["meals"] };
   assert.equal(eligible([side], settings).length, 0);
   assert.equal(eligible([side], settings, "snack").length, 1);
+  // A latte tagged "breakfast, drink" isn't a breakfast.
+  const latte = { ...pool[0], id: "latte", dish: "Iced latte", meals: ["breakfast", "drink"] as PlanRecipe["meals"] };
+  assert.equal(eligible([latte], settings, "breakfast").length, 0);
   // A recipe with no pack sizes, scaled from 2 to 6 people, costs about 3x one plate-set, not 3x every package.
   const old: PlanRecipe = { ...pool[0], id: "old", servings: 2, ingredients: pool[0].ingredients.map(({ pack_qty: _p, ...g }) => g) };
   const one = summarize([old], 2, []).used;
