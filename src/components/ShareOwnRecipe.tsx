@@ -9,14 +9,19 @@ export function ShareOwnRecipe({ recipeId, dish, initialUrl }: { recipeId: strin
   const [pending, start] = useTransition();
 
   async function send(link: string) {
-    try {
-      if (navigator.share) await navigator.share({ title: dish, text: `My recipe for ${dish}`, url: link });
-      else {
-        await navigator.clipboard.writeText(link);
-        setMsg("Link copied");
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: dish, text: `My recipe for ${dish}`, url: link });
+      } catch {
+        // Closed the share sheet: nothing to do.
       }
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(link);
+      setMsg("Link copied");
     } catch {
-      // Closed the share sheet: nothing to do.
+      setMsg("Copy the link below and send it to anyone you like.");
     }
   }
 
