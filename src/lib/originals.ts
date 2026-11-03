@@ -1,6 +1,7 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
-import { adaptRecipe, inventRecipe } from "@/lib/claude";
+import { adaptRecipe, buildRecipe, inventRecipe } from "@/lib/claude";
+import { METHOD_BY_ID, describeBuild, type Build } from "@/lib/builder";
 import { LEFTOVER_SCAN, recordScan, siteCapReached } from "@/lib/limits";
 import { LEFTOVER_STYLES, slugify, type LeftoverStyle } from "@/lib/recipe";
 import { VERSIONS, dietTagsFrom, type VersionKind } from "@/lib/diet";
@@ -58,18 +59,27 @@ export async function createOriginal(input: {
   const { result, inputTokens, outputTokens } = made;
   await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: true, inputTokens, outputTokens });
 
+  return saveOriginal(input.userId, result, { style: pick.style, meal: input.meal, inspiredBy: input.inspiredBy });
+}
+
+/** Saves a Claude-written original as a public recipe and puts it in the cook's library. */
+async function saveOriginal(
+  userId: string,
+  result: Awaited<ReturnType<typeof inventRecipe>>["result"],
+  opts: { style: string; meal?: "breakfast" | "lunch" | "dinner" | "snack"; inspiredBy: string | null },
+): Promise<{ ok: true; slug: string; id: string } | { ok: false; message: string }> {
   const db = admin();
   const id = crypto.randomUUID();
   const slug = `${slugify(result.dish!)}-${id.slice(0, 6)}`;
-  const meals = result.meals?.length ? result.meals : [input.meal ?? ("dinner" as const)];
+  const meals = result.meals?.length ? result.meals : [opts.meal ?? ("dinner" as const)];
   const { error } = await db.from("recipes").insert({
     id,
     slug,
-    user_id: input.userId,
+    user_id: userId,
     dish: result.dish!,
     restaurant: null,
     cuisine: result.cuisine || null,
-    meals: input.meal && !meals.includes(input.meal) ? [...meals, input.meal] : meals,
+    meals: opts.meal && !meals.includes(opts.meal) ? [...meals, opts.meal] : meals,
     servings: result.servings ?? 2,
     minutes: result.minutes ?? null,
     difficulty: result.difficulty ?? null,
@@ -84,15 +94,50 @@ export async function createOriginal(input: {
     steps: result.steps!,
     image_path: null,
     source: "leftovers",
-    style: pick.style,
-    inspired_by: input.inspiredBy,
+    style: opts.style,
+    inspired_by: opts.inspiredBy,
   });
   if (error) {
     console.error("original recipe insert failed", error);
     return { ok: false, message: "We made a recipe but couldn't save it. Try again." };
   }
-  await db.from("saved_recipes").upsert({ user_id: input.userId, recipe_id: id });
+  await db.from("saved_recipes").upsert({ user_id: userId, recipe_id: id });
   return { ok: true, slug, id };
+}
+
+/**
+ * "Build a plate": Claude writes a recipe from the cook's picks. Same limits as other originals
+ * (Plus 15 a day, free accounts 1 try) and saved the same way, styled "Build-a-plate" (public, no person named).
+ */
+export async function createBuilt(input: { userId: string; plus: boolean; build: Build }): Promise<{ ok: true; slug: string; id: string } | { ok: false; message: string }> {
+  if (await siteCapReached()) return { ok: false, message: "We've hit today's limit while we scale up. Try again tomorrow." };
+  if ((await originalsLeft(input.userId, input.plus)) <= 0) {
+    return {
+      ok: false,
+      message: input.plus
+        ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
+        : "You've used your free try. Dupe Kitchen Plus builds new recipes with you every day.",
+    };
+  }
+  const b = input.build;
+  let made;
+  try {
+    made = await buildRecipe({
+      summary: describeBuild(b),
+      method: METHOD_BY_ID[b.method]!.label,
+      servings: b.servings,
+      addIns: b.addIns,
+      sides: b.sides,
+      note: b.note,
+    });
+  } catch (e) {
+    console.error("built recipe failed", e);
+    await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: false });
+    return { ok: false, message: "Couldn't write that recipe just now. Try again." };
+  }
+  const { result, inputTokens, outputTokens } = made;
+  await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: true, inputTokens, outputTokens });
+  return saveOriginal(input.userId, result, { style: "Build-a-plate", inspiredBy: null });
 }
 
 /**

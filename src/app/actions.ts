@@ -11,7 +11,8 @@ import { recordReferralCook } from "@/lib/referrals";
 import { pantryKey } from "@/lib/format";
 import { awardPoints, onEntryPosted, onVote } from "@/lib/game-server";
 import { readReceipt } from "@/lib/claude";
-import { createOriginal, createVersion } from "@/lib/originals";
+import { createBuilt, createOriginal, createVersion } from "@/lib/originals";
+import { cleanBuild } from "@/lib/builder";
 import { createOwnRecipe } from "@/lib/own-recipes";
 import { logCook } from "@/lib/savings-server";
 import { RECEIPT_SCAN, siteCapReached } from "@/lib/limits";
@@ -580,4 +581,24 @@ export async function copySharedRecipe(slug: string, token: string): Promise<{ o
   await db.from("saved_recipes").upsert({ user_id: me.user.id, recipe_id: id });
   revalidatePath("/library");
   redirect(`/r/${copySlug}`);
+}
+
+/** "Build a plate": Claude writes a recipe from the cook's picks; it joins their library. Same limits as other new recipes. */
+export async function buildPlate(raw: {
+  protein: string;
+  method: string;
+  flavor: string;
+  addIns: string[];
+  sides: string[];
+  servings: number;
+  note: string;
+}): Promise<{ ok: true; slug: string } | { ok: false; message: string }> {
+  const me = await getMe();
+  if (!me) return { ok: false, message: "Sign in to build a recipe." };
+  const build = cleanBuild(raw);
+  if (!build) return { ok: false, message: "Pick a protein, a way to cook it and a flavor." };
+  const r = await createBuilt({ userId: me.user.id, plus: me.plus, build });
+  if (!r.ok) return r;
+  revalidatePath("/library");
+  return { ok: true, slug: r.slug };
 }

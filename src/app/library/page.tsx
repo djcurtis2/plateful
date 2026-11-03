@@ -17,6 +17,9 @@ export default async function LibraryPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <h1 className="font-display text-4xl font-bold tracking-tight">My recipes</h1>
         <div className="flex flex-wrap gap-2">
+          <Link href="/build" className="btn btn-ghost btn-sm">
+            Build a plate
+          </Link>
           <Link href="/library/new" className="btn btn-ghost btn-sm">
             Add my own recipe
           </Link>

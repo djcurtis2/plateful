@@ -177,6 +177,24 @@ export default async function Home() {
         </section>
       )}
 
+      <Link
+        href="/build"
+        className="game-tile group flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between"
+        style={{ "--tile": "var(--basil)" } as React.CSSProperties}
+      >
+        <span aria-hidden className="game-tile-art pointer-events-none absolute -bottom-10 right-6 select-none text-[6rem] leading-none opacity-20">
+          🍽️
+        </span>
+        <span className="relative flex flex-col gap-1">
+          <span className="label">New · Build a plate</span>
+          <span className="font-display text-2xl font-bold tracking-tight sm:text-3xl">Got chicken? Salmon? Tofu? Start there.</span>
+          <span className="text-muted">Pick a protein, how to cook it and a flavor. We suggest the sides and write the recipe.</span>
+        </span>
+        <span className="btn btn-primary relative shrink-0">
+          Build my plate <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+        </span>
+      </Link>
+
       {recent.length > 0 && (
         <section className="flex flex-col gap-5">
           <div className="flex items-end justify-between gap-4">
