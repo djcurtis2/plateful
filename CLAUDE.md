@@ -29,7 +29,7 @@ Run typecheck + tests before every commit. In PowerShell, quote comma lists (e.g
 
 Migrations in `supabase/migrations/0001…0016` are all applied to the one Supabase project (used by both local and live).
 New schema changes: add the next numbered file (`0017_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
-`supabase/demo_*.sql` add demo data; `demo_cleanup.sql` removes it (slugs ending `-demo`, `@demo.plateful.test` users, `samples/` photos).
+`supabase/launch_cleanup.sql` (pre-launch) removed the fake cooks (`@demo.plateful.test`) and `demo:` points and kept the sample recipes as house recipes without the `-demo` slug ending. Don't run `demo_leaderboard.sql` or `demo_cleanup.sql` on the live database again: fake people and points must never show to real users, and `demo_cleanup.sql` would delete house recipes still named `-demo`.
 
 ## Where things live
 

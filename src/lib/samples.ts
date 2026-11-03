@@ -1,6 +1,6 @@
 // Sample recipes with photos, for demos and an empty site. Imported from /admin ("Add sample recipes").
 // Photos are free-to-use Unsplash images (Unsplash License: free for commercial use, no permission needed).
-// Slugs end in "-demo" so supabase/demo_cleanup.sql removes them.
+// They're the site's house recipes (no person attached). supabase/launch_cleanup.sql dropped the old "-demo" slug ending.
 import type { Ingredient, Meal } from "./recipe.ts";
 
 export type Sample = {
@@ -28,7 +28,7 @@ const g = (name: string, qty: number, unit: string, aisle: A, price: number, pac
 
 export const SAMPLES: Sample[] = [
   {
-    slug: "ihop-buttermilk-pancakes-demo",
+    slug: "ihop-buttermilk-pancakes",
     dish: "Buttermilk pancakes",
     restaurant: "IHOP",
     style: null,
@@ -59,7 +59,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "weeknight-eggs-on-avocado-toast-demo",
+    slug: "weeknight-eggs-on-avocado-toast",
     dish: "Jammy eggs on smashed avocado toast",
     restaurant: null,
     style: "Weeknight",
@@ -88,7 +88,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "dennys-french-toast-demo",
+    slug: "dennys-french-toast",
     dish: "Thick-cut French toast",
     restaurant: "Denny's",
     style: null,
@@ -118,7 +118,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chef-style-shakshuka-demo",
+    slug: "chef-style-shakshuka",
     dish: "Smoky shakshuka with feta and herbs",
     restaurant: null,
     style: "Chef-style",
@@ -151,7 +151,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chick-fil-a-chicken-sandwich-demo",
+    slug: "chick-fil-a-chicken-sandwich",
     dish: "Pickle-brined chicken sandwich",
     restaurant: "Chick-fil-A",
     style: null,
@@ -184,7 +184,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "shake-shack-double-smashburger-demo",
+    slug: "shake-shack-double-smashburger",
     dish: "Double smashburger with special sauce",
     restaurant: "Shake Shack",
     style: null,
@@ -215,7 +215,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "pf-changs-chicken-lettuce-wraps-demo",
+    slug: "pf-changs-chicken-lettuce-wraps",
     dish: "Chicken lettuce wraps",
     restaurant: "P.F. Chang's",
     style: null,
@@ -248,7 +248,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "panda-express-orange-chicken-demo",
+    slug: "panda-express-orange-chicken",
     dish: "Orange chicken",
     restaurant: "Panda Express",
     style: null,
@@ -281,7 +281,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "grandma-style-cheesy-garlic-bread-demo",
+    slug: "grandma-style-cheesy-garlic-bread",
     dish: "Cheesy garlic bread",
     restaurant: null,
     style: "Grandma-style",
@@ -310,7 +310,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chipotle-guacamole-and-chips-demo",
+    slug: "chipotle-guacamole-and-chips",
     dish: "Guacamole and chips",
     restaurant: "Chipotle",
     style: null,
@@ -339,7 +339,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "cheesecake-factory-blueberry-cheesecake-demo",
+    slug: "cheesecake-factory-blueberry-cheesecake",
     dish: "New York cheesecake with blueberry topping",
     restaurant: "The Cheesecake Factory",
     style: null,
@@ -370,7 +370,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "starbucks-iced-caramel-latte-demo",
+    slug: "starbucks-iced-caramel-latte",
     dish: "Iced caramel latte",
     restaurant: "Starbucks",
     style: null,
@@ -396,7 +396,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chilis-molten-chocolate-cake-demo",
+    slug: "chilis-molten-chocolate-cake",
     dish: "Molten chocolate cake",
     restaurant: "Chili's",
     style: null,
@@ -425,7 +425,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "noodles-and-company-pad-thai-demo",
+    slug: "noodles-and-company-pad-thai",
     dish: "Shrimp pad thai",
     restaurant: "Noodles & Company",
     style: null,
@@ -457,7 +457,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "cava-chicken-grain-bowl-demo",
+    slug: "cava-chicken-grain-bowl",
     dish: "Chicken and black bean grain bowl",
     restaurant: "Cava",
     style: null,
@@ -489,7 +489,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "panera-mac-and-cheese-demo",
+    slug: "panera-mac-and-cheese",
     dish: "Creamy white cheddar mac and cheese",
     restaurant: "Panera Bread",
     style: null,
@@ -519,7 +519,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "wendys-chili-demo",
+    slug: "wendys-chili",
     dish: "Hearty beef chili",
     restaurant: "Wendy's",
     style: null,
@@ -551,7 +551,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "weeknight-sheet-pan-sausage-and-peppers-demo",
+    slug: "weeknight-sheet-pan-sausage-and-peppers",
     dish: "Sheet-pan sausage, peppers and potatoes",
     restaurant: null,
     style: "Weeknight",
@@ -582,7 +582,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chef-style-seared-salmon-demo",
+    slug: "chef-style-seared-salmon",
     dish: "Crispy-skin salmon with lemon butter",
     restaurant: null,
     style: "Chef-style",
@@ -613,7 +613,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "grandma-style-apple-crisp-demo",
+    slug: "grandma-style-apple-crisp",
     dish: "Brown-butter apple crisp",
     restaurant: null,
     style: "Grandma-style",
@@ -645,7 +645,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chef-style-mushroom-risotto-demo",
+    slug: "chef-style-mushroom-risotto",
     dish: "Wild mushroom risotto",
     restaurant: null,
     style: "Chef-style",
@@ -678,7 +678,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "chilis-loaded-nachos-demo",
+    slug: "chilis-loaded-nachos",
     dish: "Loaded nachos",
     restaurant: "Chili's",
     style: null,
@@ -709,7 +709,7 @@ export const SAMPLES: Sample[] = [
     ],
   },
   {
-    slug: "weeknight-chipotle-chicken-tacos-demo",
+    slug: "weeknight-chipotle-chicken-tacos",
     dish: "Chipotle chicken street tacos",
     restaurant: null,
     style: "Weeknight",
