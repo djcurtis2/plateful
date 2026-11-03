@@ -15,6 +15,8 @@ export const metadata: Metadata = {
   description: "Snap a restaurant dish. Get the copycat recipe, see what you save per plate, and shop the ingredients in one tap.",
   openGraph: { siteName: "Dupe Kitchen", type: "website" },
   twitter: { card: "summary_large_image" },
+  // iPhone "Add to Home Screen": open full screen under the Dupe Kitchen name.
+  appleWebApp: { capable: true, title: "Dupe Kitchen", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
