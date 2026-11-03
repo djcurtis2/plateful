@@ -30,17 +30,22 @@ export function DishGuessGame({
 }) {
   const [state, setState] = useState<DishState>(initial);
   const [query, setQuery] = useState("");
+  const [showAll, setShowAll] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
 
   const misses = state.results.filter((r) => !r).length;
   const view = dishView(misses, state.over);
   const guessed = (c: string) => state.guesses.some((g) => sameDish(g, c));
-  const matches = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    return choices.filter((c) => !guessed(c) && (!q || c.toLowerCase().includes(q))).slice(0, q ? 12 : 8);
+  const q = query.trim().toLowerCase();
+  const left = useMemo(
+    () => choices.filter((c) => !guessed(c) && (!q || c.toLowerCase().includes(q))),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [query, choices, state.guesses]);
+    [q, choices, state.guesses],
+  );
+  // Typing or "Show all" lists every match; otherwise a short starter list keeps phones tidy.
+  const matches = q || showAll ? left : left.slice(0, 8);
+  const hidden = left.length - matches.length;
 
   function guess(pick: string) {
     setError(null);
@@ -111,6 +116,7 @@ export function DishGuessGame({
         <div className="flex flex-col gap-2">
           <label className="flex flex-col gap-1">
             <span className="label">What dish is it?</span>
+            <span className="text-sm text-muted">The answer is one of {choices.length} dishes. Type to search, or browse them all.</span>
             <input
               className="input"
               type="search"
@@ -121,7 +127,7 @@ export function DishGuessGame({
               disabled={pending}
             />
           </label>
-          <ul className="grid gap-1.5 sm:grid-cols-2">
+          <ul className={`grid gap-1.5 sm:grid-cols-2 ${matches.length > 12 ? "max-h-96 overflow-y-auto pr-1" : ""}`}>
             {matches.map((c) => (
               <li key={c}>
                 <button
@@ -136,6 +142,11 @@ export function DishGuessGame({
             ))}
             {matches.length === 0 && <li className="text-sm text-muted">No dishes match. Try another word.</li>}
           </ul>
+          {hidden > 0 && (
+            <button type="button" className="btn btn-ghost self-start" onClick={() => setShowAll(true)}>
+              Show all {left.length} dishes
+            </button>
+          )}
           {pending && <p className="text-sm text-muted">Checking…</p>}
         </div>
       ) : (
