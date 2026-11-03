@@ -7,17 +7,9 @@ import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
 import { CLUBS, MAX_CLUBS } from "@/lib/clubs";
 import {
-  BUNDLES, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable,
-  type Avatar, type GearItem, type LookPart, type Rarity, type Slot,
+  BUNDLES, CHEF_TABS, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable,
+  type Avatar, type ChefTab, type GearItem, type LookPart, type Rarity, type Slot,
 } from "@/lib/avatar";
-
-export type ChefTab = "look" | "wardrobe" | "clubs" | "shop";
-export const CHEF_TABS: { id: ChefTab; label: string }[] = [
-  { id: "look", label: "Look" },
-  { id: "wardrobe", label: "Wardrobe" },
-  { id: "clubs", label: "Clubs" },
-  { id: "shop", label: "Shop" },
-];
 
 const PART_LABELS: Record<LookPart, string> = {
   skin: "Skin", eyes: "Eyes", brows: "Brows", mouth: "Mouth", hair: "Hair", hairColor: "Hair color", facialHair: "Facial hair", glasses: "Glasses",

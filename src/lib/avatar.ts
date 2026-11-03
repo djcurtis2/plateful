@@ -256,3 +256,12 @@ export function parseGearMetadata(s: string | null | undefined): string[] {
   }
   return out;
 }
+
+/** Tabs on the My chef page. Lives here (not in the client editor) so the server page can read it. */
+export type ChefTab = "look" | "wardrobe" | "clubs" | "shop";
+export const CHEF_TABS: { id: ChefTab; label: string }[] = [
+  { id: "look", label: "Look" },
+  { id: "wardrobe", label: "Wardrobe" },
+  { id: "clubs", label: "Clubs" },
+  { id: "shop", label: "Shop" },
+];

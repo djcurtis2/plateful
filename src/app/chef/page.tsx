@@ -3,7 +3,8 @@ import { redirect } from "next/navigation";
 import { getMe } from "@/lib/data";
 import { myChef } from "@/lib/avatar-server";
 import { refreshGearPurchase } from "@/lib/gear-billing";
-import { ChefEditor, CHEF_TABS, type ChefTab } from "@/components/ChefEditor";
+import { ChefEditor } from "@/components/ChefEditor";
+import { CHEF_TABS, type ChefTab } from "@/lib/avatar";
 
 export const metadata: Metadata = { title: "My chef" };
 
