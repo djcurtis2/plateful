@@ -36,7 +36,7 @@ New schema changes: add the next numbered file (`0017_…sql`, idempotent: `if n
 | Area | Files |
 | --- | --- |
 | Photo → recipe | `app/api/recognize/route.ts`, `lib/claude.ts` (`recognizeDish`), `lib/recipe.ts` (zod + JSON schema) |
-| Limits / cost control | `lib/limits.ts`: site-wide `DAILY_SCAN_CAP` over all Claude calls; per-person quotas. Receipts (`RECEIPT_SCAN`) and new recipes (`LEFTOVER_SCAN`) are logged in `scans` with their own marker and don't use dish-scan quotas. |
+| Limits / cost control | `lib/limits.ts`: site-wide `DAILY_SCAN_CAP` over all Claude calls; per-person quotas (guests 1 scan ever, free accounts 3 a week, Plus 40 a day; env `GUEST_SCANS`, `FREE_SCANS_PER_WEEK`, `PLUS_SCANS_PER_DAY`). Receipts (`RECEIPT_SCAN`) and new recipes (`LEFTOVER_SCAN`) are logged in `scans` with their own marker and don't use dish-scan quotas. |
 | Data access | `lib/data.ts` (`RECIPE_COLUMNS` + `toRecipe`: add new recipe columns in both) |
 | Server actions | `app/actions.ts`, `app/plan/actions.ts`, `app/admin/actions.ts`. Only export async actions from `"use server"` files; read helpers go in `lib/`. |
 | Cook-off + game | `lib/game.ts` (pure: points, levels, badges, prizes, receipt rules), `lib/game-server.ts` (ledger, finalize), `cast_vote` SQL function |

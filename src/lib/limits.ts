@@ -34,6 +34,8 @@ function daysAgo(n: number) {
   return new Date(Date.now() - n * 86_400_000).toISOString();
 }
 
+const EVER = "1970-01-01T00:00:00Z";
+
 async function countScans(filter: { column: "user_id" | "visitor_id" | "ip_hash"; value: string } | null, since: string) {
   // Only scans Claude actually processed (and billed) count. Failures before or at the API call have no tokens.
   let q = admin()
@@ -68,10 +70,10 @@ export async function checkScanAllowance(who: {
     };
   }
 
-  // A single IP can't burn through limits by clearing cookies. Generous, since offices and dorms share IPs.
+  // A single IP can't burn through limits by clearing cookies. Allows a few, since households and offices share IPs.
   if (who.ipHash && !who.userId) {
     const ipDay = await countScans({ column: "ip_hash", value: who.ipHash }, today);
-    if (ipDay >= intEnv("ANON_SCANS_PER_DAY", 3) * 5) {
+    if (ipDay >= intEnv("GUEST_IP_SCANS_PER_DAY", 5)) {
       return { ok: false, code: "ip_limit", message: "Too many scans from this network today. Sign in to keep going." };
     }
   }
@@ -85,26 +87,27 @@ export async function checkScanAllowance(who: {
   }
 
   if (who.userId) {
-    const limit = intEnv("FREE_SCANS_PER_WEEK", 5);
+    const limit = intEnv("FREE_SCANS_PER_WEEK", 3);
     const used = await countScans({ column: "user_id", value: who.userId }, daysAgo(7));
     return used < limit
       ? { ok: true, remaining: limit - used }
       : {
           ok: false,
           code: "free_limit",
-          message: `You've used your ${limit} free scans this week. Upgrade to Plus for unlimited copycats.`,
+          message: `You've used your ${limit} free scans this week. Plus gives you up to ${intEnv("PLUS_SCANS_PER_DAY", 40)} a day.`,
         };
   }
 
+  // Guests get a taste (one scan by default, ever), then sign in for the weekly free scans.
   if (who.visitorId) {
-    const limit = intEnv("ANON_SCANS_PER_DAY", 3);
-    const used = await countScans({ column: "visitor_id", value: who.visitorId }, today);
+    const limit = intEnv("GUEST_SCANS", 1);
+    const used = await countScans({ column: "visitor_id", value: who.visitorId }, EVER);
     return used < limit
       ? { ok: true, remaining: limit - used }
       : {
           ok: false,
           code: "anon_limit",
-          message: `That's ${limit} free scans for today. Sign in free to get ${intEnv("FREE_SCANS_PER_WEEK", 5)} a week and save your recipes.`,
+          message: `That was your free scan. Sign in free to get ${intEnv("FREE_SCANS_PER_WEEK", 3)} a week and save your recipes.`,
         };
   }
 

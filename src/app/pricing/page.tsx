@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "Pricing" };
 
 export default async function PricingPage() {
   const me = await getMe();
-  const free = intEnv("FREE_SCANS_PER_WEEK", 5);
+  const free = intEnv("FREE_SCANS_PER_WEEK", 3);
   const plusDaily = intEnv("PLUS_SCANS_PER_DAY", 40);
   const yearlyOn = !!process.env.STRIPE_PRICE_PLUS_YEARLY;
   return (
