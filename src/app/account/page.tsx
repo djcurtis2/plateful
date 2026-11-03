@@ -1,4 +1,4 @@
-import { REFERRAL_MAX_REWARDS } from "@/lib/plan";
+import { PLUS_MONTHLY, PLUS_YEARLY, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 import type { Metadata } from "next";
 import { DietForm } from "@/components/DietForm";
 import { DeleteAccount } from "@/components/DeleteAccount";
@@ -191,9 +191,17 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               <button className="btn btn-ghost">Manage billing</button>
             </form>
           ) : (
-            <form action="/api/stripe/checkout" method="post">
-              <button className="btn btn-primary">Upgrade to Plus · $4.99/mo</button>
-            </form>
+            <span className="flex flex-wrap gap-2">
+              <form action="/api/stripe/checkout" method="post">
+                <button className="btn btn-primary">Upgrade to Plus · {PLUS_MONTHLY}/mo</button>
+              </form>
+              {process.env.STRIPE_PRICE_PLUS_YEARLY && (
+                <form action="/api/stripe/checkout" method="post">
+                  <input type="hidden" name="interval" value="year" />
+                  <button className="btn btn-ghost">{PLUS_YEARLY}/year</button>
+                </form>
+              )}
+            </span>
           )}
         </div>
       </section>

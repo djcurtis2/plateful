@@ -17,11 +17,16 @@ export async function POST(req: NextRequest) {
     await admin().from("profiles").update({ stripe_customer_id: customer }).eq("id", me.user.id);
   }
 
+  // Yearly only when its Stripe price is set up; anything else gets monthly.
+  const form = await req.formData().catch(() => null);
+  const yearly = form?.get("interval") === "year" && !!process.env.STRIPE_PRICE_PLUS_YEARLY;
+  const price = yearly ? requireEnv("STRIPE_PRICE_PLUS_YEARLY") : requireEnv("STRIPE_PRICE_PLUS_MONTHLY");
+
   const session = await stripe().checkout.sessions.create({
     mode: "subscription",
     customer,
     client_reference_id: me.user.id,
-    line_items: [{ price: requireEnv("STRIPE_PRICE_PLUS_MONTHLY"), quantity: 1 }],
+    line_items: [{ price, quantity: 1 }],
     allow_promotion_codes: true,
     subscription_data: { metadata: { user_id: me.user.id } },
     success_url: `${siteUrl}/account?upgraded=1`,

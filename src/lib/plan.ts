@@ -12,6 +12,11 @@ export function hasPlus(p: ProfilePlanFields | null | undefined, now = new Date(
   return paid || bonus;
 }
 
+/** Plus prices as shown on the site. The amounts charged come from the Stripe prices in STRIPE_PRICE_PLUS_MONTHLY / _YEARLY. */
+export const PLUS_MONTHLY = "$4.99";
+export const PLUS_YEARLY = "$39.99";
+export const PLUS_YEARLY_SAVES = "33%"; // vs. 12 × $4.99 = $59.88
+
 export const REFERRAL_GOAL = 3; // friends who cook from your link
 export const REFERRAL_BONUS_DAYS = 30;
 /** Most free months one person can earn from referrals, so throwaway-email farming has a ceiling. */

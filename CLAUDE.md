@@ -10,7 +10,7 @@ Dan likes explanations with a real-life analogy, short summaries, and no jargon 
 - Next.js 16.4 App Router (`src/proxy.ts`, not middleware; `params`/`searchParams` are Promises), React 19, Tailwind 4 (`@theme inline` tokens in `src/app/globals.css`, light + dark).
 - Supabase: Postgres, magic-link auth, storage buckets `dishes` and `attempts`. Server writes use the service-role client in `src/lib/supabase/admin.ts`; RLS is on everywhere.
 - Claude API via `@anthropic-ai/sdk` in `src/lib/claude.ts`. Model from `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`). That model does NOT support forced `tool_choice`: use `output_config: { format: { type: "json_schema", schema } }`. Those schemas need `additionalProperties: false`, every property in `required`, nullable via type arrays, and no min/max (ranges go in descriptions; zod enforces them after).
-- Stripe subscriptions (test mode, account "Plateful"). Plus = $4.99/mo.
+- Stripe subscriptions (test mode, account "Plateful"). Plus = $4.99/mo or $39.99/yr (`STRIPE_PRICE_PLUS_YEARLY`; the yearly button hides until it is set). Shown prices live in `lib/plan.ts`.
 - zod 4, qrcode. No other runtime deps; confetti etc. are hand-written.
 
 ## Commands
@@ -69,7 +69,7 @@ New schema changes: add the next numbered file (`0017_…sql`, idempotent: `if n
 - **Cook-off:** one entry per person per dish; 3 votes per person per cook-off, no self-votes; winners: Crowd favorite, Chef's pick, Thriftiest copy (receipt-verified only).
 - **Daily trivia:** 3 questions a day (UTC), same for everyone, one go per signed-in person; guests can play without points. Answers never reach the browser before a pick. 1 point per right answer + 5 every 7th day in a row (kind `trivia`, no `challenge_id`). Trivia points count for levels and gear, never the monthly prize (`monthlyTop` excludes them). Questions go live only after an admin approves the day; no real restaurants, chefs, people or brands.
 - **Daily games:** Guess the Dish and Higher or Lower are one go per person per UTC day, same puzzle for everyone, picked once and stored in `game_days`; guests play without points. Bingo is weekly (Monday UTC) and ticks itself from activity. Game points (kind `game`) count for levels and gear, never the monthly prize. Nothing is bought or left to chance.
-- **Chef avatars:** legendary gear is earned only (points, badges), never sold or Plus-gated. Shop items carry a Shop tag and Plus items a Plus tag. Points are never spent: gear unlocks, it doesn't cost points. No clubs aimed at kids (COPPA); family clubs are written for parents. Club pages show counts only (no member lists).
+- **Chef avatars:** legendary gear is earned only (points, badges), never sold or Plus-gated. Shop items carry a Shop tag and Plus items a Plus tag. Points are never spent: gear unlocks, it doesn't cost points. Bundles cost less than their items bought singly, and owning part of one never makes the rest cost more than buying those items singly (`purchasable`). No clubs aimed at kids (COPPA); family clubs are written for parents. Club pages show counts only (no member lists).
 - **Sample/stock photos:** Unsplash only, no visible brand logos.
 
 ## Gotchas

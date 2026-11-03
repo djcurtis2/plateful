@@ -2,7 +2,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { LEVELS } from "./game.ts";
 import {
-  BUNDLES, GEAR, GEAR_BY_ID, LOOK_OPTIONS, SLOTS, canSave, cleanAvatar, defaultAvatar, lockReason, newUnlocks, parseAvatar,
+  BUNDLES, GEAR, GEAR_BY_ID, singlesCents, LOOK_OPTIONS, SLOTS, canSave, cleanAvatar, defaultAvatar, lockReason, newUnlocks, parseAvatar,
   gearMetadata, parseGearMetadata, priceLabel, purchasable, starterFor, unlockedGear, visibleAvatar,
 } from "./avatar.ts";
 
@@ -18,7 +18,8 @@ test("catalog rules", () => {
   for (const g of GEAR) if (g.source.kind === "shop") assert.ok(g.source.cents >= 199, g.id);
   LEVELS.forEach((_, i) => assert.ok(GEAR.some((g) => g.slot === "hat" && g.source.kind === "level" && g.source.level === i)));
   for (const b of BUNDLES) {
-    assert.ok(b.cents >= 399 && b.cents <= 499);
+    assert.ok(b.cents >= 399 && b.cents <= 999);
+    assert.ok(b.cents < singlesCents(b.items), `${b.id} should cost less than its items`);
     for (const id of b.items) assert.equal(GEAR_BY_ID[id]?.source.kind, "shop", id);
   }
   for (const g of GEAR.filter((g) => g.source.kind === "shop" || g.source.kind === "plus")) assert.notEqual(g.rarity, "legendary", g.id);
@@ -104,7 +105,11 @@ test("buying: owned items and fully owned bundles can't be bought", () => {
   const b = BUNDLES[0];
   assert.equal(purchasable({ bundle: b.id }, b.items), null);
   assert.deepEqual(purchasable({ bundle: b.id }, [b.items[0]])?.items, b.items.slice(1));
-  assert.equal(purchasable({ bundle: b.id }, [b.items[0]])?.cents, b.cents);
+  assert.equal(purchasable({ bundle: b.id }, [b.items[0]])?.cents, Math.min(b.cents, singlesCents(b.items.slice(1))));
+  // Owning all but one item of the whole shop costs that one item's price, not $9.99.
+  const all = BUNDLES.find((x) => x.id === "whole-shop")!;
+  assert.equal(all.items.length, GEAR.filter((g) => g.source.kind === "shop").length);
+  assert.equal(purchasable({ bundle: all.id }, all.items.slice(1))?.cents, 199);
   assert.equal(purchasable({ bundle: "nope" }, []), null);
 });
 

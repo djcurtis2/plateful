@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getMe } from "@/lib/data";
 import { intEnv } from "@/lib/env";
-import { REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
+import { PLUS_MONTHLY, PLUS_YEARLY, PLUS_YEARLY_SAVES, REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 
 export const metadata: Metadata = { title: "Pricing" };
 
@@ -9,6 +9,7 @@ export default async function PricingPage() {
   const me = await getMe();
   const free = intEnv("FREE_SCANS_PER_WEEK", 5);
   const plusDaily = intEnv("PLUS_SCANS_PER_DAY", 40);
+  const yearlyOn = !!process.env.STRIPE_PRICE_PLUS_YEARLY;
   return (
     <main className="mx-auto flex w-full max-w-4xl flex-col gap-10 pt-10">
       <div className="flex flex-col gap-2 text-center">
@@ -31,8 +32,13 @@ export default async function PricingPage() {
         <section className="card flex flex-col gap-4 border-basil p-6">
           <h2 className="font-display text-2xl font-bold">Plus</h2>
           <p className="tabular font-mono text-4xl">
-            $4.99<span className="text-base text-muted">/month</span>
+            {PLUS_MONTHLY}<span className="text-base text-muted">/month</span>
           </p>
+          {yearlyOn && (
+            <p className="-mt-3 text-sm text-muted">
+              or {PLUS_YEARLY} a year (save {PLUS_YEARLY_SAVES})
+            </p>
+          )}
           <ul className="flex flex-col gap-2 text-sm">
             <li>Up to {plusDaily} photo scans a day</li>
             <li>Plan my week: every meal and snack, sharing groceries, one shopping list</li>
@@ -47,9 +53,21 @@ export default async function PricingPage() {
               You have Plus
             </a>
           ) : (
-            <form action="/api/stripe/checkout" method="post">
-              <button className="btn btn-primary w-full">{me ? "Upgrade to Plus" : "Sign in to upgrade"}</button>
-            </form>
+            <div className="flex flex-col gap-2">
+              <form action="/api/stripe/checkout" method="post">
+                <button className="btn btn-primary w-full">
+                  {me ? `Upgrade to Plus · ${PLUS_MONTHLY}/month` : "Sign in to upgrade"}
+                </button>
+              </form>
+              {me && yearlyOn && (
+                <form action="/api/stripe/checkout" method="post">
+                  <input type="hidden" name="interval" value="year" />
+                  <button className="btn btn-ghost w-full">
+                    Pay yearly · {PLUS_YEARLY} (save {PLUS_YEARLY_SAVES})
+                  </button>
+                </form>
+              )}
+            </div>
           )}
         </section>
       </div>

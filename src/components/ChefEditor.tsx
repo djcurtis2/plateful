@@ -7,7 +7,7 @@ import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
 import { CLUBS, MAX_CLUBS } from "@/lib/clubs";
 import {
-  BUNDLES, CHEF_TABS, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable,
+  BUNDLES, CHEF_TABS, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable, singlesCents,
   type Avatar, type ChefTab, type GearItem, type LookPart, type Rarity, type Slot,
 } from "@/lib/avatar";
 
@@ -288,7 +288,12 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                   <li key={b.id} className="flex flex-col gap-2 rounded-2xl border border-saffron p-3">
                     <span className="flex items-start justify-between gap-2">
                       <span className="text-sm font-semibold">{b.name}</span>
-                      <span className="tabular font-mono text-sm">{priceLabel(b.cents)}</span>
+                      <span className="flex flex-col items-end">
+                        <span className="tabular font-mono text-sm">{priceLabel(buy.cents)}</span>
+                        {buy.cents < singlesCents(buy.items) && (
+                          <span className="tabular text-xs text-muted line-through">{priceLabel(singlesCents(buy.items))}</span>
+                        )}
+                      </span>
                     </span>
                     <span className="text-xs text-muted">
                       {b.items.map((id) => GEAR_BY_ID[id]?.name).filter(Boolean).join(", ")}

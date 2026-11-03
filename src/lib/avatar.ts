@@ -78,7 +78,18 @@ export const GEAR_BY_ID: Record<string, GearItem> = Object.assign(Object.create(
 export const BUNDLES: Bundle[] = [
   { id: "party-night", name: "Party night", cents: 399, items: ["disco-floor", "tuxedo", "cat-ears"] },
   { id: "backyard-bbq", name: "Backyard BBQ", cents: 499, items: ["hawaiian-shirt", "beach-day", "giant-fork", "flame-torch"] },
+  { id: "pajama-party", name: "Pajama party", cents: 399, items: ["pj-set", "pizza-slice", "rubber-chicken"] },
+  // Everything in the shop at about half the single-item price.
+  { id: "whole-shop", name: "The whole shop", cents: 999, items: GEAR.filter((g) => g.source.kind === "shop").map((g) => g.id) },
 ];
+
+/** What the items would cost bought one at a time. */
+export function singlesCents(items: string[]): number {
+  return items.reduce((sum, id) => {
+    const g = GEAR_BY_ID[id];
+    return sum + (g?.source.kind === "shop" ? g.source.cents : 0);
+  }, 0);
+}
 
 export type LookPart = "skin" | "eyes" | "brows" | "mouth" | "hair" | "hairColor" | "facialHair" | "glasses";
 export type Look = Record<LookPart, number>; // option indices
@@ -238,7 +249,8 @@ export function purchasable(
   const b = BUNDLES.find((x) => x.id === target.bundle);
   if (!b) return null;
   const items = b.items.filter((id) => !owned.includes(id));
-  return items.length ? { items, cents: b.cents, name: b.name } : null;
+  // Owning part of a bundle never makes the rest cost more than buying it item by item.
+  return items.length ? { items, cents: Math.min(b.cents, singlesCents(items)), name: b.name } : null;
 }
 
 /** Item ids for Stripe Checkout metadata ("id1,id2"). Stripe caps a metadata value at 500 characters. */
