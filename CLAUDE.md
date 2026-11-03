@@ -27,7 +27,7 @@ Run typecheck + tests before every commit. In PowerShell, quote comma lists (e.g
 
 ## Database
 
-Migrations in `supabase/migrations/0001…0012` are applied to the one Supabase project (used by both local and live); `0013_trivia.sql` is pending until Dan runs it in the SQL editor.
+Migrations in `supabase/migrations/0001…0014` are all applied to the one Supabase project (used by both local and live).
 New schema changes: add the next numbered file (`0014_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
 `supabase/demo_*.sql` add demo data; `demo_cleanup.sql` removes it (slugs ending `-demo`, `@demo.plateful.test` users, `samples/` photos).
 
@@ -49,6 +49,7 @@ New schema changes: add the next numbered file (`0014_…sql`, idempotent: `if n
 | Gear shop | `app/api/stripe/gear` (one-time checkout), `lib/gear-billing.ts` (records purchases from the webhook and success page), admin grants |
 | Daily trivia | `lib/trivia.ts` (pure: UTC day, streak, points, share text, Claude schema), `lib/trivia-server.ts` (questions, plays, `recordTriviaPick`), `app/trivia/*`, `components/TriviaGame.tsx`, `writeTrivia` in `lib/claude.ts`, admin "Daily trivia" section (draft a week, approve/discard days) |
 | Clubs | `lib/clubs.ts` (fixed list, `CLUB_BY_ID`, `cleanClubs`), `components/ClubBadge.tsx`, `/clubs/[id]` |
+| Daily games | `lib/games.ts` (pure: seeded daily picks, Guess the Dish views/hints/points, Higher or Lower scoring, Bingo squares/lines), `lib/games-server.ts` (`game_days`, `game_plays`, `bingoFor`), `app/games/*`, `components/DishGuessGame.tsx`, `HigherLowerGame.tsx`, `ShareButton.tsx`, `app/api/games/dish-image` (hides the photo's file name). Spec: `docs/games.md` |
 | Admin | `app/admin` (only `profiles.is_admin`): judging, prizes, reference photos, backfills (package sizes, diet tags), sample recipes |
 
 ## Product rules (keep these)
@@ -63,6 +64,7 @@ New schema changes: add the next numbered file (`0014_…sql`, idempotent: `if n
 - **Names in ads need opt-in:** `profiles.feature_me`. Site-wide totals need no names.
 - **Cook-off:** one entry per person per dish; 3 votes per person per cook-off, no self-votes; winners: Crowd favorite, Chef's pick, Thriftiest copy (receipt-verified only).
 - **Daily trivia:** 3 questions a day (UTC), same for everyone, one go per signed-in person; guests can play without points. Answers never reach the browser before a pick. 1 point per right answer + 5 every 7th day in a row (kind `trivia`, no `challenge_id`). Trivia points count for levels and gear, never the monthly prize (`monthlyTop` excludes them). Questions go live only after an admin approves the day; no real restaurants, chefs, people or brands.
+- **Daily games:** Guess the Dish and Higher or Lower are one go per person per UTC day, same puzzle for everyone, picked once and stored in `game_days`; guests play without points. Bingo is weekly (Monday UTC) and ticks itself from activity. Game points (kind `game`) count for levels and gear, never the monthly prize. Nothing is bought or left to chance.
 - **Chef avatars:** legendary gear is earned only (points, badges), never sold or Plus-gated. Shop items carry a Shop tag and Plus items a Plus tag. Points are never spent: gear unlocks, it doesn't cost points. No clubs aimed at kids (COPPA); family clubs are written for parents. Club pages show counts only (no member lists).
 - **Sample/stock photos:** Unsplash only, no visible brand logos.
 

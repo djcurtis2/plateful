@@ -23,7 +23,8 @@ export type PointsKind =
   | "thriftiest"
   | "top10"
   | "receipt"
-  | "trivia";
+  | "trivia"
+  | "game";
 export type BadgeId =
   | "first_copycat"
   | "top10"
@@ -207,6 +208,21 @@ export type Database = {
       trivia_plays: Table<
         { user_id: string; day: string; picks: number[]; correct: number; finished_at: string | null; created_at: string },
         "user_id" | "day"
+      >;
+      game_days: Table<{ game: "guess_dish" | "higher_lower"; day: string; payload: Json; created_at: string }, "game" | "day" | "payload">;
+      game_plays: Table<
+        {
+          user_id: string;
+          game: "guess_dish" | "higher_lower";
+          day: string;
+          picks: string[];
+          moves: number;
+          score: number;
+          solved: boolean;
+          finished_at: string | null;
+          created_at: string;
+        },
+        "user_id" | "game" | "day"
       >;
       user_badges: Table<
         { id: number; user_id: string; badge: BadgeId; challenge_id: string | null; created_at: string },

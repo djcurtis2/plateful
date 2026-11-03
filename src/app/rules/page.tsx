@@ -2,6 +2,7 @@ import { ContactLine } from "@/components/ContactLine";
 import type { Metadata } from "next";
 import { POINTS, PRIZES, VOTES_PER_COOKOFF } from "@/lib/game";
 import { TRIVIA_STREAK_BONUS, TRIVIA_STREAK_EVERY } from "@/lib/trivia";
+import { BINGO_FULL_POINTS, BINGO_LINE_POINTS, DISH_MAX_POINTS, HL_MAX_POINTS, HL_POINTS_EVERY } from "@/lib/games";
 
 export const metadata: Metadata = { title: "Cook-off rules" };
 
@@ -24,6 +25,12 @@ export default function RulesPage() {
         <b>Daily trivia:</b> three questions a day, one go each. {POINTS.trivia} point per right answer, plus {TRIVIA_STREAK_BONUS} points every {TRIVIA_STREAK_EVERY} days
         in a row. Trivia points count toward your level and gear but not the monthly prize, which is for cooking. Questions are written with AI and checked by
         our team; if one turns out to be wrong, we may fix it without changing points already earned.
+      </p>
+      <p>
+        <b>Daily games:</b> Guess the Dish and Higher or Lower are one go per person per day, the same puzzle for everyone (days run on UTC). Guess the Dish gives up
+        to {DISH_MAX_POINTS} points; Higher or Lower gives 1 point every {HL_POINTS_EVERY} in a row, up to {HL_MAX_POINTS}. Cooking Bingo is weekly (Monday to
+        Sunday, UTC): {BINGO_LINE_POINTS} points per completed line and {BINGO_FULL_POINTS} for a full card, counted from what you actually do on Dupe Kitchen. Like
+        trivia, game points count toward your level and gear but not the monthly prize. Games are skill-based: nothing is bought and no prize is left to chance.
       </p>
       <h2 className="font-display text-xl font-bold">Prices and receipts</h2>
       <p>

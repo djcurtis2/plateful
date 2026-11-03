@@ -102,6 +102,36 @@ export default async function Home() {
         </section>
       )}
 
+      <section aria-labelledby="home-games" className="flex flex-col gap-3">
+        <div className="flex items-end justify-between gap-4">
+          <h2 id="home-games" className="font-display text-2xl font-bold tracking-tight">
+            More daily games
+          </h2>
+          <Link href="/games" className="text-sm font-semibold text-basil hover:underline">
+            All games
+          </Link>
+        </div>
+        <ul className="grid gap-3 sm:grid-cols-3">
+          {[
+            { href: "/games/dish", icon: "🔍", title: "Guess the Dish", blurb: "A blurry photo that sharpens with every guess." },
+            { href: "/games/higher-lower", icon: "↕️", title: "Higher or Lower", blurb: "Which restaurant dish costs more per plate?" },
+            { href: "/games/bingo", icon: "🎯", title: "Cooking Bingo", blurb: "This week's card ticks itself as you cook." },
+          ].map((g) => (
+            <li key={g.href}>
+              <Link href={g.href} className="card group flex h-full items-start gap-3 p-4 hover:border-basil">
+                <span className="text-2xl" aria-hidden>
+                  {g.icon}
+                </span>
+                <span className="flex flex-col">
+                  <span className="font-display text-lg font-bold group-hover:text-basil">{g.title}</span>
+                  <span className="text-sm text-muted">{g.blurb}</span>
+                </span>
+              </Link>
+            </li>
+          ))}
+        </ul>
+      </section>
+
       {top.length >= 3 && (
         <section className="flex flex-col gap-5">
           <div className="flex items-end justify-between gap-4">
