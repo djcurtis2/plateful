@@ -7,6 +7,7 @@ import { chefFrom, ownedGear, type ChefCard } from "@/lib/avatar-server";
 import { GEAR_BY_ID, newUnlocks, visibleAvatar, type Avatar, type GearItem } from "@/lib/avatar";
 import { GearUnlock } from "@/components/GearUnlock";
 import { ChefAvatar } from "@/components/ChefAvatar";
+import { UserMenu } from "@/components/UserMenu";
 import { publicName } from "@/lib/game";
 import { SEEN_COOKIE, WELCOME_COOKIE } from "@/lib/cookies";
 import { LevelIcon } from "@/components/GameIcons";
@@ -113,29 +114,10 @@ export async function Header() {
                 </Link>
                 <Link
                   href="/pantry"
-                  className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink sm:inline"
+                  className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink lg:inline"
                 >
                   Pantry
                 </Link>
-                <Link
-                  href="/account"
-                  className="rounded-lg px-2 py-1.5 text-muted hover:text-ink"
-                >
-                  {me.plus ? "Plus" : "Account"}
-                </Link>
-                {chef && (() => {
-                  // Never saved a chef: nudge with a dot until they make one.
-                  const nudge = me.profile?.avatar == null;
-                  const label = nudge ? "Make your chef" : "My chef";
-                  return (
-                    <Link href="/chef" aria-label={label} title={label} className="relative ml-1 flex rounded-full hover:opacity-80">
-                      <ChefAvatar avatar={chef.avatar} head size={32} uid="header-chef" />
-                      {nudge && (
-                        <span aria-hidden className="absolute -right-0.5 -top-0.5 size-2.5 rounded-full bg-chili ring-2 ring-bg" />
-                      )}
-                    </Link>
-                  );
-                })()}
                 {stats && (
                   <Link
                     href="/account"
@@ -148,6 +130,20 @@ export async function Header() {
                     </span>
                   </Link>
                 )}
+                {(() => {
+                  // Never saved a chef: nudge with a dot until they make one.
+                  const nudge = me.profile?.avatar == null;
+                  const label = nudge ? "Make your chef" : "My chef";
+                  return (
+                    <UserMenu label={label} nudge={nudge} plus={me.plus}>
+                      {chef ? (
+                        <ChefAvatar avatar={chef.avatar} head size={32} uid="header-chef" />
+                      ) : (
+                        <span className="flex size-8 items-center justify-center rounded-full border border-line bg-surface text-xs">Me</span>
+                      )}
+                    </UserMenu>
+                  );
+                })()}
               </>
             ) : (
               <Link href="/login" className="btn btn-ghost btn-sm">

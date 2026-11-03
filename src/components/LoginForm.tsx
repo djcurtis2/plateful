@@ -27,11 +27,19 @@ export function LoginForm({ next }: { next: string }) {
   }
 
   async function google() {
-    const supabase = createClient();
-    await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
-    });
+    setState("sending");
+    try {
+      const supabase = createClient();
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
+      });
+      if (error) throw error;
+      // Success navigates away to Google; leave the button disabled until then.
+    } catch {
+      setState("error");
+      setMessage("Google sign-in isn't working right now. Use the email link instead.");
+    }
   }
 
   if (state === "sent") {
@@ -77,7 +85,7 @@ export function LoginForm({ next }: { next: string }) {
         or
         <span className="h-px flex-1 bg-line" />
       </div>
-      <button onClick={google} className="btn btn-ghost">
+      <button onClick={google} className="btn btn-ghost" disabled={state === "sending"}>
         Continue with Google
       </button>
     </div>

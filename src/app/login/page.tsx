@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/LoginForm";
+import { getMe } from "@/lib/data";
 
 export const metadata: Metadata = { title: "Sign in" };
 
@@ -10,6 +12,9 @@ const ERRORS: Record<string, string> = {
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams;
+  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/library";
+  // Already signed in: skip the form and go where they were headed.
+  if (await getMe().catch(() => null)) redirect(dest);
   return (
     <main className="mx-auto flex w-full max-w-md flex-col gap-6 py-16">
       <div className="flex flex-col gap-2">
@@ -21,7 +26,7 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
           {ERRORS[error]}
         </p>
       )}
-      <LoginForm next={next && next.startsWith("/") && !next.startsWith("//") ? next : "/library"} />
+      <LoginForm next={dest} />
     </main>
   );
 }

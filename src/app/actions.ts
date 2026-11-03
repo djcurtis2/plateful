@@ -11,7 +11,7 @@ import { awardPoints, onEntryPosted, onVote } from "@/lib/game-server";
 import { readReceipt } from "@/lib/claude";
 import { createOriginal, createVersion } from "@/lib/originals";
 import { logCook } from "@/lib/savings-server";
-import { RECEIPT_SCAN } from "@/lib/limits";
+import { RECEIPT_SCAN, siteCapReached } from "@/lib/limits";
 import { getMe, getPantry, toRecipe } from "@/lib/data";
 import { leftoversFor, shareLabel } from "@/lib/leftovers";
 import { LEFTOVER_STYLES, type Ingredient, type LeftoverStyle } from "@/lib/recipe";
@@ -116,8 +116,7 @@ export async function postAttempt(formData: FormData): Promise<PostResult> {
   const { user } = await currentUser();
   if (!user) return LOGIN;
   const recipeId = String(formData.get("recipeId") ?? "");
-  let challengeId = String(formData.get("challengeId") ?? "") || null;
-  if (!Uuid.safeParse(recipeId).success || (challengeId && !Uuid.safeParse(challengeId).success)) {
+  if (!Uuid.safeParse(recipeId).success) {
     return { ok: false, code: "invalid", message: "Unknown recipe." };
   }
   const d = Details.safeParse({
@@ -179,18 +178,18 @@ export async function postAttempt(formData: FormData): Promise<PostResult> {
   }
 
   // An entry for this week's cook-off dish counts toward the cook-off, whichever page it was posted from.
-  if (!challengeId) {
-    const now = new Date().toISOString();
-    const { data: live } = await db
-      .from("challenges")
-      .select("id")
-      .eq("recipe_id", recipeId)
-      .lte("starts_at", now)
-      .gte("ends_at", now)
-      .limit(1)
-      .maybeSingle();
-    challengeId = live?.id ?? null;
-  }
+  // The server picks the cook-off (live, unfinalized, this dish); a client-sent id is never trusted.
+  const now = new Date().toISOString();
+  const { data: live } = await db
+    .from("challenges")
+    .select("id")
+    .eq("recipe_id", recipeId)
+    .lte("starts_at", now)
+    .gte("ends_at", now)
+    .is("finalized_at", null)
+    .limit(1)
+    .maybeSingle();
+  const challengeId = live?.id ?? null;
   const finalChallenge = challengeId ?? existing?.challenge_id ?? null;
 
   // A typed-in price replaces a verified one only when the cook changes it (blank or unchanged keeps the verified price).
@@ -277,6 +276,7 @@ async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string,
   const type = sniffImage(bytes);
   if (!type) return { verified: false, message: "Use a JPEG, PNG or WebP photo of the receipt." };
 
+  if (await siteCapReached()) return { verified: false, message: "We've hit today's receipt-check limit. Try again tomorrow." };
   const db = admin();
   // Receipt checks are paid Claude calls: 5 per person per day.
   const since = new Date(Date.now() - 86_400_000).toISOString();
@@ -289,6 +289,7 @@ async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string,
   const paid = ingredients.filter((g) => g.price > 0).length;
   const { data: ch } = challengeId ? await db.from("challenges").select("starts_at").eq("id", challengeId).maybeSingle() : { data: null };
 
+  let logged = false;
   try {
     const { result, inputTokens, outputTokens } = await readReceipt({
       imageBase64: Buffer.from(bytes).toString("base64"),
@@ -298,6 +299,7 @@ async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string,
     });
     // Log the paid call for cost tracking ("receipt" marks it apart from dish scans).
     await db.from("scans").insert({ user_id: userId, ip_hash: RECEIPT_SCAN, ok: result.is_receipt, input_tokens: inputTokens, output_tokens: outputTokens });
+    logged = true;
     const verdict = receiptVerdict(result, paid, ch ? new Date(ch.starts_at) : new Date(Date.now() - 7 * 86_400_000));
     if (!verdict.ok) return { verified: false, message: verdict.why };
     await db
@@ -313,6 +315,11 @@ async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string,
     return { verified: true, message: `Receipt verified: $${verdict.cost.toFixed(2)} a plate${result.store ? ` at ${result.store}` : ""}.` };
   } catch (e) {
     console.error("receipt check failed", e);
+    // A failed read may still have been billed: count it toward the person's 5 and the site cap (0 tokens still counts).
+    if (!logged) await db.from("scans").insert({ user_id: userId, ip_hash: RECEIPT_SCAN, ok: false, input_tokens: 0, output_tokens: 0 }).then(
+      () => undefined,
+      () => undefined,
+    );
     return { verified: false, message: "We couldn't read that receipt. Try a clearer, flat photo." };
   }
 }

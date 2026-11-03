@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
+import Link from "next/link";
 import { Header } from "@/components/Header";
 import { siteUrl } from "@/lib/env";
 import "./globals.css";
@@ -32,13 +33,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <footer className="border-t border-line">
           <div className="mx-auto flex w-full max-w-6xl flex-wrap justify-between gap-4 px-4 py-8 text-sm text-muted sm:px-6">
             <p>Plateful makes copycat recipes inspired by restaurant dishes. Not affiliated with any restaurant.</p>
-            <nav className="flex gap-4">
-              <a href="/cookoff" className="hover:text-ink">Cook-off</a>
-              <a href="/leaderboard" className="hover:text-ink">Leaderboard</a>
-              <a href="/rules" className="hover:text-ink">Rules</a>
-              <a href="/pricing" className="hover:text-ink">Pricing</a>
-              <a href="/terms" className="hover:text-ink">Terms</a>
-              <a href="/privacy" className="hover:text-ink">Privacy</a>
+            <nav className="flex flex-wrap gap-x-4 gap-y-2">
+              <Link href="/cookoff" className="hover:text-ink">Cook-off</Link>
+              <Link href="/leaderboard" className="hover:text-ink">Leaderboard</Link>
+              <Link href="/clubs" className="hover:text-ink">Clubs</Link>
+              <Link href="/cookoff/past" className="hover:text-ink">Hall of fame</Link>
+              <Link href="/rules" className="hover:text-ink">Rules</Link>
+              <Link href="/pricing" className="hover:text-ink">Pricing</Link>
+              <Link href="/terms" className="hover:text-ink">Terms</Link>
+              <Link href="/privacy" className="hover:text-ink">Privacy</Link>
             </nav>
           </div>
         </footer>
