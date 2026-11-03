@@ -113,18 +113,28 @@ export default async function Home() {
         </div>
         <ul className="grid gap-3 sm:grid-cols-3">
           {[
-            { href: "/games/dish", icon: "🔍", title: "Guess the Dish", blurb: "A blurry photo that sharpens with every guess." },
-            { href: "/games/higher-lower", icon: "↕️", title: "Higher or Lower", blurb: "Which restaurant dish costs more per plate?" },
-            { href: "/games/bingo", icon: "🎯", title: "Cooking Bingo", blurb: "This week's card ticks itself as you cook." },
+            { href: "/games/dish", icon: "🔍", art: "?", tile: "var(--chili)", cta: "Play today", title: "Guess the Dish", blurb: "A blurry photo that sharpens with every guess." },
+            { href: "/games/higher-lower", icon: "↕️", art: "⇅", tile: "var(--basil)", cta: "Play today", title: "Higher or Lower", blurb: "Which restaurant dish costs more per plate?" },
+            { href: "/games/bingo", icon: "🎯", art: "#", tile: "var(--plum)", cta: "See this week's card", title: "Cooking Bingo", blurb: "This week's card ticks itself as you cook." },
           ].map((g) => (
             <li key={g.href}>
-              <Link href={g.href} className="card group flex h-full items-start gap-3 p-4 hover:border-basil">
-                <span className="text-2xl" aria-hidden>
+              <Link href={g.href} className="game-tile group flex h-full items-start gap-3 p-4" style={{ "--tile": g.tile } as React.CSSProperties}>
+                {/* Big faded symbol in the corner, like the trivia card's question marks; decoration only. */}
+                <span
+                  aria-hidden
+                  className="game-tile-art pointer-events-none absolute -bottom-9 -right-3 select-none font-display text-[6rem] font-bold leading-none text-[var(--tile)] opacity-15"
+                >
+                  {g.art}
+                </span>
+                <span className="game-tile-icon relative grid size-11 shrink-0 place-items-center rounded-2xl text-2xl shadow-sm" aria-hidden>
                   {g.icon}
                 </span>
-                <span className="flex flex-col">
-                  <span className="font-display text-lg font-bold group-hover:text-basil">{g.title}</span>
+                <span className="relative flex flex-col gap-0.5">
+                  <span className="font-display text-lg font-bold text-[color-mix(in_oklab,var(--tile)_65%,var(--ink))]">{g.title}</span>
                   <span className="text-sm text-muted">{g.blurb}</span>
+                  <span className="mt-1 text-sm font-semibold text-[color-mix(in_oklab,var(--tile)_65%,var(--ink))]">
+                    {g.cta} <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
+                  </span>
                 </span>
               </Link>
             </li>
