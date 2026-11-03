@@ -15,7 +15,7 @@ import { StatusToast } from "@/components/StatusToast";
 
 export function Logo() {
   return (
-    <span className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
+    <span className="flex items-center gap-2 whitespace-nowrap font-display text-lg font-bold tracking-tight sm:text-xl">
       <span
         aria-hidden
         className="inline-block size-5 rounded-full bg-saffron shadow-[inset_0_0_0_5px_var(--basil)]"
@@ -84,11 +84,11 @@ export async function Header() {
   return (
     <>
       <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Link href="/" aria-label="Dupe Kitchen home">
             <Logo />
           </Link>
-          <nav className="flex items-center gap-1 text-sm font-medium sm:gap-3">
+          <nav className="flex items-center gap-1 whitespace-nowrap text-sm font-medium sm:gap-3">
             <Link
               href="/cookoff"
               className="rounded-lg px-2 py-1.5 text-muted hover:text-ink"
@@ -105,7 +105,7 @@ export async function Header() {
               <>
                 <Link
                   href="/library"
-                  className="rounded-lg px-2 py-1.5 text-muted hover:text-ink"
+                  className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink sm:inline"
                 >
                   My recipes
                 </Link>
