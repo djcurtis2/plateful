@@ -3,7 +3,10 @@ import { RecipeTile } from "@/components/RecipeTile";
 import { WaitlistForm } from "@/components/WaitlistForm";
 import { getCurrentChallenge, getMe, getRecentPublicRecipes, isLive } from "@/lib/data";
 import { siteSavings } from "@/lib/savings-server";
-import { timeLeft } from "@/lib/game";
+import { publicName, timeLeft } from "@/lib/game";
+import { leaderboard } from "@/lib/game-server";
+import { ChefAvatar } from "@/components/ChefAvatar";
+import { ClubBadge } from "@/components/ClubBadge";
 import Link from "next/link";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +18,9 @@ export default async function Home() {
     getCurrentChallenge().catch(() => null),
     siteSavings(),
   ]);
+  // Top chefs strip: this cook-off's points, or all-time when there's no cook-off. Hidden until 3 people have points,
+  // so an empty site never shows a lonely podium.
+  const top = (await leaderboard(challenge ? { challengeId: challenge.id } : "all", 3).catch(() => [])).filter((r) => r.points > 0);
 
   return (
     <main className="flex flex-col gap-16 pt-8 sm:pt-12">
@@ -62,6 +68,39 @@ export default async function Home() {
           <Link href="/cookoff" className="btn btn-sun shrink-0">
             {isLive(challenge) ? "Join the cook-off" : "See the winners"}
           </Link>
+        </section>
+      )}
+
+      {top.length >= 3 && (
+        <section className="flex flex-col gap-5">
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <span className="label">{challenge ? "This cook-off" : "All time"}</span>
+              <h2 className="font-display text-3xl font-bold tracking-tight">Top chefs</h2>
+            </div>
+            <Link href="/leaderboard" className="text-sm font-semibold text-basil hover:underline">
+              Full leaderboard
+            </Link>
+          </div>
+          <ol className="grid gap-4 sm:grid-cols-3">
+            {top.map((r) => (
+              <li key={r.userId} className="card flex flex-col items-center gap-2 p-5 text-center">
+                <span className={`tabular font-mono text-sm font-semibold ${r.rank === 1 ? "text-basil" : "text-muted"}`}>#{r.rank}</span>
+                <ChefAvatar avatar={r.chef.avatar} size={112} uid={`${r.userId}-home`} title={`${publicName(r.name)}'s chef`} />
+                <span className="w-full truncate font-semibold">{publicName(r.name)}</span>
+                <span className="text-xs text-muted">
+                  {r.level} · <span className="tabular font-mono">{r.points}</span> pts
+                </span>
+                {r.chef.clubs.length > 0 && (
+                  <span className="flex flex-wrap justify-center gap-1.5">
+                    {r.chef.clubs.slice(0, 2).map((c) => (
+                      <ClubBadge key={c} id={c} />
+                    ))}
+                  </span>
+                )}
+              </li>
+            ))}
+          </ol>
         </section>
       )}
 
