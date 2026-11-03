@@ -5,6 +5,7 @@ import { hasPlus, type ProfilePlanFields } from "@/lib/plan";
 import type { Ingredient, Recipe } from "@/lib/recipe";
 import { chefCards, type ChefCard } from "@/lib/avatar-server";
 import { CLUB_MIN_MEMBERS } from "@/lib/clubs";
+import { legacySlots, normalizeSettings, type PlanSettings, type PlanSlot } from "@/lib/planner";
 
 type RecipeRow = Omit<Recipe, "image_url" | "menu_price" | "plate_cost" | "out_price"> & {
   out_price: string | number | null;
@@ -299,18 +300,34 @@ export async function clubEntries(clubId: string, limit = 12): Promise<Attempt[]
   return withNames((data ?? []) as AttemptRow[]);
 }
 
-export type MealPlanRow = { id: string; settings: import("@/lib/planner").PlanSettings; recipe_ids: string[]; swapped: string[]; created_at: string };
+/** legacy = an older dinners-only plan with no stored spots yet; its spots come from recipe_ids. */
+export type MealPlanRow = { id: string; settings: PlanSettings; slots: PlanSlot[]; legacy: boolean; swapped: string[]; created_at: string };
 
 /** This person's most recent meal plan. */
 export async function getLatestPlan(userId: string): Promise<MealPlanRow | null> {
   const { data } = await admin()
     .from("meal_plans")
-    .select("id, settings, recipe_ids, swapped, created_at")
+    .select("id, settings, recipe_ids, slots, swapped, created_at")
     .eq("user_id", userId)
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return (data as MealPlanRow | null) ?? null;
+  if (!data) return null;
+  const slots = data.slots as PlanSlot[] | null;
+  return {
+    id: data.id,
+    settings: normalizeSettings(data.settings as Partial<PlanSettings>),
+    slots: slots ?? legacySlots(data.recipe_ids),
+    legacy: !slots,
+    swapped: data.swapped,
+    created_at: data.created_at,
+  };
+}
+
+/** A recipe this person may put in their week: any public recipe, or one of their own private ones. */
+export async function getUsableRecipe(userId: string, id: string): Promise<Recipe | null> {
+  const { data } = await admin().from("recipes").select(RECIPE_COLUMNS).eq("id", id).or(`is_public.eq.true,user_id.eq.${userId}`).maybeSingle();
+  return data ? toRecipe(data as RecipeRow) : null;
 }
 
 /** Recipes that haven't been checked for diet tags yet (admin backfill). */

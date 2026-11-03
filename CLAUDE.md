@@ -27,8 +27,8 @@ Run typecheck + tests before every commit. In PowerShell, quote comma lists (e.g
 
 ## Database
 
-Migrations in `supabase/migrations/0001…0014` are all applied to the one Supabase project (used by both local and live).
-New schema changes: add the next numbered file (`0014_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
+Migrations in `supabase/migrations/0001…0015` are all applied to the one Supabase project (used by both local and live).
+New schema changes: add the next numbered file (`0016_…sql`, idempotent: `if not exists`, drop/re-add constraints), run it in the Supabase SQL editor, and update `src/lib/database.types.ts` by hand to match.
 `supabase/demo_*.sql` add demo data; `demo_cleanup.sql` removes it (slugs ending `-demo`, `@demo.plateful.test` users, `samples/` photos).
 
 ## Where things live
@@ -41,7 +41,8 @@ New schema changes: add the next numbered file (`0014_…sql`, idempotent: `if n
 | Server actions | `app/actions.ts`, `app/plan/actions.ts`, `app/admin/actions.ts`. Only export async actions from `"use server"` files; read helpers go in `lib/`. |
 | Cook-off + game | `lib/game.ts` (pure: points, levels, badges, prizes, receipt rules), `lib/game-server.ts` (ledger, finalize), `cast_vote` SQL function |
 | Use it up / originals | `lib/leftovers.ts`, `lib/originals.ts` (`createOriginal`, `createVersion`, shared daily limit) |
-| Plan my week (Plus) | `lib/planner.ts` (pure greedy planner), `app/plan/*` |
+| Plan my week (Plus) | `lib/planner.ts` (pure: spots per day × meal, greedy picks, leftovers, `summarizeWeek`), `app/plan/*` (week, `pick` page), `components/PlanForm.tsx`, `RecipePicker.tsx`. Plans store `slots` (jsonb); older plans only have `recipe_ids` and read as one dinner a day (`legacySlots`). |
+| Own recipes | `lib/own-recipes.ts` (`createOwnRecipe`, `OWN_RECIPES_PER_DAY`), `priceOwnRecipe` in `lib/claude.ts`, `addOwnRecipe` / `deleteOwnRecipe` in `app/actions.ts`, `/library/new`, `components/OwnRecipeForm.tsx`. Logged in `scans` as `OWN_SCAN`. |
 | Savings | `lib/savings.ts` (pure), `lib/savings-server.ts` (`cook_log`, badges, totals) |
 | Diets + versions | `lib/diet.ts` (pure), `components/VersionMaker.tsx`, `DietChips.tsx`, `DietForm.tsx` |
 | Payments | `app/api/stripe/*`, `lib/billing.ts` (`syncSubscription`, `refreshFromStripe` fallback) |
@@ -57,7 +58,9 @@ New schema changes: add the next numbered file (`0014_…sql`, idempotent: `if n
 - **Plus gating:** free = leftover list + 1 suggestion (rest blurred), 1 lifetime try of new recipes/versions, example plan only. Plus = all suggestions, 15 new recipes or versions a day, Plan my week. Diet profile and filters are free.
 - **Savings are honest estimates:** counted only when someone cooks ("I made it", plan "Made it", cook-off post), once per recipe per day, servings capped at 8. Compare per plate: copycats use `menu_price / menu_serves`; others use Claude's `out_price` (similar takeout), else `AVERAGE_OUT` by meal. Always label as estimates.
 - **Per plate everywhere:** use `menuPlate()` / `savings()` from `lib/recipe.ts`, never raw `menu_price`, when comparing with home cost.
-- **Planner costs:** `bill` = whole packages bought; `used` = what the dinners eat. Recipes without `pack_qty` use their `plate_cost` for meal cost.
+- **Planner costs:** `bill` = whole packages bought; `used` = what the meals eat. Recipes without `pack_qty` use their `plate_cost` for meal cost. A leftover lunch means the dinner before it is cooked double; the two split its cost.
+- **Plan my week:** any of breakfast, lunch, dinner, snack for 3–7 days. "Plan it for me" or start empty and pick. Dinners never repeat; breakfasts and snacks rotate up to 3 favorites; odd-day lunches (and lunches short of recipes) are last night's leftovers. Cooks can put any public recipe or their own in any spot (checked server-side with `getUsableRecipe`).
+- **Own recipes:** free for any signed-in cook (10 a day); private (`is_public` false, `source` "own"), labeled "My recipe", no versions, sharing or public gallery; only their owner can delete them. Claude adds prices and keeps the cook's ingredients and steps.
 - **Diets are a guide, not an allergy guarantee:** show `ALLERGY_NOTE`. Tags are derived in code from Claude's `contains` list (`dietTagsFrom`). Untagged recipes never count as fitting a diet. A diet version that still breaks its diet is not saved.
 - **Originals and versions:** never named after or attributed to a real chef, person or restaurant. Versions keep the original's restaurant and menu price. First photo posted for a recipe without one becomes its picture.
 - **Receipts are never stored:** read once by Claude, only the result (price, store, date) is kept.

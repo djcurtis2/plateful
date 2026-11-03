@@ -6,6 +6,8 @@ import { LEFTOVER_STYLES, slugify, type LeftoverStyle } from "@/lib/recipe";
 import { VERSIONS, dietTagsFrom, type VersionKind } from "@/lib/diet";
 import type { Recipe } from "@/lib/recipe";
 
+const MEAL_BRIEF = { breakfast: "a breakfast", lunch: "a lunch", dinner: "a dinner main", snack: "a snack" } as const;
+
 /** New Dupe Kitchen originals: Plus gets 15 a day; free accounts get 1 to try the feature. */
 export const ORIGINALS_LIMIT = { plusPerDay: 15, freeLifetime: 1 };
 
@@ -28,7 +30,8 @@ export async function createOriginal(input: {
   style: LeftoverStyle;
   avoidDish: string;
   inspiredBy: string | null;
-  dinnerOnly?: boolean;
+  /** Plan my week asks for a recipe for one meal. */
+  meal?: "breakfast" | "lunch" | "dinner" | "snack";
 }): Promise<{ ok: true; slug: string; id: string } | { ok: false; message: string }> {
   if (await siteCapReached()) return { ok: false, message: "We've hit today's limit while we scale up. Try again tomorrow." };
   if ((await originalsLeft(input.userId, input.plus)) <= 0) {
@@ -44,7 +47,7 @@ export async function createOriginal(input: {
   try {
     made = await inventRecipe({
       leftovers: input.leftovers,
-      styleBrief: input.dinnerOnly ? `${pick.brief}. It must be a dinner main` : pick.brief,
+      styleBrief: input.meal ? `${pick.brief}. It must be ${MEAL_BRIEF[input.meal]}` : pick.brief,
       avoidDish: input.avoidDish,
     });
   } catch (e) {
@@ -58,7 +61,7 @@ export async function createOriginal(input: {
   const db = admin();
   const id = crypto.randomUUID();
   const slug = `${slugify(result.dish!)}-${id.slice(0, 6)}`;
-  const meals = result.meals?.length ? result.meals : ["dinner" as const];
+  const meals = result.meals?.length ? result.meals : [input.meal ?? ("dinner" as const)];
   const { error } = await db.from("recipes").insert({
     id,
     slug,
@@ -66,7 +69,7 @@ export async function createOriginal(input: {
     dish: result.dish!,
     restaurant: null,
     cuisine: result.cuisine || null,
-    meals: input.dinnerOnly && !meals.includes("dinner") ? [...meals, "dinner"] : meals,
+    meals: input.meal && !meals.includes(input.meal) ? [...meals, input.meal] : meals,
     servings: result.servings ?? 2,
     minutes: result.minutes ?? null,
     difficulty: result.difficulty ?? null,

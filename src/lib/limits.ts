@@ -13,6 +13,8 @@ export const RECEIPT_SCAN = "receipt";
 export const LEFTOVER_SCAN = "leftovers";
 /** Admin "write a week of trivia" calls: counted toward the site cap only. */
 export const TRIVIA_SCAN = "trivia";
+/** "Add my own recipe": Claude prices a cook's own recipe. Its own daily limit (OWN_RECIPES_PER_DAY). */
+export const OWN_SCAN = "own";
 
 export function hashIp(ip: string | null): string | null {
   if (!ip) return null;
@@ -39,7 +41,7 @@ async function countScans(filter: { column: "user_id" | "visitor_id" | "ip_hash"
     .select("id", { count: "exact", head: true })
     .gte("created_at", since)
     .not("input_tokens", "is", null);
-  if (filter) q = q.eq(filter.column, filter.value).or(`ip_hash.is.null,ip_hash.not.in.(${RECEIPT_SCAN},${LEFTOVER_SCAN},${TRIVIA_SCAN})`);
+  if (filter) q = q.eq(filter.column, filter.value).or(`ip_hash.is.null,ip_hash.not.in.(${RECEIPT_SCAN},${LEFTOVER_SCAN},${TRIVIA_SCAN},${OWN_SCAN})`);
   const { count, error } = await q;
   if (error) throw new Error(`Couldn't read the scans table (${error.code ?? "no code"}): ${error.message}`);
   return count ?? 0;
@@ -129,7 +131,7 @@ export async function recordScan(row: {
     });
 }
 
-/** Site-wide daily cap on paid Claude calls (dish scans, receipts, leftover recipes and trivia together). */
+/** Site-wide daily cap on paid Claude calls (dish scans, receipts, leftover recipes, own recipes and trivia together). */
 export async function siteCapReached() {
   return (await countScans(null, startOfUtcDay())) >= intEnv("DAILY_SCAN_CAP", 2000);
 }

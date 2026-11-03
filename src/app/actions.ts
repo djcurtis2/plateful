@@ -2,6 +2,7 @@
 import { DIET_IDS, VERSIONS, type VersionKind } from "@/lib/diet";
 import { IMAGE_MAX, extFor, sniffImage } from "@/lib/images";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { admin } from "@/lib/supabase/admin";
@@ -10,6 +11,7 @@ import { pantryKey } from "@/lib/format";
 import { awardPoints, onEntryPosted, onVote } from "@/lib/game-server";
 import { readReceipt } from "@/lib/claude";
 import { createOriginal, createVersion } from "@/lib/originals";
+import { createOwnRecipe } from "@/lib/own-recipes";
 import { logCook } from "@/lib/savings-server";
 import { RECEIPT_SCAN, siteCapReached } from "@/lib/limits";
 import { getMe, getPantry, toRecipe } from "@/lib/data";
@@ -443,4 +445,57 @@ export async function setDiets(diets: string[]): Promise<Result> {
   revalidatePath("/library");
   revalidatePath("/plan");
   return { ok: true };
+}
+
+const OwnRecipeForm = z.object({
+  dish: z.string().trim().min(2).max(90),
+  meals: z.array(z.enum(["breakfast", "lunch", "dinner", "snack", "dessert"])).min(1).max(5),
+  servings: z.coerce.number().int().min(1).max(12),
+  minutes: z.union([z.literal(""), z.coerce.number().int().min(1).max(1440)]),
+  ingredients: z.array(z.string().trim().min(1).max(120)).min(1).max(30),
+  steps: z.array(z.string().trim().min(1).max(400)).max(14),
+});
+const lines = (v: FormDataEntryValue | null) =>
+  String(v ?? "")
+    .split(/\r?\n/)
+    .map((l) => l.replace(/^\s*(?:[-*•]|\d+[.)])\s*/, "").trim())
+    .filter(Boolean);
+
+/** "Add my own recipe": anyone signed in can save their own; Claude prices it for the shopping list. Private to them. */
+export async function addOwnRecipe(formData: FormData): Promise<{ ok: true; slug: string } | { ok: false; message: string }> {
+  const me = await getMe();
+  if (!me) return { ok: false, message: "Sign in to save your own recipes." };
+  const p = OwnRecipeForm.safeParse({
+    dish: formData.get("dish"),
+    meals: formData.getAll("meals").map(String),
+    servings: formData.get("servings"),
+    minutes: formData.get("minutes") ?? "",
+    ingredients: lines(formData.get("ingredients")),
+    steps: lines(formData.get("steps")),
+  });
+  if (!p.success) {
+    const field = p.error.issues[0]?.path[0];
+    const why: Record<string, string> = {
+      dish: "Give your recipe a name.",
+      meals: "Pick at least one meal it's for.",
+      ingredients: "List your ingredients, one per line (up to 30, each under 120 characters).",
+      steps: "Up to 14 steps, each under 400 characters.",
+      minutes: "Time should be in minutes.",
+    };
+    return { ok: false, message: why[String(field)] ?? "Check the form and try again." };
+  }
+  const r = await createOwnRecipe({ userId: me.user.id, ...p.data, minutes: p.data.minutes === "" ? null : p.data.minutes });
+  if (!r.ok) return r;
+  revalidatePath("/library");
+  return { ok: true, slug: r.slug };
+}
+
+/** Deletes one of your own recipes. Copycats and originals are shared, so only "own" recipes can be deleted. */
+export async function deleteOwnRecipe(recipeId: string): Promise<{ ok: boolean; message?: string }> {
+  const me = await getMe();
+  if (!me || !Uuid.safeParse(recipeId).success) return { ok: false, message: "Sign in to do that." };
+  const { data } = await admin().from("recipes").delete().eq("id", recipeId).eq("user_id", me.user.id).eq("source", "own").select("id");
+  if (!data?.length) return { ok: false, message: "Couldn't delete that recipe." };
+  revalidatePath("/library");
+  redirect("/library");
 }

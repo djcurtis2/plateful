@@ -278,13 +278,15 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
           </p>
         </section>
 
-        <section className="flex flex-col gap-3">
-          <div>
-            <h2 className="font-display text-2xl font-bold">{recipe.restaurant ? "Restaurant vs. mine" : "Show off your version"}</h2>
-            <p className="text-sm text-muted">Add a photo of your version and post it. Your link earns you free months.</p>
-          </div>
-          <ShareCard recipe={recipe} shareUrl={shareUrl} canPost={signedIn} hasEntry={hasEntry} />
-        </section>
+        {recipe.source !== "own" && (
+          <section className="flex flex-col gap-3">
+            <div>
+              <h2 className="font-display text-2xl font-bold">{recipe.restaurant ? "Restaurant vs. mine" : "Show off your version"}</h2>
+              <p className="text-sm text-muted">Add a photo of your version and post it. Your link earns you free months.</p>
+            </div>
+            <ShareCard recipe={recipe} shareUrl={shareUrl} canPost={signedIn} hasEntry={hasEntry} />
+          </section>
+        )}
       </aside>
     </div>
   );

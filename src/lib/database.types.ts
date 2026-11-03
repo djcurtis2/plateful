@@ -92,7 +92,7 @@ export type Database = {
           diet_tags: string[];
           variant_of: string | null;
           variant_kind: string | null;
-          source: "snap" | "leftovers";
+          source: "snap" | "leftovers" | "own";
           style: string | null;
           inspired_by: string | null;
           servings: number;
@@ -111,7 +111,7 @@ export type Database = {
         "slug" | "dish" | "ingredients" | "steps"
       >;
       meal_plans: Table<
-        { id: string; user_id: string; settings: Json; recipe_ids: string[]; swapped: string[]; created_at: string; updated_at: string },
+        { id: string; user_id: string; settings: Json; recipe_ids: string[]; slots: Json | null; swapped: string[]; created_at: string; updated_at: string },
         "user_id" | "settings"
       >;
       cook_log: Table<
