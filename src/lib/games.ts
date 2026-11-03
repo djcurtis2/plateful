@@ -176,8 +176,9 @@ export const BINGO_LINES = [
   [0, 4, 8],
   [2, 4, 6],
 ] as const;
-export const BINGO_LINE_POINTS = 3;
-export const BINGO_FULL_POINTS = 10;
+// Bingo takes a week of real cooking, so it pays more than a daily game (up to 8 × 5 + 20 = 60 a week).
+export const BINGO_LINE_POINTS = 5;
+export const BINGO_FULL_POINTS = 20;
 
 export function bingoMarks(card: ReturnType<typeof bingoCard>, a: BingoActivity): boolean[] {
   return card.map((sq) => sq === BINGO_FREE || sq.done(a));

@@ -40,7 +40,7 @@ Like the daily newspaper crossword: one puzzle a day, the same for everyone, und
 
 - A 3×3 card each week (Monday–Sunday UTC), the same for everyone, centre square free.
 - Squares tick themselves from what you already do on Dupe Kitchen: cook a dinner, cook a copycat, a plate under $3, a vegetarian dish, two cuisines, make a version, make a leftovers recipe, post a cook-off entry, vote, play trivia 3 days, snap a dish, save $20, plan a week.
-- Points: 3 per completed line, 10 for the full card. Awarded once per week each.
+- Points: 5 per completed line, 20 for the full card (up to 60 a week, more than a daily game since it takes a week of cooking). Awarded once per week each.
 - Share: an emoji 3×3 grid.
 
 ## Where things live

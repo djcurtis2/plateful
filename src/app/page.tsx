@@ -7,6 +7,7 @@ import { publicName, timeLeft } from "@/lib/game";
 import { leaderboard } from "@/lib/game-server";
 import { triviaPlay, triviaQuestions } from "@/lib/trivia-server";
 import { TRIVIA_PER_DAY, triviaDay } from "@/lib/trivia";
+import { BINGO_FULL_POINTS, BINGO_LINE_POINTS, DISH_MAX_POINTS, HL_MAX_POINTS } from "@/lib/games";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import Link from "next/link";
@@ -113,9 +114,9 @@ export default async function Home() {
         </div>
         <ul className="grid gap-3 sm:grid-cols-3">
           {[
-            { href: "/games/dish", icon: "🔍", art: "?", tile: "var(--chili)", cta: "Play today", title: "Guess the Dish", blurb: "A blurry photo that sharpens with every guess." },
-            { href: "/games/higher-lower", icon: "↕️", art: "⇅", tile: "var(--basil)", cta: "Play today", title: "Higher or Lower", blurb: "Which restaurant dish costs more per plate?" },
-            { href: "/games/bingo", icon: "🎯", art: "#", tile: "var(--plum)", cta: "See this week's card", title: "Cooking Bingo", blurb: "This week's card ticks itself as you cook." },
+            { href: "/games/dish", icon: "🔍", art: "?", tile: "var(--chili)", reward: `Up to ${DISH_MAX_POINTS} pts a day`, cta: "Play today", title: "Guess the Dish", blurb: "A blurry photo that sharpens with every guess." },
+            { href: "/games/higher-lower", icon: "↕️", art: "⇅", tile: "var(--basil)", reward: `Up to ${HL_MAX_POINTS} pts a day`, cta: "Play today", title: "Higher or Lower", blurb: "Which restaurant dish costs more per plate?" },
+            { href: "/games/bingo", icon: "🎯", art: "#", tile: "var(--plum)", reward: `${BINGO_LINE_POINTS} pts a line · ${BINGO_FULL_POINTS} for a full card`, cta: "See this week's card", title: "Cooking Bingo", blurb: "This week's card ticks itself as you cook." },
           ].map((g) => (
             <li key={g.href}>
               <Link href={g.href} className="game-tile group flex h-full items-start gap-3 p-4" style={{ "--tile": g.tile } as React.CSSProperties}>
@@ -131,6 +132,7 @@ export default async function Home() {
                 </span>
                 <span className="relative flex flex-col gap-0.5">
                   <span className="font-display text-lg font-bold text-[color-mix(in_oklab,var(--tile)_65%,var(--ink))]">{g.title}</span>
+                  <span className="mb-1 w-fit rounded-full bg-[var(--tile)] px-2 py-0.5 font-mono text-[11px] font-semibold text-surface">★ {g.reward}</span>
                   <span className="text-sm text-muted">{g.blurb}</span>
                   <span className="mt-1 text-sm font-semibold text-[color-mix(in_oklab,var(--tile)_65%,var(--ink))]">
                     {g.cta} <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
