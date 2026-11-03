@@ -357,7 +357,10 @@ Rules:
         content: `Write ${days} days of questions.${avoid.length ? `\nAvoid these recent questions:\n${avoid.map((q) => `- ${q}`).join("\n")}` : ""}`,
       },
     ],
-  });
+  },
+    // A week of questions takes about a minute: give it room, and don't pay twice by retrying a slow call.
+    { timeout: 180_000, maxRetries: 0 },
+  );
   const text = msg.content.find((b) => b.type === "text");
   if (!text || text.type !== "text") throw new Error("no result");
   const raw = JSON.parse(text.text) as { days?: { questions?: unknown[] }[] };
