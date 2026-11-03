@@ -3,6 +3,7 @@ import { DIET_IDS, VERSIONS, type VersionKind } from "@/lib/diet";
 import { IMAGE_MAX, extFor, sniffImage } from "@/lib/images";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { siteUrl } from "@/lib/env";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { admin } from "@/lib/supabase/admin";
@@ -14,9 +15,9 @@ import { createOriginal, createVersion } from "@/lib/originals";
 import { createOwnRecipe } from "@/lib/own-recipes";
 import { logCook } from "@/lib/savings-server";
 import { RECEIPT_SCAN, siteCapReached } from "@/lib/limits";
-import { getMe, getPantry, toRecipe } from "@/lib/data";
+import { getMe, getPantry, getSharedRecipe, toRecipe } from "@/lib/data";
 import { leftoversFor, shareLabel } from "@/lib/leftovers";
-import { LEFTOVER_STYLES, type Ingredient, type LeftoverStyle } from "@/lib/recipe";
+import { LEFTOVER_STYLES, slugify, type Ingredient, type LeftoverStyle } from "@/lib/recipe";
 import { POINTS, VOTE_ERRORS, receiptVerdict, validPublicName } from "@/lib/game";
 
 type Result = { ok: true } | { ok: false; code: "login" | "invalid" | "failed"; message: string };
@@ -498,4 +499,85 @@ export async function deleteOwnRecipe(recipeId: string): Promise<{ ok: boolean; 
   if (!data?.length) return { ok: false, message: "Couldn't delete that recipe." };
   revalidatePath("/library");
   redirect("/library");
+}
+
+/** Turns on a private share link for one of your own recipes (or returns the existing one). */
+export async function shareOwnRecipe(recipeId: string): Promise<{ ok: true; url: string } | { ok: false; message: string }> {
+  const me = await getMe();
+  if (!me || !Uuid.safeParse(recipeId).success) return { ok: false, message: "Sign in to do that." };
+  const db = admin();
+  const { data } = await db.from("recipes").select("slug, share_token").eq("id", recipeId).eq("user_id", me.user.id).eq("source", "own").maybeSingle();
+  if (!data) return { ok: false, message: "Only your own recipes can be shared by link." };
+  let token = data.share_token;
+  if (!token) {
+    token = crypto.randomUUID();
+    const { error } = await db.from("recipes").update({ share_token: token }).eq("id", recipeId).eq("user_id", me.user.id);
+    if (error) return { ok: false, message: "Couldn't make a link. Try again." };
+  }
+  return { ok: true, url: `${siteUrl}/r/${data.slug}?k=${token}` };
+}
+
+/** Turns the share link off: anyone who has it sees "not found" from now on. Copies people saved are theirs to keep. */
+export async function stopSharingOwnRecipe(recipeId: string): Promise<{ ok: boolean; message?: string }> {
+  const me = await getMe();
+  if (!me || !Uuid.safeParse(recipeId).success) return { ok: false, message: "Sign in to do that." };
+  await admin().from("recipes").update({ share_token: null }).eq("id", recipeId).eq("user_id", me.user.id).eq("source", "own");
+  return { ok: true, message: "Link turned off" };
+}
+
+/** Most shared recipes one person can copy in a day; copies cost nothing, the cap just stops floods. */
+const COPIES_PER_DAY = 30;
+
+/**
+ * Saves your own copy of a recipe someone shared with you: private to you, yours to plan with,
+ * and unaffected if they change or delete theirs. Copying the same one twice opens your first copy.
+ */
+export async function copySharedRecipe(slug: string, token: string): Promise<{ ok: false; message: string }> {
+  const me = await getMe();
+  if (!me) return { ok: false, message: "Sign in to save a copy." };
+  const original = await getSharedRecipe(slug, token);
+  if (!original) return { ok: false, message: "That link has been turned off." };
+  const db = admin();
+  const { data: mine } = await db.from("recipes").select("slug").eq("user_id", me.user.id).eq("inspired_by", original.id).eq("source", "own").limit(1).maybeSingle();
+  if (mine) redirect(`/r/${mine.slug}`);
+  const { count } = await db
+    .from("recipes")
+    .select("id", { count: "exact", head: true })
+    .eq("user_id", me.user.id)
+    .not("inspired_by", "is", null)
+    .eq("source", "own")
+    .gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
+  if ((count ?? 0) >= COPIES_PER_DAY) return { ok: false, message: "That's a lot of copies today. Try again tomorrow." };
+  const id = crypto.randomUUID();
+  const copySlug = `${slugify(original.dish)}-${id.slice(0, 6)}`;
+  const { error } = await db.from("recipes").insert({
+    id,
+    slug: copySlug,
+    user_id: me.user.id,
+    dish: original.dish,
+    restaurant: null,
+    cuisine: original.cuisine,
+    meals: original.meals,
+    servings: original.servings,
+    minutes: original.minutes,
+    difficulty: original.difficulty,
+    confidence: null,
+    why: original.why,
+    menu_price: null,
+    plate_cost: original.plate_cost,
+    out_price: original.out_price,
+    contains: original.contains,
+    diet_tags: original.diet_tags,
+    ingredients: original.ingredients,
+    steps: original.steps,
+    image_path: null,
+    source: "own",
+    style: null,
+    is_public: false,
+    inspired_by: original.id,
+  });
+  if (error) return { ok: false, message: "Couldn't save a copy. Try again." };
+  await db.from("saved_recipes").upsert({ user_id: me.user.id, recipe_id: id });
+  revalidatePath("/library");
+  redirect(`/r/${copySlug}`);
 }

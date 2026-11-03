@@ -324,6 +324,19 @@ export async function getLatestPlan(userId: string): Promise<MealPlanRow | null>
   };
 }
 
+/** Someone's own recipe opened from its share link. Null unless the token matches a recipe still being shared. */
+export async function getSharedRecipe(slug: string, token: string): Promise<Recipe | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(token)) return null;
+  const { data } = await admin().from("recipes").select(RECIPE_COLUMNS).eq("slug", slug).eq("source", "own").eq("share_token", token).maybeSingle();
+  return data ? toRecipe(data as RecipeRow) : null;
+}
+
+/** The owner's current share link token for their own recipe, if it's being shared. */
+export async function getShareToken(userId: string, recipeId: string): Promise<string | null> {
+  const { data } = await admin().from("recipes").select("share_token").eq("id", recipeId).eq("user_id", userId).maybeSingle();
+  return data?.share_token ?? null;
+}
+
 /** A recipe this person may put in their week: any public recipe, or one of their own private ones. */
 export async function getUsableRecipe(userId: string, id: string): Promise<Recipe | null> {
   const { data } = await admin().from("recipes").select(RECIPE_COLUMNS).eq("id", id).or(`is_public.eq.true,user_id.eq.${userId}`).maybeSingle();

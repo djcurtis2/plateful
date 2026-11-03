@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getAttempts, getMe, getPantry, getRecipeBySlug, getRecipesByIds, isSaved } from "@/lib/data";
+import { getAttempts, getMe, getPantry, getRecipeBySlug, getRecipesByIds, getShareToken, getSharedRecipe, isSaved } from "@/lib/data";
+import type { Recipe } from "@/lib/recipe";
 import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 import { siteUrl } from "@/lib/env";
@@ -16,13 +17,21 @@ import { originalsLeft } from "@/lib/originals";
 import { VERSIONS, VERSION_IDS, dietMisses } from "@/lib/diet";
 import { AdminButton } from "@/components/AdminButton";
 import { deleteOwnRecipe } from "@/app/actions";
+import { ShareOwnRecipe } from "@/components/ShareOwnRecipe";
+import { CopySharedRecipe } from "@/components/CopySharedRecipe";
 
-type Params = { params: Promise<{ slug: string }> };
+type Params = { params: Promise<{ slug: string }>; searchParams: Promise<{ k?: string }> };
 
-export async function generateMetadata({ params }: Params): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Params): Promise<Metadata> {
   const { slug } = await params;
+  const { k } = await searchParams;
   const r = await getRecipeBySlug(slug);
-  if (!r) return { title: "Recipe not found" };
+  if (!r) {
+    const shared = k ? await getSharedRecipe(slug, k) : null;
+    // Shared-by-link recipes get a title for the chat preview but stay out of search engines.
+    return shared ? { title: `${shared.dish} recipe`, robots: { index: false, follow: false } } : { title: "Recipe not found" };
+  }
+  if (r.source === "own") return { title: `${r.dish} recipe`, robots: { index: false, follow: false } };
   const s = savings(r);
   const title = r.restaurant ? `${r.restaurant} ${r.dish} copycat` : `${r.dish} recipe`;
   const description = s
@@ -31,10 +40,15 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   return { title, description, alternates: { canonical: `/r/${r.slug}` }, openGraph: { title, description } };
 }
 
-export default async function RecipePage({ params }: Params) {
+export default async function RecipePage({ params, searchParams }: Params) {
   const { slug } = await params;
+  const { k } = await searchParams;
   const recipe = await getRecipeBySlug(slug);
-  if (!recipe) notFound();
+  if (!recipe) {
+    const shared = k ? await getSharedRecipe(slug, k) : null;
+    if (!shared) notFound();
+    return <SharedRecipe recipe={shared} token={k!} />;
+  }
 
   const me = await getMe();
   const [pantry, savedState, attempts] = await Promise.all([
@@ -60,6 +74,8 @@ export default async function RecipePage({ params }: Params) {
   const shareUrl = `${siteUrl}/r/${recipe.slug}${ref ? `?ref=${ref}` : ""}`;
   // Your own recipes are private: no shared versions, no public gallery.
   const own = recipe.source === "own";
+  // undefined = not the owner (no share controls); null = owner, not shared yet.
+  const shareToken = own && me ? await getShareToken(me.user.id, recipe.id).catch(() => null) : undefined;
 
   return (
     <main className="flex flex-col gap-14 pt-8">
@@ -78,14 +94,19 @@ export default async function RecipePage({ params }: Params) {
         versionOf={versionOf}
       />
       {own && (
-        <section className="card flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted">Only you can see this recipe. Prices are estimates.</p>
+        <section className="card flex flex-col gap-3 p-5 sm:flex-row sm:flex-wrap sm:items-center sm:justify-between">
+          <p className="text-sm text-muted">Only you, and anyone you send a link to, can see this recipe. Prices are estimates.</p>
           <span className="flex flex-wrap items-center gap-2">
             <Link href={`/plan?new=1&include=${recipe.slug}`} className="btn btn-primary btn-sm">
               Put it in my week
             </Link>
             <AdminButton action={deleteOwnRecipe.bind(null, recipe.id)} label="Delete" confirm="delete" className="btn btn-ghost btn-sm" />
           </span>
+          {shareToken !== undefined && (
+            <div className="sm:basis-full">
+              <ShareOwnRecipe recipeId={recipe.id} dish={recipe.dish} initialUrl={shareToken ? `${siteUrl}/r/${recipe.slug}?k=${shareToken}` : null} />
+            </div>
+          )}
         </section>
       )}
       {root && !own && (
@@ -129,6 +150,33 @@ export default async function RecipePage({ params }: Params) {
           <AttemptGallery attempts={attempts} signedIn={!!me} myId={me?.user.id} recipe={recipe} shareUrl={shareUrl} />
         </section>
       )}
+    </main>
+  );
+}
+
+/** Someone's own recipe opened from their share link: read it, and save your own copy to plan with. */
+async function SharedRecipe({ recipe, token }: { recipe: Recipe; token: string }) {
+  const me = await getMe();
+  const pantry = me ? await getPantry(me.user.id) : [];
+  return (
+    <main className="flex flex-col gap-10 pt-8">
+      <section className="card flex flex-col gap-3 border-saffron p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <span className="label">Shared with you</span>
+          <p className="text-sm text-muted">A Dupe Kitchen cook shared their own recipe with you. Only people with the link can see it.</p>
+        </div>
+        <CopySharedRecipe slug={recipe.slug} token={token} signedIn={!!me} />
+      </section>
+      <RecipeView
+        recipe={recipe}
+        shareUrl=""
+        signedIn={!!me}
+        pantry={pantry}
+        initiallySaved={false}
+        initiallyCooked={false}
+        myDiets={me?.profile?.diets ?? []}
+        shared
+      />
     </main>
   );
 }

@@ -95,6 +95,7 @@ export type Database = {
           source: "snap" | "leftovers" | "own";
           style: string | null;
           inspired_by: string | null;
+          share_token: string | null;
           servings: number;
           minutes: number | null;
           difficulty: string | null;

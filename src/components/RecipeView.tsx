@@ -21,9 +21,11 @@ type Props = {
   hasEntry?: boolean;
   myDiets?: string[];
   versionOf?: { slug: string; dish: string; label: string } | null;
+  /** Opened from someone else's share link: no save or "I made it" here (the page offers "Save a copy"). */
+  shared?: boolean;
 };
 
-export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved, initiallyCooked, hasEntry = false, myDiets = [], versionOf = null }: Props) {
+export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved, initiallyCooked, hasEntry = false, myDiets = [], versionOf = null, shared = false }: Props) {
   const [servings, setServings] = useState(recipe.servings);
   const pantrySet = useMemo(() => new Set(pantry), [pantry]);
   const [have, setHave] = useState<Set<number>>(
@@ -96,9 +98,9 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
             </div>
           )}
           <div className="flex flex-col gap-2">
-            {recipeLabel(recipe) && (
+            {(shared || recipeLabel(recipe)) && (
               <span className="label">
-                {recipeLabel(recipe)}
+                {shared ? "Shared recipe" : recipeLabel(recipe)}
                 {versionOf ? ` · ${versionOf.label} version` : ""}
               </span>
             )}
@@ -149,7 +151,7 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
             </div>
           )}
           {recipe.why && <p className="border-l-[3px] border-saffron pl-3 text-sm text-muted">{recipe.why}</p>}
-          <div className="flex flex-wrap gap-2">
+          <div className={shared ? "hidden" : "flex flex-wrap gap-2"}>
             <button className="btn btn-ghost btn-sm" onClick={save} disabled={pending}>
               {saved ? "Saved to My recipes" : "Save recipe"}
             </button>
