@@ -78,14 +78,26 @@ export default async function Home() {
       )}
 
       {trivia.length === TRIVIA_PER_DAY && (
-        <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <span className="label">Daily trivia · 3 questions</span>
-            <h2 className="font-display text-2xl font-bold tracking-tight">{trivia[0].question}</h2>
-            <p className="text-muted">A kitchen trick with every answer, and points for your chef.</p>
+        <section className="relative flex flex-col gap-4 overflow-hidden rounded-3xl bg-saffron p-6 text-saffron-ink sm:flex-row sm:items-center sm:justify-between sm:p-8">
+          {/* Big faded question marks for a game-show feel; decoration only. */}
+          <span aria-hidden className="pointer-events-none absolute -right-4 -top-10 select-none font-display text-[10rem] font-bold leading-none opacity-15">
+            ?
+          </span>
+          <span aria-hidden className="pointer-events-none absolute -bottom-12 right-28 hidden select-none font-display text-[7rem] font-bold leading-none opacity-10 sm:block">
+            ?
+          </span>
+          <div className="relative flex flex-col gap-1">
+            <span className="font-mono text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">
+              Daily trivia · 3 questions{triviaDone ? " · done today ✓" : ""}
+            </span>
+            <h2 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">{trivia[0].question}</h2>
+            <p className="opacity-80">A kitchen trick with every answer, and points for your chef.</p>
           </div>
-          <Link href="/trivia" className={`btn shrink-0 ${triviaDone ? "btn-ghost" : "btn-primary"}`}>
-            {triviaDone ? "See today's answers" : "Play today's trivia"}
+          <Link
+            href="/trivia"
+            className={`btn relative shrink-0 ${triviaDone ? "border-2 border-saffron-ink/40 hover:border-saffron-ink" : "bg-saffron-ink text-saffron hover:opacity-90"}`}
+          >
+            {triviaDone ? "See today's answers" : "Play today's trivia →"}
           </Link>
         </section>
       )}
