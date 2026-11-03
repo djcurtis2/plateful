@@ -26,7 +26,7 @@ export function toRecipe(row: RecipeRow): Recipe {
     restaurant: row.restaurant,
     cuisine: row.cuisine,
     meals: (row.meals ?? []) as Recipe["meals"],
-    source: row.source === "leftovers" ? "leftovers" : "snap",
+    source: row.source === "leftovers" || row.source === "own" ? row.source : "snap",
     style: row.style === "Plateful kitchen" ? "House style" : (row.style ?? null), // old name for "Surprise me" recipes
     servings: row.servings,
     minutes: row.minutes,
