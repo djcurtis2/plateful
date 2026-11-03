@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getMe } from "@/lib/data";
 import { intEnv } from "@/lib/env";
-import { PLUS_MONTHLY, PLUS_YEARLY, PLUS_YEARLY_SAVES, REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
+import { LAUNCH_CODE, PLUS_MONTHLY, PLUS_YEARLY, PLUS_YEARLY_SAVES, REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 
 export const metadata: Metadata = { title: "Pricing" };
 
@@ -68,6 +68,11 @@ export default async function PricingPage() {
                 </form>
               )}
             </div>
+          )}
+          {!me?.plus && (
+            <p className="text-center text-xs text-muted">
+              Launch offer: use code <span className="font-mono font-semibold text-ink">{LAUNCH_CODE}</span> at checkout for $5 off your first payment.
+            </p>
           )}
         </section>
       </div>
