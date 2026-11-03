@@ -5,6 +5,8 @@ import { getCurrentChallenge, getMe, getRecentPublicRecipes, isLive } from "@/li
 import { siteSavings } from "@/lib/savings-server";
 import { publicName, timeLeft } from "@/lib/game";
 import { leaderboard } from "@/lib/game-server";
+import { triviaPlay, triviaQuestions } from "@/lib/trivia-server";
+import { TRIVIA_PER_DAY, triviaDay } from "@/lib/trivia";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import Link from "next/link";
@@ -21,6 +23,10 @@ export default async function Home() {
   // Top chefs strip: this cook-off's points, or all-time when there's no cook-off. Hidden until 3 people have points,
   // so an empty site never shows a lonely podium.
   const top = (await leaderboard(challenge ? { challengeId: challenge.id } : "all", 3).catch(() => [])).filter((r) => r.points > 0);
+  // Daily trivia teaser: today's first question (never the answers), once the day's set is approved.
+  const today = triviaDay();
+  const trivia = await triviaQuestions(today).catch(() => []);
+  const triviaDone = me && trivia.length === TRIVIA_PER_DAY ? !!(await triviaPlay(me.user.id, today).catch(() => null))?.finished_at : false;
 
   return (
     <main className="flex flex-col gap-16 pt-8 sm:pt-12">
@@ -67,6 +73,19 @@ export default async function Home() {
           </div>
           <Link href="/cookoff" className="btn btn-sun shrink-0">
             {isLive(challenge) ? "Join the cook-off" : "See the winners"}
+          </Link>
+        </section>
+      )}
+
+      {trivia.length === TRIVIA_PER_DAY && (
+        <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <span className="label">Daily trivia · 3 questions</span>
+            <h2 className="font-display text-2xl font-bold tracking-tight">{trivia[0].question}</h2>
+            <p className="text-muted">A kitchen trick with every answer, and points for your chef.</p>
+          </div>
+          <Link href="/trivia" className={`btn shrink-0 ${triviaDone ? "btn-ghost" : "btn-primary"}`}>
+            {triviaDone ? "See today's answers" : "Play today's trivia"}
           </Link>
         </section>
       )}

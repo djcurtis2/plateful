@@ -95,6 +95,9 @@ export async function Header() {
             >
               Cook-off
             </Link>
+            <Link href="/trivia" className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink md:inline">
+              Trivia
+            </Link>
             <Link
               href="/leaderboard"
               className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink sm:inline"

@@ -7,7 +7,10 @@ import { finalizeChallenge } from "@/lib/game-server";
 import { PRIZES } from "@/lib/game";
 import { slugify } from "@/lib/recipe";
 import { IMAGE_MAX, extFor, sniffImage } from "@/lib/images";
-import { packSizes, tagDiet } from "@/lib/claude";
+import { packSizes, tagDiet, writeTrivia } from "@/lib/claude";
+import { TRIVIA_PER_DAY, shuffleChoices, triviaDay } from "@/lib/trivia";
+import { triviaSchedule } from "@/lib/trivia-server";
+import { TRIVIA_SCAN, recordScan, siteCapReached } from "@/lib/limits";
 import type { Ingredient } from "@/lib/recipe";
 import { recipesMissingDietTags, recipesMissingPackSizes } from "@/lib/data";
 import { dietTagsFrom } from "@/lib/diet";
@@ -300,4 +303,69 @@ export async function removeGear(userId: string, itemId: string): Promise<R> {
     }
   }
   return gearDone(`Removed ${g.name}.`);
+}
+
+const Day = z.iso.date();
+
+/** Drafts questions for the next empty days (up to a week ahead) in one Claude call. Nothing goes live until approved. */
+export async function writeTriviaWeek(): Promise<R> {
+  const me = await requireAdmin();
+  if (!me) return DENIED;
+  if (await siteCapReached()) return { ok: false, message: "Today's site-wide Claude cap is used up. Try tomorrow." };
+  const today = triviaDay();
+  const empty = (await triviaSchedule(today, 14)).filter((d) => d.questions.length === 0).map((d) => d.day).slice(0, 7);
+  if (!empty.length) return { ok: true, message: "The next two weeks already have questions." };
+  const { data: recent } = await admin().from("trivia_questions").select("question").order("day", { ascending: false }).limit(90);
+
+  let written;
+  try {
+    written = await writeTrivia(empty.length, (recent ?? []).map((q) => q.question));
+  } catch (e) {
+    console.error("write trivia failed", e);
+    await recordScan({ userId: me.user.id, visitorId: null, ipHash: TRIVIA_SCAN, ok: false });
+    return { ok: false, message: "Claude couldn't write questions just now. Try again." };
+  }
+  await recordScan({ userId: me.user.id, visitorId: null, ipHash: TRIVIA_SCAN, ok: true, inputTokens: written.inputTokens, outputTokens: written.outputTokens });
+
+  const rows = empty.flatMap((day, i) => {
+    const set = written.sets[i] ?? [];
+    if (set.length < TRIVIA_PER_DAY) return []; // a day with a bad question is left empty; write again to fill it
+    return set.slice(0, TRIVIA_PER_DAY).map((q, j) => {
+      const { choices, answer } = shuffleChoices(q.choices, q.answer_index);
+      return { day, position: j + 1, question: q.question, choices, answer, why: q.why };
+    });
+  });
+  if (rows.length) {
+    const { error } = await admin().from("trivia_questions").upsert(rows, { onConflict: "day,position", ignoreDuplicates: true });
+    if (error) return { ok: false, message: error.message };
+  }
+  revalidatePath("/admin");
+  const filled = rows.length / TRIVIA_PER_DAY;
+  return { ok: true, message: `Drafted ${filled} ${filled === 1 ? "day" : "days"}${filled < empty.length ? `; ${empty.length - filled} came back incomplete, write again to fill them` : ""}. Check and approve them below.` };
+}
+
+/** Puts a drafted day live. */
+export async function approveTriviaDay(day: string): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  if (!Day.safeParse(day).success) return { ok: false, message: "Bad day." };
+  const { data, error } = await admin().from("trivia_questions").update({ status: "approved" }).eq("day", day).select("id");
+  if (error) return { ok: false, message: error.message };
+  if ((data?.length ?? 0) < TRIVIA_PER_DAY) return { ok: false, message: "That day doesn't have all its questions." };
+  revalidatePath("/admin");
+  revalidatePath("/trivia");
+  return { ok: true, message: "Approved." };
+}
+
+/** Throws away a day's questions so the next "Write" replaces them. Not once anyone has played it. */
+export async function discardTriviaDay(day: string): Promise<R> {
+  if (!(await requireAdmin())) return DENIED;
+  if (!Day.safeParse(day).success) return { ok: false, message: "Bad day." };
+  if (day < triviaDay()) return { ok: false, message: "That day is over." };
+  const { count } = await admin().from("trivia_plays").select("day", { count: "exact", head: true }).eq("day", day);
+  if (count) return { ok: false, message: `${count} ${count === 1 ? "person has" : "people have"} already played this day.` };
+  const { error } = await admin().from("trivia_questions").delete().eq("day", day);
+  if (error) return { ok: false, message: error.message };
+  revalidatePath("/admin");
+  revalidatePath("/trivia");
+  return { ok: true, message: "Discarded. Write again to replace it." };
 }

@@ -35,6 +35,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <p>Dupe Kitchen makes copycat recipes inspired by restaurant dishes. Not affiliated with any restaurant.</p>
             <nav className="flex flex-wrap gap-x-4 gap-y-2">
               <Link href="/cookoff" className="hover:text-ink">Cook-off</Link>
+              <Link href="/trivia" className="hover:text-ink">Daily trivia</Link>
               <Link href="/leaderboard" className="hover:text-ink">Leaderboard</Link>
               <Link href="/clubs" className="hover:text-ink">Clubs</Link>
               <Link href="/cookoff/past" className="hover:text-ink">Hall of fame</Link>

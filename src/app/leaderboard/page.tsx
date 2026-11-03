@@ -25,7 +25,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       <div>
         <span className="label">Cook-off</span>
         <h1 className="font-display text-4xl font-bold tracking-tight">Leaderboard</h1>
-        <p className="text-muted">Points come from cooking, voting, collecting votes and bringing friends.</p>
+        <p className="text-muted">Points come from cooking, voting, collecting votes, bringing friends and daily trivia.</p>
       </div>
 
       <div role="group" aria-label="Leaderboard" className="grid w-fit grid-cols-3 gap-1 rounded-xl bg-sunk p-1 text-sm">

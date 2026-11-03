@@ -16,6 +16,7 @@ export const POINTS: Record<Exclude<PointsKind, "streak">, number> = {
   thriftiest: 50,
   top10: 25,
   receipt: 10, // verified your price with a receipt
+  trivia: 1, // per right answer in daily trivia (see trivia.ts)
 };
 
 /** Entering in consecutive weeks: +10 × streak length (week 2 = 20, week 3 = 30, ...). */

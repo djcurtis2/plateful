@@ -2,6 +2,7 @@ import "server-only";
 import Anthropic from "@anthropic-ai/sdk";
 import { requireEnv } from "@/lib/env";
 import { RecognizedSchema, recipeOutputSchema, type Recognized } from "@/lib/recipe";
+import { TriviaDraftSchema, triviaOutputSchema } from "@/lib/trivia";
 
 let client: Anthropic | null = null;
 function anthropic() {
@@ -331,4 +332,37 @@ Rules:
     throw new RecognitionError("bad_result", "The recipe came back incomplete.");
   }
   return { result: parsed.data, inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens };
+}
+
+/**
+ * Daily trivia: drafts `days` sets of three cooking questions in one call. An admin approves them before they go live.
+ * `avoid` lists recent questions so the new ones don't repeat them.
+ */
+export async function writeTrivia(days: number, avoid: string[]) {
+  const msg = await anthropic().messages.create({
+    model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
+    max_tokens: 8000,
+    system: `You write the daily cooking trivia for Dupe Kitchen, an app that helps people cook restaurant dishes at home for less.
+Each day has 3 multiple-choice questions, easiest first, about food science, cooking techniques, ingredients, kitchen myths, food history or saving money in the kitchen.
+Rules:
+- Only well-established facts that a food-science reference or culinary school would agree on. Skip anything disputed, regional or that changed recently. When unsure, pick a different question.
+- Exactly one choice is right. The wrong choices are plausible but clearly wrong to an expert. No "all of the above", no trick wording.
+- Never about real restaurants, chefs, people, brands or companies.
+- Friendly and useful: the "why" line should teach something a home cook can use tonight.
+- Mix the topics across the week and don't repeat any question in the avoid list.`,
+    output_config: { format: { type: "json_schema", schema: triviaOutputSchema as unknown as Record<string, unknown> } },
+    messages: [
+      {
+        role: "user",
+        content: `Write ${days} days of questions.${avoid.length ? `\nAvoid these recent questions:\n${avoid.map((q) => `- ${q}`).join("\n")}` : ""}`,
+      },
+    ],
+  });
+  const text = msg.content.find((b) => b.type === "text");
+  if (!text || text.type !== "text") throw new Error("no result");
+  const raw = JSON.parse(text.text) as { days?: { questions?: unknown[] }[] };
+  const sets = (raw.days ?? []).map((d) =>
+    (d.questions ?? []).map((q) => TriviaDraftSchema.safeParse(q)).flatMap((p) => (p.success ? [p.data] : [])),
+  );
+  return { sets, inputTokens: msg.usage.input_tokens, outputTokens: msg.usage.output_tokens };
 }

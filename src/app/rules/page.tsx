@@ -1,6 +1,7 @@
 import { ContactLine } from "@/components/ContactLine";
 import type { Metadata } from "next";
 import { POINTS, PRIZES, VOTES_PER_COOKOFF } from "@/lib/game";
+import { TRIVIA_STREAK_BONUS, TRIVIA_STREAK_EVERY } from "@/lib/trivia";
 
 export const metadata: Metadata = { title: "Cook-off rules" };
 
@@ -19,6 +20,11 @@ export default function RulesPage() {
       </p>
       <h2 className="font-display text-xl font-bold">Points</h2>
       <p>Points ({POINTS.post} for an entry, {POINTS.vote_received} per vote received, and more) count toward levels and the monthly prize. Dupe Kitchen may remove points earned through abuse.</p>
+      <p>
+        <b>Daily trivia:</b> three questions a day, one go each. {POINTS.trivia} point per right answer, plus {TRIVIA_STREAK_BONUS} points every {TRIVIA_STREAK_EVERY} days
+        in a row. Trivia points count toward your level and gear but not the monthly prize, which is for cooking. Questions are written with AI and checked by
+        our team; if one turns out to be wrong, we may fix it without changing points already earned.
+      </p>
       <h2 className="font-display text-xl font-bold">Prices and receipts</h2>
       <p>
         You can add your cost per plate, cooking time, swaps and notes to your entry. Prices you type in are shown as self-reported. To get a verified price, add a photo of your grocery receipt: Dupe Kitchen reads it once to match items to the recipe and work out your cost per plate, then discards the image. We keep only the result (price, store name and date checked). The receipt must be dated from two weeks before the cook-off started onward and cover at least half of the recipe&apos;s paid ingredients. Pantry staples you already had count at the recipe&apos;s estimate. Dupe Kitchen may remove a verified badge it believes is inaccurate.

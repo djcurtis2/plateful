@@ -22,7 +22,8 @@ export type PointsKind =
   | "chef_pick"
   | "thriftiest"
   | "top10"
-  | "receipt";
+  | "receipt"
+  | "trivia";
 export type BadgeId =
   | "first_copycat"
   | "top10"
@@ -188,6 +189,24 @@ export type Database = {
           created_at: string;
         },
         "user_id" | "kind" | "points" | "ref"
+      >;
+      trivia_questions: Table<
+        {
+          id: number;
+          day: string;
+          position: number;
+          question: string;
+          choices: string[];
+          answer: number;
+          why: string;
+          status: "draft" | "approved";
+          created_at: string;
+        },
+        "day" | "position" | "question" | "choices" | "answer" | "why"
+      >;
+      trivia_plays: Table<
+        { user_id: string; day: string; picks: number[]; correct: number; finished_at: string | null; created_at: string },
+        "user_id" | "day"
       >;
       user_badges: Table<
         { id: number; user_id: string; badge: BadgeId; challenge_id: string | null; created_at: string },

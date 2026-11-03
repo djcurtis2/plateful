@@ -50,6 +50,7 @@ export function UserMenu({ children, label, nudge, plus }: { children: React.Rea
           <Link role="menuitem" href="/library" className={ITEM}>My recipes</Link>
           <Link role="menuitem" href="/plan" className={ITEM}>Plan my week</Link>
           <Link role="menuitem" href="/pantry" className={ITEM}>Pantry</Link>
+          <Link role="menuitem" href="/trivia" className={ITEM}>Daily trivia</Link>
           <Link role="menuitem" href="/leaderboard" className={ITEM}>Leaderboard</Link>
           <Link role="menuitem" href="/clubs" className={ITEM}>Clubs</Link>
           <Link role="menuitem" href="/account" className={ITEM}>{plus ? "Account (Plus)" : "Account"}</Link>

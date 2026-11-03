@@ -6,6 +6,9 @@ import { getAttempts, getChallengeById, getMe, isLive, recipesMissingDietTags, r
 import { admin, publicImageUrl } from "@/lib/supabase/admin";
 import { monthlyTop, publicNames } from "@/lib/game-server";
 import { publicName, rankEntries } from "@/lib/game";
+import { approveTriviaDay, discardTriviaDay, writeTriviaWeek } from "./actions";
+import { triviaSchedule } from "@/lib/trivia-server";
+import { triviaDay } from "@/lib/trivia";
 import { fillDietTags, fillPackSizes, grantGear, importSamples, finalize, recordGiftCard, removeGear, setChefPick, setHidden, setPrizeStatus, setReferencePhoto } from "./actions";
 import { ReferencePhotoForm } from "@/components/ReferencePhotoForm";
 import { money } from "@/lib/format";
@@ -52,6 +55,10 @@ export default async function AdminPage() {
   const lastMonth = lastMonthDate.toISOString().slice(0, 7);
   const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
   const [topLast, topThis, [saverLast]] = await Promise.all([monthlyTop(lastMonth), monthlyTop(thisMonth), topSavers(lastMonthDate, 1, monthStart)]);
+
+  const trivia = await triviaSchedule(triviaDay(now), 14);
+  const triviaReady = trivia.findIndex((d) => !d.approved);
+  const daysReady = triviaReady < 0 ? trivia.length : triviaReady;
 
   const nextStart = new Date(now);
   nextStart.setDate(now.getDate() + ((7 - now.getDay()) % 7 || 7)); // next Sunday
@@ -218,6 +225,51 @@ export default async function AdminPage() {
             ))}
           </ul>
         )}
+      </section>
+
+      <section className="card flex flex-col gap-4 p-5">
+        <h2 className="font-display text-2xl font-bold">Daily trivia</h2>
+        <p className={`text-sm ${daysReady < 2 ? "font-semibold text-chili" : "text-muted"}`}>
+          {daysReady === 0
+            ? "Today has no approved questions, so the trivia page is empty."
+            : `Approved questions for the next ${daysReady} ${daysReady === 1 ? "day" : "days"} (UTC).`}{" "}
+          Claude drafts a week at a time; read each day and approve it, or discard it to get a new set.
+        </p>
+        <AdminButton action={writeTriviaWeek} label="Write the next empty days" className="btn btn-primary btn-sm w-fit" />
+        {trivia
+          .filter((d) => d.questions.length > 0)
+          .map((d) => (
+            <div key={d.day} className="flex flex-col gap-2 rounded-xl border border-line p-4">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <b className="font-mono text-sm">
+                  {d.day} {d.approved ? <span className="text-basil">· live</span> : <span className="text-saffron-ink">· draft</span>}
+                </b>
+                <span className="flex gap-2">
+                  {!d.approved && <AdminButton action={approveTriviaDay.bind(null, d.day)} label="Approve" className="btn btn-primary btn-sm" />}
+                  <AdminButton action={discardTriviaDay.bind(null, d.day)} label="Discard" confirm="Deletes this day's questions." />
+                </span>
+              </div>
+              <ol className="flex flex-col gap-2 text-sm">
+                {d.questions.map((q) => (
+                  <li key={q.id}>
+                    <p className="font-semibold">
+                      {q.position}. {q.question}
+                    </p>
+                    <p className="text-muted">
+                      {q.choices.map((c, i) => (
+                        <span key={i} className={i === q.answer ? "font-semibold text-basil" : ""}>
+                          {i > 0 && " · "}
+                          {c}
+                          {i === q.answer && " ✓"}
+                        </span>
+                      ))}
+                    </p>
+                    <p className="text-xs text-muted">{q.why}</p>
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ))}
       </section>
 
       <section className="card flex flex-col gap-3 p-5">

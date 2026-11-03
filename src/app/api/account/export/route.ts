@@ -15,6 +15,7 @@ const BY_USER = [
   "meal_plans",
   "cook_log",
   "user_gear",
+  "trivia_plays",
 ] as const;
 
 /** "Download my data": a JSON file of the signed-in person's account and activity. */
