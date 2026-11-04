@@ -11,8 +11,14 @@ import { BINGO_FULL_POINTS, BINGO_LINE_POINTS, DISH_MAX_POINTS, HL_MAX_POINTS } 
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import Link from "next/link";
+import Image from "next/image";
+import { menuPlate, savings } from "@/lib/recipe";
+import { money } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+
+/** The site-wide savings line stays hidden until the number helps rather than hurts. */
+const SHOW_SAVINGS_FROM = 1000;
 
 export default async function Home() {
   const [me, recent, challenge, community] = await Promise.all([
@@ -29,18 +35,45 @@ export default async function Home() {
   const trivia = await triviaQuestions(today).catch(() => []);
   const triviaDone = me && trivia.length === TRIVIA_PER_DAY ? !!(await triviaPlay(me.user.id, today).catch(() => null))?.finished_at : false;
 
+  // The proof near the top: the recent copycat with a photo that saves the most per plate.
+  const proof = recent
+    .filter((r) => r.image_url && savings(r))
+    .sort((a, b) => savings(b)!.saved - savings(a)!.saved)[0];
+  const proofPct = proof ? savings(proof)!.pct : 0;
+
   return (
     <main className="flex flex-col gap-16 pt-8 sm:pt-12">
-      <section className="grid items-start gap-10 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)]">
-        <div className="flex min-w-0 flex-col gap-6">
-          <span className="label">Restaurant copycats</span>
+      {/* Phones read top to bottom: headline, snap box, proof. Wide screens put the snap box in its own column. */}
+      <section className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:grid-rows-[auto_1fr]">
+        <div className="flex min-w-0 flex-col gap-4">
           <h1 className="font-display text-5xl font-bold leading-[1.02] tracking-tight sm:text-6xl">
             Snap the restaurant plate. <span className="text-basil">Make it for less.</span>
           </h1>
-          <p className="max-w-[58ch] text-lg text-muted">
-            Upload a photo of a dish you ate out. Dupe Kitchen identifies it, writes a copycat recipe for your table, shows what you
-            save per plate, and builds the grocery list. Then post your version next to the original.
-          </p>
+          <p className="max-w-[58ch] text-lg text-muted">Get the copycat recipe, the cost per plate and your grocery list from one photo.</p>
+        </div>
+        <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+          <Snapper signedIn={!!me} />
+        </div>
+        <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-2">
+          {proof && (
+            <Link href={`/r/${proof.slug}`} className="card group flex max-w-xl items-center gap-4 p-3 hover:border-basil">
+              <span className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-sunk">
+                <Image src={proof.image_url!} alt="" fill sizes="80px" className="object-cover" />
+              </span>
+              <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                <span className="truncate font-display font-bold group-hover:text-basil">{proof.dish}</span>
+                <span className="tabular flex flex-wrap items-baseline gap-x-4 font-mono text-sm">
+                  <span className="text-muted">
+                    Restaurant <s>{money(menuPlate(proof)!)}</s>
+                  </span>
+                  <span>
+                    Yours <b className="text-lg text-basil">{money(proof.plate_cost!)}</b>
+                  </span>
+                </span>
+                <span className="text-xs text-muted">Estimated per plate, about {proofPct}% less.</span>
+              </span>
+            </Link>
+          )}
           <ol className="grid max-w-xl grid-cols-2 gap-3 sm:grid-cols-4">
             {[
               ["Snap", "Photo of the dish"],
@@ -54,7 +87,7 @@ export default async function Home() {
               </li>
             ))}
           </ol>
-          {community.saved >= 1 && (
+          {community.saved >= SHOW_SAVINGS_FROM && (
             <p className="w-fit rounded-2xl border border-saffron bg-saffron/10 px-4 py-3">
               Dupe Kitchen cooks have saved{" "}
               <b className="tabular font-mono text-lg text-basil">${Math.round(community.saved).toLocaleString("en-US")}</b> cooking{" "}
@@ -62,8 +95,21 @@ export default async function Home() {
             </p>
           )}
         </div>
-        <Snapper signedIn={!!me} />
       </section>
+
+      {recent.length > 0 && (
+        <section className="flex flex-col gap-5">
+          <div className="flex items-end justify-between gap-4">
+            <h2 className="font-display text-3xl font-bold tracking-tight">Fresh copycats</h2>
+            <span className="text-sm text-muted">Made by Dupe Kitchen cooks</span>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-sm:[&>*:nth-child(n+4)]:hidden">
+            {recent.map((r) => (
+              <RecipeTile key={r.id} recipe={r} />
+            ))}
+          </div>
+        </section>
+      )}
 
       {challenge && (
         <section className="card flex flex-col gap-4 p-6 sm:flex-row sm:items-center sm:justify-between">
@@ -194,20 +240,6 @@ export default async function Home() {
           Build my plate <span className="inline-block transition-transform group-hover:translate-x-1">→</span>
         </span>
       </Link>
-
-      {recent.length > 0 && (
-        <section className="flex flex-col gap-5">
-          <div className="flex items-end justify-between gap-4">
-            <h2 className="font-display text-3xl font-bold tracking-tight">Fresh copycats</h2>
-            <span className="text-sm text-muted">Made by Dupe Kitchen cooks</span>
-          </div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {recent.map((r) => (
-              <RecipeTile key={r.id} recipe={r} />
-            ))}
-          </div>
-        </section>
-      )}
 
       <section className="grid gap-6 rounded-3xl bg-basil p-6 text-basil-ink sm:p-10 lg:grid-cols-2 lg:items-center">
         <div>
