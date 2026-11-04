@@ -30,7 +30,7 @@ test("points: one per right answer, bonus every 7th day in a row", () => {
 
 test("share text hides the answers", () => {
   const text = triviaShareText("2026-11-02", [true, false, true], "https://example.com/trivia");
-  assert.equal(text, "Dupe Kitchen trivia · Nov 2\n🟩🟥🟩 2/3\nhttps://example.com/trivia");
+  assert.equal(text, "Yumjack trivia · Nov 2\n🟩🟥🟩 2/3\nhttps://example.com/trivia");
 });
 
 test("shuffling keeps the right answer attached", () => {

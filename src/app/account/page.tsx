@@ -241,7 +241,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <div>
           <span className="label">Your data</span>
           <h2 className="font-display text-2xl font-bold">Download or delete</h2>
-          <p className="text-sm text-muted">Get a copy of everything Dupe Kitchen stores about you, or delete your account for good.</p>
+          <p className="text-sm text-muted">Get a copy of everything Yumjack stores about you, or delete your account for good.</p>
         </div>
         <a href="/api/account/export" className="btn btn-ghost btn-sm self-start" download>
           Download my data

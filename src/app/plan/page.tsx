@@ -38,7 +38,7 @@ export default async function PlanPage({ searchParams }: Search) {
         <Intro />
         <section className="card flex flex-col gap-4 border-saffron p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="label">Dupe Kitchen Plus</span>
+            <span className="label">Yumjack Plus</span>
             <p className="font-display text-2xl font-bold">Plan every meal of the week, snacks included</p>
             <p className="text-muted">Pick it all yourself or let us fill it in. One shopping list, nothing wasted. Here are three example days.</p>
           </div>
@@ -134,7 +134,7 @@ export default async function PlanPage({ searchParams }: Search) {
           <b>
             {open} open {open === 1 ? "spot" : "spots"}.
           </b>{" "}
-          Pick any recipe (yours or anyone&apos;s), let us choose with Swap, have Dupe Kitchen write a new one, or leave it open for a night out.
+          Pick any recipe (yours or anyone&apos;s), let us choose with Swap, have Yumjack write a new one, or leave it open for a night out.
         </p>
       )}
 

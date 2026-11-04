@@ -3,8 +3,8 @@ import type { MetadataRoute } from "next";
 /** Lets phones "Add to Home Screen": the site opens full screen with its own icon, like an app. */
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Dupe Kitchen",
-    short_name: "Dupe Kitchen",
+    name: "Yumjack",
+    short_name: "Yumjack",
     description: "Snap a restaurant dish. Get the copycat recipe, see what you save per plate, and shop the ingredients.",
     start_url: "/",
     scope: "/",

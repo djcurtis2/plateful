@@ -163,7 +163,7 @@ async function SharedRecipe({ recipe, token }: { recipe: Recipe; token: string }
       <section className="card flex flex-col gap-3 border-saffron p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <span className="label">Shared with you</span>
-          <p className="text-sm text-muted">A Dupe Kitchen cook shared their own recipe with you. Only people with the link can see it.</p>
+          <p className="text-sm text-muted">A Yumjack cook shared their own recipe with you. Only people with the link can see it.</p>
         </div>
         <CopySharedRecipe slug={recipe.slug} token={token} signedIn={!!me} />
       </section>

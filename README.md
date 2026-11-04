@@ -1,4 +1,4 @@
-# Dupe Kitchen
+# Yumjack
 
 See `CLAUDE.md` for architecture, product rules and gotchas.
 
@@ -50,7 +50,7 @@ Create a key at console.anthropic.com and set `ANTHROPIC_API_KEY`. `ANTHROPIC_MO
 
 ### 4. Stripe
 
-1. In test mode, create a product "Dupe Kitchen Plus" with a $4.99 monthly price. Put the price ID (`price_…`) in `STRIPE_PRICE_PLUS_MONTHLY`.
+1. In test mode, create a product "Yumjack Plus" with a $4.99 monthly price. Put the price ID (`price_…`) in `STRIPE_PRICE_PLUS_MONTHLY`.
 2. Put your secret key in `STRIPE_SECRET_KEY`.
 3. Turn on the customer portal: **Settings → Billing → Customer portal**.
 4. For local webhooks, install the Stripe CLI and run `npm run stripe:listen`. Copy the `whsec_…` it prints into `STRIPE_WEBHOOK_SECRET`.

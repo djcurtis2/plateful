@@ -47,7 +47,7 @@ export async function GET() {
   return new NextResponse(JSON.stringify(body, null, 2), {
     headers: {
       "content-type": "application/json",
-      "content-disposition": `attachment; filename="dupe-kitchen-data-${new Date().toISOString().slice(0, 10)}.json"`,
+      "content-disposition": `attachment; filename="yumjack-data-${new Date().toISOString().slice(0, 10)}.json"`,
       "cache-control": "no-store",
     },
   });

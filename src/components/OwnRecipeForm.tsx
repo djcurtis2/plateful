@@ -11,7 +11,7 @@ const MEAL_CHOICES = [
   ["dessert", "Dessert"],
 ] as const;
 
-/** Type your own recipe; Dupe Kitchen prices it so it can go on a week's shopping list. */
+/** Type your own recipe; Yumjack prices it so it can go on a week's shopping list. */
 export function OwnRecipeForm({ next, meal }: { next: string | null; meal: string | null }) {
   const [error, setError] = useState("");
   const [pending, start] = useTransition();

@@ -31,8 +31,8 @@ export function LeftoverMaker({
       <div>
         <p className="font-display text-lg font-bold">{few ? "Not enough ideas? Make something new" : "Or make something new"}</p>
         <p className="text-sm text-muted">
-          Dupe Kitchen writes an original recipe around your leftovers, in the style you pick. It&apos;s saved to My recipes.
-          {signedIn && !plus && (triesLeft > 0 ? " Try it once free; it's part of Dupe Kitchen Plus." : "")}
+          Yumjack writes an original recipe around your leftovers, in the style you pick. It&apos;s saved to My recipes.
+          {signedIn && !plus && (triesLeft > 0 ? " Try it once free; it's part of Yumjack Plus." : "")}
         </p>
       </div>
       <div role="radiogroup" aria-label="Style" className="flex flex-wrap gap-2">

@@ -59,7 +59,7 @@ export default async function PickPage({ searchParams }: Search) {
           <h1 className="font-display text-4xl font-bold tracking-tight">
             {meal} on {WEEKDAYS[at.day]}
           </h1>
-          <p className="text-muted">Pick anything: your own recipes, ones you&apos;ve saved, or any recipe on Dupe Kitchen.</p>
+          <p className="text-muted">Pick anything: your own recipes, ones you&apos;ve saved, or any recipe on Yumjack.</p>
         </div>
         <Link href={`/library/new?meal=${at.meal}&next=${encodeURIComponent(back)}`} className="btn btn-ghost btn-sm">
           Add my own recipe

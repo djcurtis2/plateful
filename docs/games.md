@@ -1,11 +1,11 @@
 # Daily games
 
-Short games built from Dupe Kitchen's own data (dish photos, menu prices, home costs, cooking activity).
+Short games built from Yumjack's own data (dish photos, menu prices, home costs, cooking activity).
 Like the daily newspaper crossword: one puzzle a day, the same for everyone, under two minutes, with a spoiler-free result to share.
 
 ## Goals
 
-- A reason to open Dupe Kitchen every day, not just when snapping a dish.
+- A reason to open Yumjack every day, not just when snapping a dish.
 - Teach the core idea (restaurant price vs. home cost) while people play.
 - Push toward real cooking (Cooking Bingo), which feeds savings, cook-offs and sharing.
 - Every share links back to the site.
@@ -23,9 +23,9 @@ Like the daily newspaper crossword: one puzzle a day, the same for everyone, und
 
 - A dish photo starts zoomed in and blurred. Each wrong guess zooms out and sharpens it. 6 guesses.
 - Guesses are picked from a list of ~40 dish names (today's answer hidden among them), so spelling never matters.
-- Hints unlock as you miss: after 2 misses the cuisine, after 3 the meal, after 4 the label (e.g. "Chipotle copycat" or "Weeknight · Dupe Kitchen original").
+- Hints unlock as you miss: after 2 misses the cuisine, after 3 the meal, after 4 the label (e.g. "Chipotle copycat" or "Weeknight · Yumjack original").
 - Points: solved in 1–2 guesses = 3, in 3–4 = 2, in 5–6 = 1.
-- Share: `Dupe Kitchen · Guess the Dish · Nov 2 / 🟥🟥🟩 3/6`.
+- Share: `Yumjack · Guess the Dish · Nov 2 / 🟥🟥🟩 3/6`.
 - Pool: public recipes with a photo, not versions, one per dish name, not used in the last 30 days.
 
 ## Higher or Lower (daily run)
@@ -34,12 +34,12 @@ Like the daily newspaper crossword: one puzzle a day, the same for everyone, und
 - Same deck for everyone each day (up to 30 copycats with menu prices, shuffled by the day), so the daily leaderboard is fair. Ties count as right.
 - Prices are per plate (`menuPlate`), the same comparison used everywhere else.
 - Points: 1 per 5 in a row, up to 3. Daily top-10 leaderboard by score (earliest finish wins ties).
-- Share: `Dupe Kitchen · Higher or Lower · Nov 2 / 🔥 12 in a row`.
+- Share: `Yumjack · Higher or Lower · Nov 2 / 🔥 12 in a row`.
 
 ## Cooking Bingo (weekly)
 
 - A 3×3 card each week (Monday–Sunday UTC), the same for everyone, centre square free.
-- Squares tick themselves from what you already do on Dupe Kitchen: cook a dinner, cook a copycat, a plate under $3, a vegetarian dish, two cuisines, make a version, make a leftovers recipe, post a cook-off entry, vote, play trivia 3 days, snap a dish, save $20, plan a week.
+- Squares tick themselves from what you already do on Yumjack: cook a dinner, cook a copycat, a plate under $3, a vegetarian dish, two cuisines, make a version, make a leftovers recipe, post a cook-off entry, vote, play trivia 3 days, snap a dish, save $20, plan a week.
 - Points: 5 per completed line, 20 for the full card (up to 60 a week, more than a daily game since it takes a week of cooking). Awarded once per week each.
 - Share: an emoji 3×3 grid.
 

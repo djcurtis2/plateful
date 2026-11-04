@@ -114,7 +114,7 @@ type PostResult =
  * Posts or updates your cook-off entry (one per person per dish).
  * - New photo: posts it, or replaces your old photo and resets its votes.
  * - No photo but you already have an entry: updates the details only, votes kept.
- * - Optional receipt: Dupe Kitchen reads it to verify your price per plate. The receipt is never stored.
+ * - Optional receipt: Yumjack reads it to verify your price per plate. The receipt is never stored.
  */
 export async function postAttempt(formData: FormData): Promise<PostResult> {
   const { user } = await currentUser();
@@ -169,7 +169,7 @@ export async function postAttempt(formData: FormData): Promise<PostResult> {
     imagePath = `${user.id}/${crypto.randomUUID()}.${ext}`;
     const up = await db.storage.from("attempts").upload(imagePath, bytes, { contentType: type });
     if (up.error) return { ok: false, code: "failed", message: "Couldn't upload your photo. Try again." };
-    // Recipes without a photo (Dupe Kitchen originals) take the first cook's photo as their picture.
+    // Recipes without a photo (Yumjack originals) take the first cook's photo as their picture.
     const { data: rec } = await db.from("recipes").select("image_path").eq("id", recipeId).maybeSingle();
     if (rec && !rec.image_path) {
       const coverPath = `cooks/${recipeId}.${ext}`;
@@ -404,7 +404,7 @@ export async function makeFromLeftovers(
   return { ok: true, slug: r.slug };
 }
 
-/** Opt in or out of being named in Dupe Kitchen stories and ads (e.g. "Dan has saved $1,240"). */
+/** Opt in or out of being named in Yumjack stories and ads (e.g. "Dan has saved $1,240"). */
 export async function setFeatureMe(on: boolean): Promise<Result> {
   const { user } = await currentUser();
   if (!user) return LOGIN;

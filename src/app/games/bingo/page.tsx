@@ -35,7 +35,7 @@ export default async function BingoPage() {
         </Link>
         <h1 className="font-display text-4xl font-bold tracking-tight">Cooking Bingo</h1>
         <p className="text-muted">
-          A new card every Monday, the same for everyone. Squares tick themselves as you cook and play on Dupe Kitchen. {BINGO_LINE_POINTS} points per line,{" "}
+          A new card every Monday, the same for everyone. Squares tick themselves as you cook and play on Yumjack. {BINGO_LINE_POINTS} points per line,{" "}
           {BINGO_FULL_POINTS} more for the full card.
         </p>
       </div>

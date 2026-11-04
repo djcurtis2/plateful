@@ -87,7 +87,7 @@ export type Recipe = {
   /** Set when this is a "Make it my way" version of another recipe. */
   variant_of: string | null;
   variant_kind: string | null;
-  /** "snap" = from a photo; "leftovers" = a Dupe Kitchen original written to use up leftovers; "own" = a cook's own private recipe. */
+  /** "snap" = from a photo; "leftovers" = a Yumjack original written to use up leftovers; "own" = a cook's own private recipe. */
   source: "snap" | "leftovers" | "own";
   style: string | null;
   servings: number;
@@ -229,11 +229,11 @@ export function slugify(dish: string, restaurant?: string | null) {
   return base || "dish";
 }
 
-/** Label above a recipe's name: "Chipotle copycat" or "Grandma-style · Dupe Kitchen original". */
+/** Label above a recipe's name: "Chipotle copycat" or "Grandma-style · Yumjack original". */
 export function recipeLabel(r: Pick<Recipe, "restaurant" | "style" | "source">): string | null {
   if (r.source === "own") return "My recipe";
   if (r.restaurant) return `${r.restaurant} copycat`;
-  if (r.style || r.source === "leftovers") return `${r.style ? `${r.style} · ` : ""}Dupe Kitchen original`;
+  if (r.style || r.source === "leftovers") return `${r.style ? `${r.style} · ` : ""}Yumjack original`;
   return null;
 }
 

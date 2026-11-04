@@ -41,7 +41,7 @@ test("ranking and standing", () => {
 });
 
 test("names and time", () => {
-  assert.equal(publicName(null), "A Dupe Kitchen cook");
+  assert.equal(publicName(null), "A Yumjack cook");
   assert.equal(publicName("  Dan "), "Dan");
   assert.equal(validPublicName("D"), "Use 2 to 30 characters.");
   assert.equal(validPublicName("Chef Dan"), null);

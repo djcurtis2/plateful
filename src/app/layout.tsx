@@ -11,12 +11,12 @@ const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"],
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: { default: "Dupe Kitchen — make restaurant dishes at home for less", template: "%s · Dupe Kitchen" },
+  title: { default: "Yumjack — make restaurant dishes at home for less", template: "%s · Yumjack" },
   description: "Snap a restaurant dish. Get the copycat recipe, see what you save per plate, and shop the ingredients in one tap.",
-  openGraph: { siteName: "Dupe Kitchen", type: "website" },
+  openGraph: { siteName: "Yumjack", type: "website" },
   twitter: { card: "summary_large_image" },
-  // iPhone "Add to Home Screen": open full screen under the Dupe Kitchen name.
-  appleWebApp: { capable: true, title: "Dupe Kitchen", statusBarStyle: "default" },
+  // iPhone "Add to Home Screen": open full screen under the Yumjack name.
+  appleWebApp: { capable: true, title: "Yumjack", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = {
@@ -34,7 +34,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <div className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6">{children}</div>
         <footer className="border-t border-line">
           <div className="mx-auto flex w-full max-w-6xl flex-wrap justify-between gap-4 px-4 py-8 text-sm text-muted sm:px-6">
-            <p>Dupe Kitchen makes copycat recipes inspired by restaurant dishes. Not affiliated with any restaurant.</p>
+            <p>Yumjack makes copycat recipes inspired by restaurant dishes. Not affiliated with any restaurant.</p>
             <nav className="flex flex-wrap gap-x-4 gap-y-2">
               <Link href="/cookoff" className="hover:text-ink">Cook-off</Link>
               <Link href="/games" className="hover:text-ink">Daily games</Link>

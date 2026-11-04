@@ -30,7 +30,7 @@ export function DeleteAccount({ plus }: { plus: boolean }) {
     >
       <p className="text-sm">
         This permanently deletes your account, saved recipes, pantry, plans, cook-off entries and photos, points, badges and gear
-        {plus ? ", and cancels your Plus subscription" : ""}. Recipes you made stay on Dupe Kitchen without your name. This can&apos;t be undone.
+        {plus ? ", and cancels your Plus subscription" : ""}. Recipes you made stay on Yumjack without your name. This can&apos;t be undone.
       </p>
       <label htmlFor="delete-word" className="label">
         Type DELETE to confirm

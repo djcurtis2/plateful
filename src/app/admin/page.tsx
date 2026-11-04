@@ -295,7 +295,7 @@ export default async function AdminPage() {
         </p>
         {missingDiets > 0 && <AdminButton action={fillDietTags} label="Tag diets (10 at a time)" className="btn btn-primary btn-sm w-fit" />}
         <p className="text-sm text-muted">
-          Sample recipes: {SAMPLES.length} copycats and Dupe Kitchen originals with free Unsplash photos, so the site doesn&apos;t look empty. They&apos;re house recipes; only missing ones are
+          Sample recipes: {SAMPLES.length} copycats and Yumjack originals with free Unsplash photos, so the site doesn&apos;t look empty. They&apos;re house recipes; only missing ones are
           added.
         </p>
         <AdminButton action={importSamples} label="Add sample recipes" className="btn btn-ghost btn-sm w-fit" />

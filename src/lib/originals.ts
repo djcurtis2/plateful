@@ -9,7 +9,7 @@ import type { Recipe } from "@/lib/recipe";
 
 const MEAL_BRIEF = { breakfast: "a breakfast", lunch: "a lunch", dinner: "a dinner main", snack: "a snack" } as const;
 
-/** New Dupe Kitchen originals: Plus gets 15 a day; free accounts get 1 to try the feature. */
+/** New Yumjack originals: Plus gets 15 a day; free accounts get 1 to try the feature. */
 export const ORIGINALS_LIMIT = { plusPerDay: 15, freeLifetime: 1 };
 
 /** How many more originals this person can make right now. */
@@ -40,7 +40,7 @@ export async function createOriginal(input: {
       ok: false,
       message: input.plus
         ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Dupe Kitchen Plus makes new recipes from your leftovers every day.",
+        : "You've used your free try. Yumjack Plus makes new recipes from your leftovers every day.",
     };
   }
   const pick = LEFTOVER_STYLES[input.style];
@@ -116,7 +116,7 @@ export async function createBuilt(input: { userId: string; plus: boolean; build:
       ok: false,
       message: input.plus
         ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Dupe Kitchen Plus builds new recipes with you every day.",
+        : "You've used your free try. Yumjack Plus builds new recipes with you every day.",
     };
   }
   const b = input.build;
@@ -158,7 +158,7 @@ export async function createVersion(input: { userId: string; plus: boolean; root
       ok: false,
       message: input.plus
         ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Dupe Kitchen Plus makes any recipe your way, every day.",
+        : "You've used your free try. Yumjack Plus makes any recipe your way, every day.",
     };
   }
   const v = VERSIONS[input.kind];

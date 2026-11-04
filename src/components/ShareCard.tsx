@@ -130,7 +130,7 @@ async function panel(
     } else {
       // No restaurant photo: show the restaurant's name as the "plate".
       const isOriginal = tag === "The recipe";
-      const name = isOriginal ? "Dupe Kitchen" : tag.replace(/^At /, "");
+      const name = isOriginal ? "Yumjack" : tag.replace(/^At /, "");
       g.font = `700 52px ${fonts.display ?? fonts.body}`;
       const lines = wrap(g, name, w - 60, 3);
       const top = y + h / 2 - ((lines.length - 1) * 58) / 2;
@@ -195,7 +195,7 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
     g.font = `600 28px ${fonts.mono}`;
     const original = !recipe.restaurant && (!!recipe.style || recipe.source === "leftovers");
     g.fillText(
-      (original ? `DUPE KITCHEN ORIGINAL${recipe.style ? " · " + recipe.style.toUpperCase() : ""}` : `COPYCAT${recipe.restaurant ? " · " + recipe.restaurant.toUpperCase() : ""}`).slice(0, 52),
+      (original ? `YUMJACK ORIGINAL${recipe.style ? " · " + recipe.style.toUpperCase() : ""}` : `COPYCAT${recipe.restaurant ? " · " + recipe.restaurant.toUpperCase() : ""}`).slice(0, 52),
       64,
       100,
     );
@@ -205,7 +205,7 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
 
     const py = 330, pw = 460, ph = 540, lx = 64, rx = 64 + pw + 32;
     if (original && !recipe.image_url) {
-      // A Dupe Kitchen original with no photo yet: nothing to compare against, so your plate gets the whole card.
+      // A Yumjack original with no photo yet: nothing to compare against, so your plate gets the whole card.
       await panel(g, attempt, lx, py, W - 128, ph, "Mine", fonts);
     } else {
       await panel(g, recipe.image_url, lx, py, pw, ph, original ? "The recipe" : `At ${(recipe.restaurant ?? "the restaurant").slice(0, 22)}`, fonts);
@@ -243,7 +243,7 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
     g.fill();
     g.fillStyle = "#FFFFFF";
     g.font = `700 40px ${fonts.display}`;
-    g.fillText("Dupe Kitchen", 104, 1254);
+    g.fillText("Yumjack", 104, 1254);
     g.fillStyle = "rgba(255,255,255,.85)";
     g.font = `500 24px ${fonts.mono}`;
     // Keep the footer clear of the chef (lower right): measure it and cut with an ellipsis to the room left of the chef.

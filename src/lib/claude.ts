@@ -12,7 +12,7 @@ function anthropic() {
 
 export type ImageMedia = "image/jpeg" | "image/png" | "image/webp";
 
-const SYSTEM = `You are the recognition engine for Dupe Kitchen, an app that helps people recreate restaurant dishes at home for less.
+const SYSTEM = `You are the recognition engine for Yumjack, an app that helps people recreate restaurant dishes at home for less.
 You look at one photo of a prepared dish and return a home-cook copycat recipe as JSON in the required format.
 Rules:
 - If the photo is not a prepared dish (a person, a pet, a menu, raw groceries, a screenshot of text), set is_food to false with a short reason and nothing else.
@@ -134,7 +134,7 @@ export async function readReceipt(input: {
   const msg = await anthropic().messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
     max_tokens: 2000,
-    system: `You check grocery receipts for Dupe Kitchen, a cooking app. You read one receipt photo and compare it to a recipe.
+    system: `You check grocery receipts for Yumjack, a cooking app. You read one receipt photo and compare it to a recipe.
 Rules:
 - Only a real grocery receipt counts. A screenshot of a shopping cart, an order confirmation without prices paid, a handwritten list or a non-receipt photo is not a receipt.
 - Never return card numbers, loyalty numbers, names or addresses. Store name only.
@@ -222,7 +222,7 @@ export async function inventRecipe(input: {
   const msg = await anthropic().messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
     max_tokens: 4000,
-    system: `You are the recipe developer for Dupe Kitchen, an app that helps home cooks save money and waste less.
+    system: `You are the recipe developer for Yumjack, an app that helps home cooks save money and waste less.
 Write ONE original recipe that uses up leftover groceries.
 Rules:
 - Build the dish around at least two of the leftovers, and use as many as genuinely fit. Don't force in ones that don't belong.
@@ -271,7 +271,7 @@ export async function buildRecipe(input: {
   const msg = await anthropic().messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
     max_tokens: 4000,
-    system: `You are the recipe developer for Dupe Kitchen, an app that helps home cooks save money by cooking at home.
+    system: `You are the recipe developer for Yumjack, an app that helps home cooks save money by cooking at home.
 A cook picked the parts of a plate; write ONE complete recipe that turns their picks into a great meal.
 Rules:
 - Use the protein, cooking method and flavor they picked. Use every add-in they picked unless it truly clashes; you may add a few pantry staples (salt, oil, pepper) and anything the method needs.
@@ -325,7 +325,7 @@ const dietSchema = {
   },
 } as const;
 
-/** What an existing recipe contains, for diet tags on recipes saved before Dupe Kitchen asked. Text only, cheap. */
+/** What an existing recipe contains, for diet tags on recipes saved before Yumjack asked. Text only, cheap. */
 export async function tagDiet(dish: string, ingredients: { name: string; qty: number; unit: string }[], servings: number) {
   const list = ingredients.map((g) => `- ${g.name}: ${g.qty} ${g.unit}`.trim()).join("\n");
   const msg = await anthropic().messages.create({
@@ -365,7 +365,7 @@ export async function adaptRecipe(input: {
   const msg = await anthropic().messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
     max_tokens: 4000,
-    system: `You are the recipe developer for Dupe Kitchen. Rewrite ONE recipe as a new version.
+    system: `You are the recipe developer for Yumjack. Rewrite ONE recipe as a new version.
 Rules:
 - Keep it recognizably the same dish: same flavors, look and idea. Use real substitutions that cook well (e.g. chipotle-marinated portobellos for chicken), not just removals.
 - The version must fully meet its brief. For diet versions, check every ingredient, including hidden sources like broth, butter, soy sauce, fish sauce and Worcestershire.
@@ -414,7 +414,7 @@ export async function priceOwnRecipe(input: {
   const msg = await anthropic().messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
     max_tokens: 4000,
-    system: `You help home cooks on Dupe Kitchen save their own recipes with grocery prices.
+    system: `You help home cooks on Yumjack save their own recipes with grocery prices.
 Turn the cook's recipe into structured data.
 Rules:
 - ingredients: one entry per line the cook wrote, in their order. Don't add or drop ingredients (you may split a line like "salt and pepper" in two). This can be fewer than 4.
@@ -451,7 +451,7 @@ export async function writeTrivia(days: number, avoid: string[]) {
   const msg = await anthropic().messages.create({
     model: process.env.ANTHROPIC_MODEL || "claude-sonnet-5-5",
     max_tokens: 8000,
-    system: `You write the daily cooking trivia for Dupe Kitchen, an app that helps people cook restaurant dishes at home for less.
+    system: `You write the daily cooking trivia for Yumjack, an app that helps people cook restaurant dishes at home for less.
 Each day has 3 multiple-choice questions, easiest first, about food science, cooking techniques, ingredients, kitchen myths, food history or saving money in the kitchen.
 Rules:
 - Only well-established facts that a food-science reference or culinary school would agree on. Skip anything disputed, regional or that changed recently. When unsure, pick a different question.

@@ -78,12 +78,12 @@ export async function CookoffView({ challenge, isCurrent }: { challenge: Challen
           <div className="card flex flex-col gap-1 p-5">
             <span className="label">Crowd favorite</span>
             <p className="font-display text-lg font-bold">Most votes wins</p>
-            <p className="text-sm text-muted">{PRIZES.crowd_favorite.plusMonths} months of Plus, a winner badge, and a feature on Dupe Kitchen&apos;s homepage and socials.</p>
+            <p className="text-sm text-muted">{PRIZES.crowd_favorite.plusMonths} months of Plus, a winner badge, and a feature on Yumjack&apos;s homepage and socials.</p>
           </div>
           <div className="card flex flex-col gap-1 p-5">
             <span className="label">Chef&apos;s pick</span>
             <p className="font-display text-lg font-bold">Best-looking copy</p>
-            <p className="text-sm text-muted">Picked by the Dupe Kitchen team. Same prize, so a great plate can win without a big following.</p>
+            <p className="text-sm text-muted">Picked by the Yumjack team. Same prize, so a great plate can win without a big following.</p>
           </div>
           <div className="card flex flex-col gap-1 p-5">
             <span className="label">Thriftiest copy</span>
@@ -136,7 +136,7 @@ export async function CookoffView({ challenge, isCurrent }: { challenge: Challen
               ))}
             </div>
           ) : (
-            <p className="text-muted">Voting has closed. Winners are announced once the Dupe Kitchen team picks the Chef&apos;s pick.</p>
+            <p className="text-muted">Voting has closed. Winners are announced once the Yumjack team picks the Chef&apos;s pick.</p>
           )}
           {upcoming && (
             <div className="card flex flex-col gap-2 p-5 sm:flex-row sm:items-center sm:justify-between">

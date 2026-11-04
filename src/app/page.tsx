@@ -89,7 +89,7 @@ export default async function Home() {
           </ol>
           {community.saved >= SHOW_SAVINGS_FROM && (
             <p className="w-fit rounded-2xl border border-saffron bg-saffron/10 px-4 py-3">
-              Dupe Kitchen cooks have saved{" "}
+              Yumjack cooks have saved{" "}
               <b className="tabular font-mono text-lg text-basil">${Math.round(community.saved).toLocaleString("en-US")}</b> cooking{" "}
               {community.meals.toLocaleString("en-US")} {community.meals === 1 ? "meal" : "meals"} at home instead of eating out.
             </p>
@@ -101,7 +101,7 @@ export default async function Home() {
         <section className="flex flex-col gap-5">
           <div className="flex items-end justify-between gap-4">
             <h2 className="font-display text-3xl font-bold tracking-tight">Fresh copycats</h2>
-            <span className="text-sm text-muted">Made by Dupe Kitchen cooks</span>
+            <span className="text-sm text-muted">Made by Yumjack cooks</span>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 max-sm:[&>*:nth-child(n+4)]:hidden">
             {recent.map((r) => (

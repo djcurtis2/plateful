@@ -87,10 +87,10 @@ export function dishPoints(guesses: number, solved: boolean) {
   return guesses <= 2 ? 3 : guesses <= 4 ? 2 : 1;
 }
 
-/** "Dupe Kitchen · Guess the Dish · Nov 2 / 🟥🟥🟩 3/6": spoiler-free. */
+/** "Yumjack · Guess the Dish · Nov 2 / 🟥🟥🟩 3/6": spoiler-free. */
 export function dishShareText(day: string, results: boolean[], url: string) {
   const solved = results.at(-1) === true;
-  return `Dupe Kitchen · Guess the Dish · ${shortDate(day)}\n${results.map((r) => (r ? "🟩" : "🟥")).join("")} ${solved ? results.length : "X"}/${DISH_MAX_GUESSES}\n${url}`;
+  return `Yumjack · Guess the Dish · ${shortDate(day)}\n${results.map((r) => (r ? "🟩" : "🟥")).join("")} ${solved ? results.length : "X"}/${DISH_MAX_GUESSES}\n${url}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,7 +113,7 @@ export function hlPoints(score: number) {
 }
 
 export function hlShareText(day: string, score: number, perfect: boolean, url: string) {
-  return `Dupe Kitchen · Higher or Lower · ${shortDate(day)}\n${perfect ? "🏆 a perfect run" : `🔥 ${score} in a row`}\n${url}`;
+  return `Yumjack · Higher or Lower · ${shortDate(day)}\n${perfect ? "🏆 a perfect run" : `🔥 ${score} in a row`}\n${url}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,5 +192,5 @@ export function bingoLines(marks: boolean[]): number[] {
 export function bingoShareText(week: string, marks: boolean[], url: string) {
   const rows = [0, 3, 6].map((r) => marks.slice(r, r + 3).map((m, i) => (r + i === 4 ? "⭐" : m ? "🟩" : "⬜")).join(""));
   const lines = bingoLines(marks).length;
-  return `Dupe Kitchen · Cooking Bingo · week of ${shortDate(week)}\n${rows.join("\n")}\n${marks.every(Boolean) ? "Full card!" : `${lines} ${lines === 1 ? "line" : "lines"}`}\n${url}`;
+  return `Yumjack · Cooking Bingo · week of ${shortDate(week)}\n${rows.join("\n")}\n${marks.every(Boolean) ? "Full card!" : `${lines} ${lines === 1 ? "line" : "lines"}`}\n${url}`;
 }

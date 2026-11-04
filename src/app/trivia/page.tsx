@@ -55,7 +55,7 @@ export default async function TriviaPage() {
       )}
 
       <p className="text-xs text-muted">
-        Questions are written with AI and checked by the Dupe Kitchen team.
+        Questions are written with AI and checked by the Yumjack team.
         {contactEmail && (
           <>
             {" "}Spot a wrong answer? Email <a href={`mailto:${contactEmail}`} className="underline">{contactEmail}</a>.

@@ -42,11 +42,11 @@ export function triviaPoints(correct: number, streak: number) {
   return { answers, bonus, total: answers + bonus };
 }
 
-/** "Dupe Kitchen trivia · Nov 2 / 🟩🟥🟩 2/3": spoiler-free, like a word-game result. */
+/** "Yumjack trivia · Nov 2 / 🟩🟥🟩 2/3": spoiler-free, like a word-game result. */
 export function triviaShareText(day: string, results: boolean[], url: string): string {
   const date = new Date(`${day}T12:00:00Z`).toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone: "UTC" });
   const right = results.filter(Boolean).length;
-  return `Dupe Kitchen trivia · ${date}\n${results.map((r) => (r ? "🟩" : "🟥")).join("")} ${right}/${results.length}\n${url}`;
+  return `Yumjack trivia · ${date}\n${results.map((r) => (r ? "🟩" : "🟥")).join("")} ${right}/${results.length}\n${url}`;
 }
 
 /** Moves the right answer to a random slot (models tend to put it in the same place). */

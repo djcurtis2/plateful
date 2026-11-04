@@ -9,7 +9,7 @@ export function SavingsCard({ saved, meals, shareUrl }: { saved: number; meals: 
   const canvas = useRef<HTMLCanvasElement>(null);
   const [msg, setMsg] = useState("");
   const amount = `$${Math.round(saved).toLocaleString("en-US")}`;
-  const text = `I've saved ${amount} cooking restaurant favorites at home with Dupe Kitchen.`;
+  const text = `I've saved ${amount} cooking restaurant favorites at home with Yumjack.`;
 
   const draw = useCallback(async () => {
     const cv = canvas.current;
@@ -23,7 +23,7 @@ export function SavingsCard({ saved, meals, shareUrl }: { saved: number; meals: 
     g.fillRect(0, 0, W, H);
     g.fillStyle = "#F2B630";
     g.font = `600 30px ${mono}`;
-    g.fillText("COOKED AT HOME WITH DUPE KITCHEN", 72, 130);
+    g.fillText("COOKED AT HOME WITH YUMJACK", 72, 130);
     g.fillStyle = "#FFFFFF";
     g.font = `700 92px ${display}`;
     g.fillText("I've saved", 72, 330);
@@ -55,7 +55,7 @@ export function SavingsCard({ saved, meals, shareUrl }: { saved: number; meals: 
 
   async function file() {
     const blob = await new Promise<Blob | null>((r) => canvas.current?.toBlob(r, "image/png"));
-    return blob ? new File([blob], "dupe-kitchen-savings.png", { type: "image/png" }) : null;
+    return blob ? new File([blob], "yumjack-savings.png", { type: "image/png" }) : null;
   }
 
   return (

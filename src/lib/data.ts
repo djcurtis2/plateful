@@ -141,7 +141,7 @@ export type Attempt = {
   caption: string | null;
   votes: number;
   created_at: string;
-  name: string | null; // public name of the cook; null = "A Dupe Kitchen cook"
+  name: string | null; // public name of the cook; null = "A Yumjack cook"
   chef: ChefCard;
   cost_per_plate: number | null;
   cost_source: "self" | "receipt" | null;
@@ -260,7 +260,7 @@ export async function getUpcomingChallenge(): Promise<Challenge | null> {
   return data ? toChallenge(data) : null;
 }
 
-/** Recipes saved before Dupe Kitchen asked for package sizes (admin backfill). */
+/** Recipes saved before Yumjack asked for package sizes (admin backfill). */
 export async function recipesMissingPackSizes() {
   const { data } = await admin().from("recipes").select("id, ingredients").order("created_at", { ascending: false }).limit(1000);
   return ((data ?? []) as { id: string; ingredients: unknown }[]).filter((r) => (r.ingredients as Ingredient[]).some((g) => g.pack_qty === undefined));

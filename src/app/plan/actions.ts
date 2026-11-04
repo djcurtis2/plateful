@@ -10,7 +10,7 @@ import { shareLabel } from "@/lib/leftovers";
 import { logCook } from "@/lib/savings-server";
 
 type R = { ok: true; message?: string } | { ok: false; message: string };
-const PLUS_ONLY: R = { ok: false, message: "Plan my week is part of Dupe Kitchen Plus." };
+const PLUS_ONLY: R = { ok: false, message: "Plan my week is part of Yumjack Plus." };
 const CHANGED: R = { ok: false, message: "That plan has changed. Refresh the page." };
 
 const Settings = z.object({
@@ -134,7 +134,7 @@ export async function clearPlanSlot(planId: string, index: number): Promise<R> {
 }
 
 /**
- * Nothing fits a spot? Claude writes a new Dupe Kitchen original for that meal, built on this week's leftovers
+ * Nothing fits a spot? Claude writes a new Yumjack original for that meal, built on this week's leftovers
  * (about 15 seconds each; counts toward the daily new-recipe limit).
  */
 export async function fillPlanGap(planId: string, index: number): Promise<R> {

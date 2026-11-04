@@ -52,7 +52,7 @@ export function NameForm({ initial = "", compact = false }: { initial?: string; 
           {error}
         </p>
       ) : (
-        <p className="text-xs text-muted">Shown publicly on your entries and the leaderboard. Without one you appear as &ldquo;A Dupe Kitchen cook.&rdquo;</p>
+        <p className="text-xs text-muted">Shown publicly on your entries and the leaderboard. Without one you appear as &ldquo;A Yumjack cook.&rdquo;</p>
       )}
     </form>
   );
