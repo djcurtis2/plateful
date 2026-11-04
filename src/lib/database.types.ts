@@ -52,6 +52,7 @@ export type Database = {
           stripe_customer_id: string | null;
           subscription_status: string | null;
           current_period_end: string | null;
+          cancel_at: string | null;
           bonus_until: string | null;
           referral_rewards_granted: number;
           public_name: string | null;

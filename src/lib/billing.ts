@@ -1,6 +1,6 @@
 import "server-only";
 import type Stripe from "stripe";
-import { stripe, periodEnd } from "@/lib/stripe";
+import { stripe, periodEnd, cancelDate } from "@/lib/stripe";
 import { admin } from "@/lib/supabase/admin";
 
 /** Copies a Stripe subscription's status onto the person's profile (plan, status, renewal date). */
@@ -12,6 +12,7 @@ export async function syncSubscription(sub: Stripe.Subscription, userIdHint: str
     plan: (active ? "plus" : "free") as "plus" | "free",
     subscription_status: sub.status,
     current_period_end: periodEnd(sub),
+    cancel_at: cancelDate(sub),
     stripe_customer_id: customer,
   };
   const db = admin();

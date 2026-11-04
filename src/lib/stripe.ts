@@ -15,3 +15,9 @@ export function periodEnd(sub: Stripe.Subscription): string | null {
   const ts = fromItem?.current_period_end ?? fromSub;
   return ts ? new Date(ts * 1000).toISOString() : null;
 }
+
+/** When a cancelled subscription stops, or null if it will renew. Newer Stripe flows set cancel_at; older ones only the flag. */
+export function cancelDate(sub: Stripe.Subscription): string | null {
+  if (sub.cancel_at) return new Date(sub.cancel_at * 1000).toISOString();
+  return sub.cancel_at_period_end ? periodEnd(sub) : null;
+}

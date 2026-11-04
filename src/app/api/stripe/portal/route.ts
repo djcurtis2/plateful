@@ -8,6 +8,6 @@ export async function POST(req: NextRequest) {
   const me = await getMe();
   const customer = me?.profile?.stripe_customer_id;
   if (!customer) return NextResponse.redirect(new URL("/pricing", req.url), { status: 303 });
-  const session = await stripe().billingPortal.sessions.create({ customer, return_url: `${siteUrl}/account` });
+  const session = await stripe().billingPortal.sessions.create({ customer, return_url: `${siteUrl}/account?billing=1` });
   return NextResponse.redirect(session.url, { status: 303 });
 }

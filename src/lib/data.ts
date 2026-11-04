@@ -80,6 +80,7 @@ export type Profile = ProfilePlanFields & {
   referral_code: string;
   stripe_customer_id: string | null;
   current_period_end: string | null;
+  cancel_at: string | null;
   public_name: string | null;
   is_admin: boolean;
   feature_me: boolean;
@@ -96,7 +97,7 @@ export async function getMe() {
   if (!user) return null;
   const { data } = await supabase
     .from("profiles")
-    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
+    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, cancel_at, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
     .eq("id", user.id)
     .maybeSingle();
   const profile = data as Profile | null;

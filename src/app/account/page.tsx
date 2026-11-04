@@ -29,14 +29,14 @@ function fmtDate(iso: string | null | undefined) {
   return iso ? new Date(iso).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
 }
 
-export default async function AccountPage({ searchParams }: { searchParams: Promise<{ upgraded?: string }> }) {
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ upgraded?: string; billing?: string }> }) {
   let me = await getMe();
   if (!me || !me.profile) redirect("/login?next=/account");
-  // Back from checkout, or a paying customer whose webhook was missed: confirm with Stripe directly.
-  if (!me.plus && me.profile.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) {
+  const { upgraded, billing } = await searchParams;
+  // Back from checkout or the billing portal, or a paying customer whose webhook was missed: confirm with Stripe directly.
+  if ((!me.plus || billing) && me.profile.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) {
     me = (await getMe())!;
   }
-  const { upgraded } = await searchParams;
   const p = me.profile!;
   const [stats, game, { data: prizes }, savings, cards] = await Promise.all([
     referralStats(me.user.id),
@@ -181,7 +181,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             <span className="label">Plan</span>
             <p className="font-display text-2xl font-bold">{me.plus ? "Plus" : "Free"}</p>
             <p className="text-sm text-muted">
-              {paid && p.current_period_end ? `Renews ${fmtDate(p.current_period_end)}` : null}
+              {paid && p.cancel_at ? `Ends ${fmtDate(p.cancel_at)}` : paid && p.current_period_end ? `Renews ${fmtDate(p.current_period_end)}` : null}
               {paid && p.subscription_status === "past_due" ? " · Payment failed, update your card" : null}
               {!paid && bonusUntil ? `Free Plus from referrals until ${bonusUntil}` : null}
             </p>
