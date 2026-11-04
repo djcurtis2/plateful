@@ -125,6 +125,39 @@
   .game-tile:hover .game-tile-art {
     transform: rotate(12deg) scale(1.1);
   }
+  /* Games page: a colored panel with tile grout lines; hovering plays one move of the game (see GameArt). */
+  .game-scene {
+    background-color: color-mix(in oklab, var(--tile) 88%, var(--surface));
+    background-image:
+      linear-gradient(rgb(255 255 255 / 0.13) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(255 255 255 / 0.13) 1px, transparent 1px);
+    background-size: 32px 32px;
+    background-position: center;
+  }
+  .scene-blur {
+    filter: blur(5px);
+    transition: filter 0.35s ease;
+  }
+  .scene-up,
+  .scene-down {
+    transition: transform 0.25s ease;
+  }
+  .scene-show {
+    opacity: 0;
+    transition: opacity 0.25s ease;
+  }
+  .game-tile:is(:hover, :focus-visible) .scene-blur {
+    filter: none;
+  }
+  .game-tile:is(:hover, :focus-visible) .scene-up {
+    transform: translateY(-6px);
+  }
+  .game-tile:is(:hover, :focus-visible) .scene-down {
+    transform: translateY(6px);
+  }
+  .game-tile:is(:hover, :focus-visible) .scene-show {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
