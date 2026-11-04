@@ -77,6 +77,7 @@ New schema changes: add the next numbered file (`0017_…sql`, idempotent: `if n
 
 - `NEXT_PUBLIC_*` values are baked in at build time: change them in Vercel, then redeploy.
 - Stripe: each webhook endpoint has its own `whsec_`. Local uses the `stripe listen` secret (`.env.local`); Vercel uses the "Plateful live site" endpoint's secret.
+- The old address plateful-amber.vercel.app redirects to yumjack.app in `src/proxy.ts`. `/api/stripe/webhook` is outside the proxy, so it does not redirect.
 - Supabase auth redirect allow-list must include `<site>/auth/callback` for every site address.
 - In the SQL editor, statements with `drop … if exists` trigger a "destructive operation" confirm; that's expected.
 - The gear shop webhook branch uses `checkout.session.completed` and `checkout.session.async_payment_succeeded` (both forwarded by `stripe:listen`; add the second to the live endpoint too). Gear checkout is cards only.

@@ -2,13 +2,20 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { REF_COOKIE, REF_MAX_AGE, REFERRAL_CODE_RE, VISITOR_COOKIE } from "@/lib/cookies";
 
+const OLD_HOST = "plateful-amber.vercel.app";
+
 /**
  * Runs before every page and API request:
  * 1. Refreshes the Supabase auth session cookie.
  * 2. Gives each browser an anonymous visitor id (rate limits, referral attribution).
  * 3. Remembers a ?ref= referral code for 30 days so sign-ups and cooks are credited.
+ * Old address: sends visitors to yumjack.app, keeping the page they asked for.
  */
 export async function proxy(request: NextRequest) {
+  if (request.headers.get("host") === OLD_HOST) {
+    return NextResponse.redirect(`https://yumjack.app${request.nextUrl.pathname}${request.nextUrl.search}`, 308);
+  }
+
   let response = NextResponse.next({ request });
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
