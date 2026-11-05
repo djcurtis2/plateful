@@ -35,7 +35,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const { upgraded, billing } = await searchParams;
   // Back from checkout or the billing portal, or a paying customer whose webhook was missed: confirm with Stripe directly.
   if ((!me.plus || billing) && me.profile.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) {
-    me = (await getMe())!;
+    me = (await getMe({ fresh: true }))!;
   }
   const p = me.profile!;
   const [stats, game, { data: prizes }, savings, cards] = await Promise.all([

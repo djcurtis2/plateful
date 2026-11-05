@@ -23,7 +23,7 @@ type Search = { searchParams: Promise<{ new?: string; include?: string }> };
 export default async function PlanPage({ searchParams }: Search) {
   const sp = await searchParams;
   let me = await getMe();
-  if (me && !me.plus && me.profile?.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) me = await getMe();
+  if (me && !me.plus && me.profile?.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) me = await getMe({ fresh: true });
   if (!me) redirect(`/login?next=${encodeURIComponent(`/plan${sp.include ? `?new=1&include=${sp.include}` : ""}`)}`);
 
   const [pool, pantry] = await Promise.all([getSuggestionPool(me.user.id, 400), getPantry(me.user.id)]);

@@ -90,16 +90,18 @@ export type Profile = ProfilePlanFields & {
   clubs: string[];
 };
 
-export async function getMe() {
+/** `fresh` re-reads the profile after a write in the same page load; Next otherwise hands back the first read. */
+export async function getMe({ fresh = false } = {}) {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
   if (!user) return null;
-  const { data } = await supabase
+  const query = supabase
     .from("profiles")
     .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, cancel_at, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
-    .eq("id", user.id)
-    .maybeSingle();
+    .eq("id", user.id);
+  // Next skips its repeat-read memory for requests that carry an abort signal.
+  const { data } = await (fresh ? query.abortSignal(new AbortController().signal) : query).maybeSingle();
   const profile = data as Profile | null;
   return { user, profile, plus: hasPlus(profile) };
 }
