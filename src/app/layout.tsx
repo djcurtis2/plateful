@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
+import Script from "next/script";
 import { Header } from "@/components/Header";
 import { siteUrl } from "@/lib/env";
 import "./globals.css";
@@ -55,6 +56,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </div>
         </footer>
+        {/* Vercel Web Analytics (no cookies, no personal data). Served from our own domain; does nothing on localhost. */}
+        <Script id="vercel-analytics-queue" strategy="afterInteractive">
+          {"window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};"}
+        </Script>
+        <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />
       </body>
     </html>
   );
