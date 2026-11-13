@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getMe } from "@/lib/data";
 import { admin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { refreshFromStripe } from "@/lib/billing";
 import { requireEnv, siteUrl } from "@/lib/env";
 
 /** Starts a Stripe Checkout for Plus. Submitted as a form so it works without client JS. */
@@ -11,6 +12,14 @@ export async function POST(req: NextRequest) {
   if (me.plus && me.profile?.plan === "plus") return NextResponse.redirect(new URL("/account", req.url), { status: 303 });
 
   let customer = me.profile?.stripe_customer_id ?? null;
+  // Already paying (the profile may just not know yet, e.g. a second checkout tab): don't start a second subscription.
+  if (customer) {
+    const live = await stripe().subscriptions.list({ customer, status: "all", limit: 10 });
+    if (live.data.some((s) => ["active", "trialing", "past_due"].includes(s.status))) {
+      await refreshFromStripe(me.user.id, customer);
+      return NextResponse.redirect(new URL("/account", req.url), { status: 303 });
+    }
+  }
   if (!customer) {
     const c = await stripe().customers.create({ email: me.user.email, metadata: { user_id: me.user.id } });
     customer = c.id;

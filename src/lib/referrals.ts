@@ -5,6 +5,8 @@ import { REFERRAL_CODE_RE } from "@/lib/cookies";
 import { onReferralCook, onReferralSignup } from "@/lib/game-server";
 
 const FRIEND_TRIAL_DAYS = 7;
+/** Friend trials (and invite points) one person's link can hand out in 30 days. Stops one person minting Plus with spare emails. */
+export const FRIEND_TRIALS_PER_30_DAYS = 5;
 
 type ProfileRow = {
   id: string;
@@ -65,12 +67,22 @@ export async function attributeSignup(userId: string, code: string | null | unde
   // Only brand-new accounts can be attributed, so existing users can't farm each other's codes.
   if (Date.now() - new Date(profile.created_at).getTime() > 15 * 60_000) return;
 
+  // Past the cap the friend is still linked (their cooking still counts toward the inviter's free months), but gets no trial
+  // and the inviter no signup points.
+  const { count: recent } = await db
+    .from("referral_events")
+    .select("id", { count: "exact", head: true })
+    .eq("referrer_id", referrer)
+    .eq("kind", "signup")
+    .gte("created_at", new Date(Date.now() - 30 * 86_400_000).toISOString());
+  const rewarded = (recent ?? 0) < FRIEND_TRIALS_PER_30_DAYS;
+
   await db
     .from("profiles")
-    .update({ referred_by: referrer, bonus_until: extend(profile.bonus_until, FRIEND_TRIAL_DAYS) })
+    .update(rewarded ? { referred_by: referrer, bonus_until: extend(profile.bonus_until, FRIEND_TRIAL_DAYS) } : { referred_by: referrer })
     .eq("id", userId);
   await db.from("referral_events").insert({ referrer_id: referrer, referred_user_id: userId, kind: "signup" });
-  await onReferralSignup(referrer, userId);
+  if (rewarded) await onReferralSignup(referrer, userId);
 }
 
 /**

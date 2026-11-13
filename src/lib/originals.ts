@@ -1,6 +1,6 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
-import { adaptRecipe, buildRecipe, inventRecipe } from "@/lib/claude";
+import { RecognitionError, adaptRecipe, buildRecipe, inventRecipe } from "@/lib/claude";
 import { METHOD_BY_ID, describeBuild, type Build } from "@/lib/builder";
 import { LEFTOVER_SCAN, countMarked, guardedCall, siteCapReached } from "@/lib/limits";
 import { LEFTOVER_STYLES, slugify, type LeftoverStyle } from "@/lib/recipe";
@@ -36,6 +36,8 @@ async function originalCall<T extends { inputTokens: number; outputTokens: numbe
       return null;
     },
     call,
+    // A refusal or a cut-off answer was still paid for, so it uses up the try (otherwise retrying it is free).
+    billedOnError: (e) => e instanceof RecognitionError,
   });
   if (r.ok) return r;
   if ("limit" in r) return { ok: false, message: r.limit };

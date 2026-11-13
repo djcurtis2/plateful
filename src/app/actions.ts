@@ -365,14 +365,29 @@ export async function setPublicName(name: string): Promise<Result> {
 }
 
 /** Flags an entry for review. Entries with 3+ reports are hidden automatically until an admin checks them. */
+const REPORTER_MIN_DAYS = 3;
+
 export async function reportAttempt(attemptId: string, reason: string): Promise<Result> {
   if (!Uuid.safeParse(attemptId).success) return { ok: false, code: "invalid", message: "Unknown post." };
   const { user } = await currentUser();
   if (!user) return LOGIN;
   const db = admin();
   await db.from("attempt_reports").upsert({ attempt_id: attemptId, user_id: user.id, reason: reason.slice(0, 200) || null });
-  const { count } = await db.from("attempt_reports").select("user_id", { count: "exact", head: true }).eq("attempt_id", attemptId);
-  if ((count ?? 0) >= 3) await db.from("attempts").update({ hidden: true }).eq("id", attemptId);
+  // Three reports hide a post until an admin looks. Only reports from established cooks count toward that (accounts at
+  // least REPORTER_MIN_DAYS old that have earned points), so a handful of fresh accounts can't knock a rival's entry
+  // off the board. Every report still shows up for admins.
+  const { data: reports } = await db.from("attempt_reports").select("user_id").eq("attempt_id", attemptId);
+  const reporters = [...new Set((reports ?? []).map((r) => r.user_id))];
+  if (reporters.length >= 3) {
+    const oldEnough = new Date(Date.now() - REPORTER_MIN_DAYS * 86_400_000).toISOString();
+    const [{ data: old }, { data: active }] = await Promise.all([
+      db.from("profiles").select("id").in("id", reporters).lt("created_at", oldEnough),
+      db.from("points_events").select("user_id").in("user_id", reporters).limit(5000),
+    ]);
+    const hasPoints = new Set((active ?? []).map((e) => e.user_id));
+    const trusted = (old ?? []).filter((p) => hasPoints.has(p.id)).length;
+    if (trusted >= 3) await db.from("attempts").update({ hidden: true }).eq("id", attemptId);
+  }
   return { ok: true };
 }
 

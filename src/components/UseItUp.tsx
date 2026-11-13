@@ -62,13 +62,26 @@ export async function UseItUp({
 
       {picks.length > 0 && (
         <ul className="grid gap-3 sm:grid-cols-3">
-          {picks.map(({ recipe: r, uses, value }, i) => (
-            <li key={r.id} className={!plus && i > 0 ? "relative" : undefined}>
-              {!plus && i > 0 && (
+          {picks.map(({ recipe: r, uses, value }, i) =>
+            // Plus-only picks never reach the page: a stand-in card with just what it uses, so the blur hides nothing real.
+            !plus && i > 0 ? (
+              <li key={`locked-${i}`} className="relative">
                 <Link href="/pricing" className="absolute inset-0 z-10 grid place-items-center rounded-3xl bg-bg/40 text-sm font-semibold backdrop-blur-[6px]">
                   <span className="rounded-full bg-saffron px-3 py-1.5 text-saffron-ink">See it with Plus</span>
                 </Link>
-              )}
+                <div aria-hidden className="card flex h-full gap-3 overflow-hidden p-3">
+                  <span className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-sunk">
+                    <DishArt dish={`locked ${i}`} ingredients={uses.map((u) => u.name)} seed={`locked-${i}`} />
+                  </span>
+                  <span className="flex min-w-0 flex-col gap-1">
+                    <span className="font-display font-bold leading-tight">A recipe for your leftovers</span>
+                    <span className="text-xs text-muted">Uses your {uses.map((u) => u.name.replace(/,.*$/, "")).join(", ")}</span>
+                    <span className="tabular font-mono text-xs text-basil">uses ~{money(value)} of leftovers</span>
+                  </span>
+                </div>
+              </li>
+            ) : (
+            <li key={r.id}>
               <Link href={`/r/${r.slug}`} className="card group flex h-full gap-3 overflow-hidden p-3 hover:border-basil">
                 <span className="relative size-20 shrink-0 overflow-hidden rounded-xl bg-sunk">
                   {r.image_url ? (
@@ -87,7 +100,8 @@ export async function UseItUp({
                 </span>
               </Link>
             </li>
-          ))}
+            ),
+          )}
         </ul>
       )}
       <LeftoverMaker recipeId={recipe.id} signedIn={!!userId} next={`/r/${recipe.slug}`} few={picks.length < 3} plus={plus} triesLeft={tries} />

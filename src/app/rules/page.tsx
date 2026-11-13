@@ -20,7 +20,7 @@ export default function RulesPage() {
         Up to three winners each week. <b>Crowd favorite</b>: the entry with the most votes when voting closes (ties go to the earlier entry). <b>Chef&apos;s pick</b>: the best-looking copy, chosen by the Yumjack team based on how closely it matches the original and how good it looks. Each wins {PRIZES.crowd_favorite.plusMonths} months of Yumjack Plus, a winner badge, and may be featured on Yumjack&apos;s homepage and social accounts. <b>Thriftiest copy</b>: the lowest receipt-verified price per plate (ties go to the earlier entry), which wins {PRIZES.thriftiest.plusMonths} month of Plus and a badge. Self-reported prices can&apos;t win Thriftiest copy. The month&apos;s top points scorer wins a {PRIZES.monthlyGiftCard}. Prizes have no cash value and can&apos;t be transferred.
       </p>
       <h2 className="font-display text-xl font-bold">Points</h2>
-      <p>Points ({POINTS.post} for an entry, {POINTS.vote_received} per vote received, and more) count toward levels and the monthly prize. Yumjack may remove points earned through abuse.</p>
+      <p>Points ({POINTS.post} for an entry, {POINTS.vote_received} per vote received, and more) count toward levels and the monthly prize. Points for inviting friends count toward levels and gear but not the monthly prize. Yumjack may remove points earned through abuse.</p>
       <p>
         <b>Daily trivia:</b> three questions a day, one go each. {POINTS.trivia} point per right answer, plus {TRIVIA_STREAK_BONUS} points every {TRIVIA_STREAK_EVERY} days
         in a row. Trivia points count toward your level and gear but not the monthly prize, which is for cooking. Questions are written with AI and checked by

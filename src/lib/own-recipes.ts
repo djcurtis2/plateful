@@ -1,6 +1,6 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
-import { priceOwnRecipe } from "@/lib/claude";
+import { RecognitionError, priceOwnRecipe } from "@/lib/claude";
 import { OWN_SCAN, countMarked, guardedCall, siteCapReached } from "@/lib/limits";
 import { slugify, type Meal } from "@/lib/recipe";
 import { dietTagsFrom } from "@/lib/diet";
@@ -34,6 +34,7 @@ export async function createOwnRecipe(input: {
       return null;
     },
     call: () => priceOwnRecipe({ dish: input.dish, servings: input.servings, ingredients: input.ingredients, steps: input.steps }),
+    billedOnError: (e) => e instanceof RecognitionError,
   });
   if (!made.ok && "limit" in made) return { ok: false, message: made.limit };
   if (!made.ok) {

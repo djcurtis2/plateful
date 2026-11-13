@@ -156,7 +156,8 @@ export async function Header() {
               </>
             ) : (
               <Link href="/login" className="btn btn-primary btn-sm">
-                Sign up<span className="hidden min-[400px]:inline">&nbsp;free</span>
+                <span className="min-[400px]:hidden">Sign up</span>
+                <span className="hidden min-[400px]:inline">Sign up free</span>
               </Link>
             )}
           </nav>

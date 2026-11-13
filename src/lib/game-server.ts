@@ -268,7 +268,14 @@ export async function monthlyTop(period: string) {
   const [y, m] = period.split("-").map(Number);
   const start = new Date(Date.UTC(y, m - 1, 1)).toISOString();
   const end = new Date(Date.UTC(y, m, 1)).toISOString();
-  const { data } = await admin().from("points_events").select("user_id, points").not("kind", "in", "(trivia,game)").gte("created_at", start).lt("created_at", end).limit(20000);
+  // The prize is for cooking: trivia, games and invite points (easy to farm with spare accounts) don't count.
+  const { data } = await admin()
+    .from("points_events")
+    .select("user_id, points")
+    .not("kind", "in", "(trivia,game,referral_signup,referral_cook)")
+    .gte("created_at", start)
+    .lt("created_at", end)
+    .limit(20000);
   const totals = new Map<string, number>();
   for (const e of data ?? []) totals.set(e.user_id, (totals.get(e.user_id) ?? 0) + e.points);
   const top = [...totals.entries()].sort((a, b) => b[1] - a[1])[0];

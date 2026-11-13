@@ -10,7 +10,7 @@ import { mySavings } from "@/lib/savings-server";
 import { dollars, nextMilestone } from "@/lib/savings";
 import { SavingsCard } from "@/components/SavingsCard";
 import { FeatureMeToggle } from "@/components/FeatureMeToggle";
-import { referralStats } from "@/lib/referrals";
+import { FRIEND_TRIALS_PER_30_DAYS, referralStats } from "@/lib/referrals";
 import { siteUrl } from "@/lib/env";
 import { CopyField } from "@/components/CopyField";
 import { NameForm } from "@/components/NameForm";
@@ -210,7 +210,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <div>
           <span className="label">Invite friends</span>
           <h2 className="font-display text-2xl font-bold">Earn a free month for every {stats.goal} friends who cook</h2>
-          <p className="text-sm text-muted">Friends get a week of Plus when they sign up from your link. Recipe pages you share carry your code too. Up to {REFERRAL_MAX_REWARDS} free months in all.</p>
+          <p className="text-sm text-muted">Friends get a week of Plus when they sign up from your link (up to {FRIEND_TRIALS_PER_30_DAYS} friends a month). Recipe pages you share carry your code too. Up to {REFERRAL_MAX_REWARDS} free months in all.</p>
         </div>
         <CopyField value={link} label="Your invite link" />
         <div className="flex flex-col gap-1.5">

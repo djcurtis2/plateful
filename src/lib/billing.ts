@@ -3,11 +3,22 @@ import type Stripe from "stripe";
 import { stripe, periodEnd, cancelDate } from "@/lib/stripe";
 import { admin } from "@/lib/supabase/admin";
 
-/** Copies a Stripe subscription's status onto the person's profile (plan, status, renewal date). */
+const LIVE = ["active", "trialing", "past_due"];
+
+/**
+ * Copies a Stripe subscription's status onto the person's profile (plan, status, renewal date).
+ * If this one ended but the customer has another live Plus subscription (say two checkouts went through), that one
+ * is copied instead, so ending one never switches off Plus they're still paying for.
+ */
 export async function syncSubscription(sub: Stripe.Subscription, userIdHint: string | null) {
   const customer = typeof sub.customer === "string" ? sub.customer : sub.customer.id;
   const userId = userIdHint ?? (sub.metadata?.user_id || null);
-  const active = ["active", "trialing", "past_due"].includes(sub.status);
+  if (!LIVE.includes(sub.status)) {
+    const others = await stripe().subscriptions.list({ customer, status: "all", limit: 10 });
+    const other = others.data.find((s) => s.id !== sub.id && LIVE.includes(s.status));
+    if (other) sub = other;
+  }
+  const active = LIVE.includes(sub.status);
   const update = {
     plan: (active ? "plus" : "free") as "plus" | "free",
     subscription_status: sub.status,
@@ -30,7 +41,7 @@ export async function refreshFromStripe(userId: string, customerId: string | nul
   if (!customerId || !process.env.STRIPE_SECRET_KEY) return false;
   try {
     const subs = await stripe().subscriptions.list({ customer: customerId, status: "all", limit: 5 });
-    const live = subs.data.find((s) => ["active", "trialing", "past_due"].includes(s.status)) ?? subs.data[0];
+    const live = subs.data.find((s) => LIVE.includes(s.status)) ?? subs.data[0];
     if (!live) return false;
     await syncSubscription(live, userId);
     return true;
