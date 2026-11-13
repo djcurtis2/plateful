@@ -8,6 +8,7 @@ import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 import { siteUrl } from "@/lib/env";
 import { RecipeView } from "@/components/RecipeView";
+import { krogerConfigured } from "@/lib/kroger-server";
 import { ReferralBeacon } from "@/components/ReferralBeacon";
 import { AttemptGallery } from "@/components/AttemptGallery";
 import { UseItUp } from "@/components/UseItUp";
@@ -83,6 +84,7 @@ export default async function RecipePage({ params, searchParams }: Params) {
         <ReferralBeacon recipeId={recipe.id} />
       </Suspense>
       <RecipeView
+        kroger={krogerConfigured()}
         recipe={recipe}
         shareUrl={shareUrl}
         signedIn={!!me}
@@ -168,6 +170,7 @@ async function SharedRecipe({ recipe, token }: { recipe: Recipe; token: string }
         <CopySharedRecipe slug={recipe.slug} token={token} signedIn={!!me} />
       </section>
       <RecipeView
+        kroger={krogerConfigured()}
         recipe={recipe}
         shareUrl=""
         signedIn={!!me}

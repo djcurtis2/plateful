@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import type { GroceryLine } from "@/lib/planner";
 import { money } from "@/lib/format";
 import { STORES, STORE_IDS, type StoreId } from "@/lib/stores";
+import { KrogerCartButton } from "@/components/KrogerCartButton";
 
 /** The week's combined shopping list, by aisle. Ticks are remembered on this device. */
-export function GroceryList({ planId, lines, pantry }: { planId: string; lines: GroceryLine[]; pantry: string[] }) {
+export function GroceryList({ planId, lines, pantry, kroger = false }: { planId: string; lines: GroceryLine[]; pantry: string[]; kroger?: boolean }) {
   const key = `pf_plan_ticks_${planId}`;
   const [got, setGot] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
@@ -17,6 +18,10 @@ export function GroceryList({ planId, lines, pantry }: { planId: string; lines: 
       /* storage unavailable */
     }
   }, [key]);
+  // Back from Kroger sign-in: open the Kroger tab so the result shows.
+  useEffect(() => {
+    if (kroger && new URLSearchParams(window.location.search).has("kroger")) setStore("kroger");
+  }, [kroger]);
   const toggle = (k: string) =>
     setGot((s) => {
       const n = new Set(s);
@@ -46,6 +51,9 @@ export function GroceryList({ planId, lines, pantry }: { planId: string; lines: 
           </button>
         ))}
       </div>
+      {kroger && store === "kroger" && (
+        <KrogerCartButton items={lines.filter((l) => !got.has(l.key)).map((l) => l.name)} />
+      )}
       <div className="flex items-center justify-between gap-2">
         <span className="text-sm text-muted">
           {got.size} of {lines.length} in the cart

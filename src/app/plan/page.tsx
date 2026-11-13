@@ -11,6 +11,7 @@ import { PlanForm } from "@/components/PlanForm";
 import { DIETS } from "@/lib/diet";
 import { refreshFromStripe } from "@/lib/billing";
 import { GroceryList } from "@/components/GroceryList";
+import { krogerConfigured } from "@/lib/kroger-server";
 import { AdminButton } from "@/components/AdminButton";
 import { clearPlanSlot, fillPlanGap, markPlanMealCooked, swapPlanMeal } from "./actions";
 import { cookedSince } from "@/lib/savings-server";
@@ -175,7 +176,7 @@ export default async function PlanPage({ searchParams }: Search) {
             <h2 className="font-display text-2xl font-bold">Shopping list</h2>
             <p className="text-sm text-muted">Everything for the week in one trip. Items marked with a count are shared between meals.</p>
           </div>
-          <GroceryList planId={plan.id} lines={week.groceries} pantry={week.pantryUsed} />
+          <GroceryList kroger={krogerConfigured()} planId={plan.id} lines={week.groceries} pantry={week.pantryUsed} />
         </section>
 
         {week.leftovers.length > 0 && (

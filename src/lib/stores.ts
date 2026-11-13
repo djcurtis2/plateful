@@ -1,6 +1,7 @@
 // Grocery handoff. Today each item links to the store's search; Instacart's partner
 // "shoppable list" API (one cart for the whole recipe) can replace instacart.cartUrl
 // once your partnership is approved. See README > Grocery partners.
+// Kroger also has "Send to my Kroger cart" (whole list into the shopper's cart): lib/kroger*.ts, app/api/kroger/*.
 
 export type StoreId = "instacart" | "walmart" | "kroger";
 

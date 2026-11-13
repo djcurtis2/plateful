@@ -1,7 +1,7 @@
 "use client";
 import { DietChips } from "@/components/DietChips";
 import { celebrate, earnedText, here } from "@/lib/celebrate";
-import { useMemo, useState, useTransition } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import type { Recipe } from "@/lib/recipe";
@@ -10,6 +10,7 @@ import { formatQty, money, packagesNeeded, pantryKey } from "@/lib/format";
 import { STORES, STORE_IDS, type StoreId } from "@/lib/stores";
 import { markCooked, toggleSave, updatePantry } from "@/app/actions";
 import { ShareCard } from "@/components/ShareCard";
+import { KrogerCartButton } from "@/components/KrogerCartButton";
 
 type Props = {
   recipe: Recipe;
@@ -23,15 +24,21 @@ type Props = {
   versionOf?: { slug: string; dish: string; label: string } | null;
   /** Opened from someone else's share link: no save or "I made it" here (the page offers "Save a copy"). */
   shared?: boolean;
+  /** Kroger keys are set: offer "Send to my Kroger cart". */
+  kroger?: boolean;
 };
 
-export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved, initiallyCooked, hasEntry = false, myDiets = [], versionOf = null, shared = false }: Props) {
+export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved, initiallyCooked, hasEntry = false, myDiets = [], versionOf = null, shared = false, kroger = false }: Props) {
   const [servings, setServings] = useState(recipe.servings);
   const pantrySet = useMemo(() => new Set(pantry), [pantry]);
   const [have, setHave] = useState<Set<number>>(
     () => new Set(recipe.ingredients.flatMap((g, i) => (pantrySet.has(pantryKey(g.name)) ? [i] : []))),
   );
   const [store, setStore] = useState<StoreId>("instacart");
+  // Back from Kroger sign-in: open the Kroger tab so the result shows.
+  useEffect(() => {
+    if (kroger && new URLSearchParams(window.location.search).has("kroger")) setStore("kroger");
+  }, [kroger]);
   const [saved, setSaved] = useState(initiallySaved);
   const [cooked, setCooked] = useState(initiallyCooked);
   const [notice, setNotice] = useState("");
@@ -246,6 +253,7 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
               </button>
             ))}
           </div>
+          {kroger && store === "kroger" && items.length > 0 && <KrogerCartButton items={items.map((g) => g.name)} />}
           {items.length === 0 ? (
             <p className="py-6 text-center text-muted">You have everything. Go cook.</p>
           ) : (
