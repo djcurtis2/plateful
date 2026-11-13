@@ -14,6 +14,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
+import { intEnv } from "@/lib/env";
+import { LAUNCH_CODE, PLUS_MONTHLY, PLUS_YEARLY } from "@/lib/plan";
+
+const PLUS_SCANS = intEnv("PLUS_SCANS_PER_DAY", 40);
 
 export const dynamic = "force-dynamic";
 
@@ -107,6 +111,41 @@ export default async function Home() {
             {recent.map((r) => (
               <RecipeTile key={r.id} recipe={r} />
             ))}
+          </div>
+        </section>
+      )}
+
+      {!me?.plus && (
+        <section className="card grid gap-6 border-basil p-6 sm:p-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center">
+          <div className="flex flex-col gap-3">
+            <span className="label">Yumjack Plus</span>
+            <h2 className="font-display text-3xl font-bold tracking-tight">Cook copycats all week for less than one entrée</h2>
+            <ul className="grid gap-x-6 gap-y-1.5 text-sm sm:grid-cols-2">
+              {[
+                `Up to ${PLUS_SCANS} photo scans a day`,
+                "Plan my week, with one shopping list",
+                "Every recipe that uses up your leftovers",
+                "Any recipe your way: vegetarian, lighter, air fryer",
+              ].map((t) => (
+                <li key={t} className="flex gap-2">
+                  <span aria-hidden className="text-basil">✓</span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </div>
+          <div className="flex flex-col gap-2 lg:items-end lg:text-right">
+            <p className="tabular font-mono text-3xl">
+              {PLUS_MONTHLY}
+              <span className="text-base text-muted">/month</span>
+            </p>
+            <p className="-mt-1 text-sm text-muted">or {PLUS_YEARLY} a year</p>
+            <Link href="/pricing" className="btn btn-primary">
+              Get Plus
+            </Link>
+            <p className="text-xs text-muted">
+              Code <span className="font-mono font-semibold text-ink">{LAUNCH_CODE}</span> takes $5 off your first payment.
+            </p>
           </div>
         </section>
       )}

@@ -104,6 +104,11 @@ export async function Header() {
             >
               Leaderboard
             </Link>
+            {!me?.plus && (
+              <Link href="/pricing" className={`rounded-lg px-2 py-1.5 font-semibold text-basil hover:text-ink ${me ? "" : "hidden min-[400px]:inline"}`}>
+                Plus
+              </Link>
+            )}
             {me ? (
               <>
                 <Link
