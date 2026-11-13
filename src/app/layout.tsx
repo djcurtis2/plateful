@@ -9,6 +9,8 @@ const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["500", "700"]
 const body = Instrument_Sans({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-instrument" });
 const mono = JetBrains_Mono({ subsets: ["latin"], weight: ["400", "500", "600"], variable: "--font-jetbrains" });
 
+const IMPACT_SITE_ID = "6761530c-c63b-4602-a0be-614e6a933c59";
+
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: { default: "Yumjack — make restaurant dishes at home for less", template: "%s · Yumjack" },
@@ -29,6 +31,10 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`}>
+      <head>
+        {/* Impact (Instacart affiliate program) site ownership check. Impact reads `value`; `content` is the standard spelling. */}
+        <meta name="impact-site-verification" content={IMPACT_SITE_ID} {...{ value: IMPACT_SITE_ID }} />
+      </head>
       <body className="min-h-dvh">
         <Header />
         <div className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6">{children}</div>
