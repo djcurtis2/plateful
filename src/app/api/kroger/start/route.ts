@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     secure: req.nextUrl.protocol === "https:",
     sameSite: "lax",
     path: "/api/kroger",
-    maxAge: 15 * 60,
+    maxAge: 60 * 60, // an hour: Kroger sign-in (or a password reset) can take a while
   });
   return res;
 }
