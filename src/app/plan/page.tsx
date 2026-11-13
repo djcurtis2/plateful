@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
+import { DishArt } from "@/components/DishArt";
 import { redirect } from "next/navigation";
 import { getCurrentChallenge, getLatestPlan, getMe, getPantry, getRecipeBySlug, getRecipesByIds, getSuggestionPool, isLive } from "@/lib/data";
 import { pantryKey, money } from "@/lib/format";
@@ -293,9 +294,7 @@ function MealRow({ m, plan, actions }: { m: PlannedMeal; plan: Plan; actions?: R
             {r.image_url ? (
               <Image src={r.image_url} alt="" fill sizes="64px" className="object-cover" />
             ) : (
-              <span className="grid h-full place-items-center font-display text-xl text-muted" aria-hidden>
-                {r.dish.slice(0, 1)}
-              </span>
+              <DishArt dish={r.dish} ingredients={r.ingredients.map((i) => i.name)} seed={r.slug} />
             )}
           </Link>
         ) : (

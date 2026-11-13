@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { fitsDiets } from "@/lib/diet";
 import Image from "next/image";
+import { DishArt } from "@/components/DishArt";
 import type { Recipe } from "@/lib/recipe";
 import { leftoversFor, shareLabel, useItUp } from "@/lib/leftovers";
 import { pantryKey, money } from "@/lib/format";
@@ -73,9 +74,7 @@ export async function UseItUp({
                   {r.image_url ? (
                     <Image src={r.image_url} alt="" fill sizes="80px" className="object-cover" />
                   ) : (
-                    <span className="grid h-full place-items-center font-display text-2xl text-muted" aria-hidden>
-                      {r.dish.slice(0, 1)}
-                    </span>
+                    <DishArt dish={r.dish} ingredients={r.ingredients.map((i) => i.name)} seed={r.slug} />
                   )}
                 </span>
                 <span className="flex min-w-0 flex-col gap-1">

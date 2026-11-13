@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { DishArt } from "@/components/DishArt";
 import type { Recipe } from "@/lib/recipe";
 import { MEAL_LABELS, menuPlate, recipeLabel, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
@@ -12,9 +13,7 @@ export function RecipeTile({ recipe, note }: { recipe: Recipe; note?: string }) 
         {recipe.image_url ? (
           <Image src={recipe.image_url} alt="" fill sizes="(max-width: 640px) 100vw, 33vw" className="object-cover" />
         ) : (
-          <div className="grid h-full place-items-center font-display text-4xl text-muted" aria-hidden>
-            {recipe.dish.slice(0, 1)}
-          </div>
+          <DishArt dish={recipe.dish} ingredients={recipe.ingredients.map((i) => i.name)} seed={recipe.slug} />
         )}
         {s && (
           <span className="absolute left-3 top-3 rounded-lg bg-saffron px-2 py-1 font-mono text-xs font-semibold text-saffron-ink">

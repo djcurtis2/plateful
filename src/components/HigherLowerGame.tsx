@@ -1,4 +1,5 @@
 "use client";
+import { DishArt } from "@/components/DishArt";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { submitHlGuess } from "@/app/games/actions";
@@ -19,9 +20,7 @@ function Card({ card, price, tone }: { card: HlCard; price: number | null; tone:
           // eslint-disable-next-line @next/next/no-img-element
           <img src={card.image_url} alt="" className="size-full object-cover" />
         ) : (
-          <span className="grid h-full place-items-center font-display text-4xl text-muted" aria-hidden>
-            {card.dish.slice(0, 1)}
-          </span>
+          <DishArt dish={card.dish} seed={card.slug} />
         )}
       </div>
       <div className="flex flex-col gap-1 p-4">
