@@ -3,7 +3,7 @@ import { dietTagsFrom } from "@/lib/diet";
 import { cookies } from "next/headers";
 import { admin } from "@/lib/supabase/admin";
 import { getMe } from "@/lib/data";
-import { checkScanAllowance, hashIp, recordScan } from "@/lib/limits";
+import { checkScanAllowance, guardedCall, hashIp } from "@/lib/limits";
 import { recognizeDish, RecognitionError, type ImageMedia } from "@/lib/claude";
 import { slugify } from "@/lib/recipe";
 import { VISITOR_COOKIE } from "@/lib/cookies";
@@ -73,21 +73,31 @@ async function handle(req: NextRequest) {
   const me = await getMe();
   const userId = me?.user.id ?? null;
 
-  const allowance = await checkScanAllowance({ userId, visitorId, ipHash, plus: !!me?.plus });
-  if (!allowance.ok) return fail(429, allowance.code, allowance.message);
-
-  let recognized;
-  try {
-    recognized = await recognizeDish({ imageBase64: Buffer.from(bytes).toString("base64"), mediaType, restaurant });
-  } catch (e) {
-    await recordScan({ userId, visitorId, ipHash, ok: false });
-    if (e instanceof RecognitionError) return fail(502, e.code, "We couldn't read that photo. Try a clearer shot of the plate.");
-    console.error("recognize failed", e);
+  const seen: { code: string; remaining: number | null } = { code: "", remaining: null };
+  const scan = await guardedCall({
+    row: { userId, visitorId, ipHash },
+    check: async (before) => {
+      const allowance = await checkScanAllowance({ userId, visitorId, ipHash, plus: !!me?.plus }, before);
+      if (allowance.ok) {
+        seen.remaining = allowance.remaining;
+        return null;
+      }
+      seen.code = allowance.code;
+      return allowance.message;
+    },
+    call: () => recognizeDish({ imageBase64: Buffer.from(bytes).toString("base64"), mediaType, restaurant }),
+    ok: (made) => made.result.is_food,
+    // Claude refused, ran out of room or sent bad JSON: it was still billed, so it counts.
+    billedOnError: (e) => e instanceof RecognitionError,
+  });
+  if (!scan.ok && "limit" in scan) return fail(429, seen.code, scan.limit);
+  if (!scan.ok) {
+    if (scan.error instanceof RecognitionError) return fail(502, scan.error.code, "We couldn't read that photo. Try a clearer shot of the plate.");
+    console.error("recognize failed", scan.error);
     return fail(502, "upstream", "Something went wrong reading your photo. Try again in a minute.");
   }
 
-  const { result, inputTokens, outputTokens } = recognized;
-  await recordScan({ userId, visitorId, ipHash, ok: result.is_food, inputTokens, outputTokens });
+  const { result } = scan.made;
 
   if (!result.is_food) {
     return fail(422, "not_food", result.reason ? `That doesn't look like a dish: ${result.reason}` : "That doesn't look like a dish. Try a photo of the plate.");
@@ -144,5 +154,5 @@ async function handle(req: NextRequest) {
 
   if (userId) await db.from("saved_recipes").upsert({ user_id: userId, recipe_id: id });
 
-  return NextResponse.json({ slug, remaining: allowance.remaining });
+  return NextResponse.json({ slug, remaining: seen.remaining });
 }

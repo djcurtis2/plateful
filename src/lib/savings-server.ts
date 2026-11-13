@@ -63,14 +63,31 @@ export async function siteSavings(): Promise<{ saved: number; meals: number; coo
   }
 }
 
-/** Biggest savers since a date, with public names. */
+/**
+ * Biggest savers since a date, with public names. This race decides the monthly gift card, so it counts only
+ * verified cooks (backed by a cook-off photo): anyone can tap "I made it", so those count toward a cook's own
+ * total but not here.
+ */
 export async function topSavers(since: Date, limit = 25, until: Date | null = null) {
-  const { data } = await admin().rpc("top_savers", {
-    p_since: since.toISOString().slice(0, 10),
-    p_limit: limit,
-    p_until: until ? until.toISOString().slice(0, 10) : null,
-  });
-  const rows = (data ?? []) as { user_id: string; saved: number | string; meals: number | string }[];
+  let q = admin()
+    .from("cook_log")
+    .select("user_id, saved")
+    .eq("verified", true)
+    .gte("cooked_on", since.toISOString().slice(0, 10))
+    .limit(20000);
+  if (until) q = q.lt("cooked_on", until.toISOString().slice(0, 10));
+  const { data } = await q;
+  const totals = new Map<string, { saved: number; meals: number }>();
+  for (const r of data ?? []) {
+    const t = totals.get(r.user_id) ?? { saved: 0, meals: 0 };
+    t.saved += Number(r.saved);
+    t.meals += 1;
+    totals.set(r.user_id, t);
+  }
+  const rows = [...totals]
+    .map(([user_id, t]) => ({ user_id, ...t }))
+    .sort((a, b) => b.saved - a.saved)
+    .slice(0, Math.max(1, Math.min(limit, 100)));
   const chefs = await chefCards(rows.map((r) => r.user_id));
   return rows.map((r, i) => ({ rank: i + 1, userId: r.user_id, saved: Number(r.saved), meals: Number(r.meals), name: chefs[r.user_id]?.name ?? null, chef: chefs[r.user_id] }));
 }

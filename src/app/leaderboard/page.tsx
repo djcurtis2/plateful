@@ -47,10 +47,10 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
 
       {view === "savers" ? (
         savers.length === 0 ? (
-          <p className="card p-6 text-muted">No savings logged this month yet. Cook something and tap &ldquo;I made it.&rdquo;</p>
+          <p className="card p-6 text-muted">No photo-backed cooks this month yet. Cook a recipe and post a photo of your plate to get on the board.</p>
         ) : (
           <div className="flex flex-col gap-2">
-            <p className="text-sm text-muted">Most saved this month vs. eating out. The month&apos;s top saver wins a grocery gift card.</p>
+            <p className="text-sm text-muted">Most saved this month vs. eating out, counting cooks with a photo of the plate. The month&apos;s top saver wins a grocery gift card.</p>
             <ol className="card divide-y divide-line">
               {savers.map((r) => {
                 const isMe = me?.user.id === r.userId;

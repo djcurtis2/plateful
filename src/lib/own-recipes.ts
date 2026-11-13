@@ -1,22 +1,16 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
 import { priceOwnRecipe } from "@/lib/claude";
-import { OWN_SCAN, recordScan, siteCapReached } from "@/lib/limits";
+import { OWN_SCAN, countMarked, guardedCall, siteCapReached } from "@/lib/limits";
 import { slugify, type Meal } from "@/lib/recipe";
 import { dietTagsFrom } from "@/lib/diet";
 
 /** Own recipes Claude prices per person per day. Free for everyone; the cap only protects the bill. */
 export const OWN_RECIPES_PER_DAY = 10;
 
-export async function ownRecipesLeft(userId: string): Promise<number> {
-  const { count } = await admin()
-    .from("scans")
-    .select("id", { count: "exact", head: true })
-    .eq("user_id", userId)
-    .eq("ip_hash", OWN_SCAN)
-    .not("input_tokens", "is", null)
-    .gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
-  return Math.max(0, OWN_RECIPES_PER_DAY - (count ?? 0));
+export async function ownRecipesLeft(userId: string, before?: number): Promise<number> {
+  const used = await countMarked(userId, OWN_SCAN, new Date(Date.now() - 86_400_000).toISOString(), before);
+  return Math.max(0, OWN_RECIPES_PER_DAY - used);
 }
 
 /**
@@ -32,18 +26,21 @@ export async function createOwnRecipe(input: {
   ingredients: string[];
   steps: string[];
 }): Promise<{ ok: true; slug: string; id: string } | { ok: false; message: string }> {
-  if (await siteCapReached()) return { ok: false, message: "We've hit today's limit while we scale up. Try again tomorrow." };
-  if ((await ownRecipesLeft(input.userId)) <= 0) return { ok: false, message: `That's ${OWN_RECIPES_PER_DAY} of your own recipes today. More tomorrow.` };
-  let made;
-  try {
-    made = await priceOwnRecipe({ dish: input.dish, servings: input.servings, ingredients: input.ingredients, steps: input.steps });
-  } catch (e) {
-    console.error("own recipe failed", e);
-    await recordScan({ userId: input.userId, visitorId: null, ipHash: OWN_SCAN, ok: false });
+  const made = await guardedCall({
+    row: { userId: input.userId, visitorId: null, ipHash: OWN_SCAN },
+    check: async (before) => {
+      if (await siteCapReached(before)) return "We've hit today's limit while we scale up. Try again tomorrow.";
+      if ((await ownRecipesLeft(input.userId, before)) <= 0) return `That's ${OWN_RECIPES_PER_DAY} of your own recipes today. More tomorrow.`;
+      return null;
+    },
+    call: () => priceOwnRecipe({ dish: input.dish, servings: input.servings, ingredients: input.ingredients, steps: input.steps }),
+  });
+  if (!made.ok && "limit" in made) return { ok: false, message: made.limit };
+  if (!made.ok) {
+    console.error("own recipe failed", made.error);
     return { ok: false, message: "Couldn't price your recipe just now. Try again." };
   }
-  const { result, inputTokens, outputTokens } = made;
-  await recordScan({ userId: input.userId, visitorId: null, ipHash: OWN_SCAN, ok: true, inputTokens, outputTokens });
+  const { result } = made.made;
 
   const db = admin();
   const id = crypto.randomUUID();

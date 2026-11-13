@@ -2,7 +2,7 @@ import "server-only";
 import { admin } from "@/lib/supabase/admin";
 import { adaptRecipe, buildRecipe, inventRecipe } from "@/lib/claude";
 import { METHOD_BY_ID, describeBuild, type Build } from "@/lib/builder";
-import { LEFTOVER_SCAN, recordScan, siteCapReached } from "@/lib/limits";
+import { LEFTOVER_SCAN, countMarked, guardedCall, siteCapReached } from "@/lib/limits";
 import { LEFTOVER_STYLES, slugify, type LeftoverStyle } from "@/lib/recipe";
 import { VERSIONS, dietTagsFrom, type VersionKind } from "@/lib/diet";
 import type { Recipe } from "@/lib/recipe";
@@ -13,11 +13,34 @@ const MEAL_BRIEF = { breakfast: "a breakfast", lunch: "a lunch", dinner: "a dinn
 export const ORIGINALS_LIMIT = { plusPerDay: 15, freeLifetime: 1 };
 
 /** How many more originals this person can make right now. */
-export async function originalsLeft(userId: string, plus: boolean): Promise<number> {
-  let q = admin().from("scans").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("ip_hash", LEFTOVER_SCAN).not("input_tokens", "is", null);
-  if (plus) q = q.gte("created_at", new Date(Date.now() - 86_400_000).toISOString());
-  const { count } = await q;
-  return Math.max(0, (plus ? ORIGINALS_LIMIT.plusPerDay : ORIGINALS_LIMIT.freeLifetime) - (count ?? 0));
+export async function originalsLeft(userId: string, plus: boolean, before?: number): Promise<number> {
+  const since = plus ? new Date(Date.now() - 86_400_000).toISOString() : "1970-01-01T00:00:00Z";
+  const used = await countMarked(userId, LEFTOVER_SCAN, since, before);
+  return Math.max(0, (plus ? ORIGINALS_LIMIT.plusPerDay : ORIGINALS_LIMIT.freeLifetime) - used);
+}
+
+/** One paid "new recipe" call (originals, builds, versions) under their shared limit, safe against taps sent at once. */
+async function originalCall<T extends { inputTokens: number; outputTokens: number }>(
+  who: { userId: string; plus: boolean },
+  freeMessage: string,
+  failMessage: string,
+  call: () => Promise<T>,
+): Promise<{ ok: true; made: T } | { ok: false; message: string }> {
+  const r = await guardedCall({
+    row: { userId: who.userId, visitorId: null, ipHash: LEFTOVER_SCAN },
+    check: async (before) => {
+      if (await siteCapReached(before)) return "We've hit today's limit while we scale up. Try again tomorrow.";
+      if ((await originalsLeft(who.userId, who.plus, before)) <= 0) {
+        return who.plus ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.` : freeMessage;
+      }
+      return null;
+    },
+    call,
+  });
+  if (r.ok) return r;
+  if ("limit" in r) return { ok: false, message: r.limit };
+  console.error("new recipe failed", r.error);
+  return { ok: false, message: failMessage };
 }
 
 /**
@@ -34,30 +57,20 @@ export async function createOriginal(input: {
   /** Plan my week asks for a recipe for one meal. */
   meal?: "breakfast" | "lunch" | "dinner" | "snack";
 }): Promise<{ ok: true; slug: string; id: string } | { ok: false; message: string }> {
-  if (await siteCapReached()) return { ok: false, message: "We've hit today's limit while we scale up. Try again tomorrow." };
-  if ((await originalsLeft(input.userId, input.plus)) <= 0) {
-    return {
-      ok: false,
-      message: input.plus
-        ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Yumjack Plus makes new recipes from your leftovers every day.",
-    };
-  }
   const pick = LEFTOVER_STYLES[input.style];
-  let made;
-  try {
-    made = await inventRecipe({
-      leftovers: input.leftovers,
-      styleBrief: input.meal ? `${pick.brief}. It must be ${MEAL_BRIEF[input.meal]}` : pick.brief,
-      avoidDish: input.avoidDish,
-    });
-  } catch (e) {
-    console.error("original recipe failed", e);
-    await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: false });
-    return { ok: false, message: "Couldn't come up with a recipe just now. Try again." };
-  }
-  const { result, inputTokens, outputTokens } = made;
-  await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: true, inputTokens, outputTokens });
+  const made = await originalCall(
+    input,
+    "You've used your free try. Yumjack Plus makes new recipes from your leftovers every day.",
+    "Couldn't come up with a recipe just now. Try again.",
+    () =>
+      inventRecipe({
+        leftovers: input.leftovers,
+        styleBrief: input.meal ? `${pick.brief}. It must be ${MEAL_BRIEF[input.meal]}` : pick.brief,
+        avoidDish: input.avoidDish,
+      }),
+  );
+  if (!made.ok) return made;
+  const { result } = made.made;
 
   return saveOriginal(input.userId, result, { style: pick.style, meal: input.meal, inspiredBy: input.inspiredBy });
 }
@@ -110,33 +123,23 @@ async function saveOriginal(
  * (Plus 15 a day, free accounts 1 try) and saved the same way, styled "Build-a-plate" (public, no person named).
  */
 export async function createBuilt(input: { userId: string; plus: boolean; build: Build }): Promise<{ ok: true; slug: string; id: string } | { ok: false; message: string }> {
-  if (await siteCapReached()) return { ok: false, message: "We've hit today's limit while we scale up. Try again tomorrow." };
-  if ((await originalsLeft(input.userId, input.plus)) <= 0) {
-    return {
-      ok: false,
-      message: input.plus
-        ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Yumjack Plus builds new recipes with you every day.",
-    };
-  }
   const b = input.build;
-  let made;
-  try {
-    made = await buildRecipe({
-      summary: describeBuild(b),
-      method: METHOD_BY_ID[b.method]!.label,
-      servings: b.servings,
-      addIns: b.addIns,
-      sides: b.sides,
-      note: b.note,
-    });
-  } catch (e) {
-    console.error("built recipe failed", e);
-    await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: false });
-    return { ok: false, message: "Couldn't write that recipe just now. Try again." };
-  }
-  const { result, inputTokens, outputTokens } = made;
-  await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: true, inputTokens, outputTokens });
+  const made = await originalCall(
+    input,
+    "You've used your free try. Yumjack Plus builds new recipes with you every day.",
+    "Couldn't write that recipe just now. Try again.",
+    () =>
+      buildRecipe({
+        summary: describeBuild(b),
+        method: METHOD_BY_ID[b.method]!.label,
+        servings: b.servings,
+        addIns: b.addIns,
+        sides: b.sides,
+        note: b.note,
+      }),
+  );
+  if (!made.ok) return made;
+  const { result } = made.made;
   return saveOriginal(input.userId, result, { style: "Build-a-plate", inspiredBy: null });
 }
 
@@ -152,34 +155,24 @@ export async function createVersion(input: { userId: string; plus: boolean; root
     await db.from("saved_recipes").upsert({ user_id: input.userId, recipe_id: existing.id });
     return { ok: true, slug: existing.slug };
   }
-  if (await siteCapReached()) return { ok: false, message: "We've hit today's limit while we scale up. Try again tomorrow." };
-  if ((await originalsLeft(input.userId, input.plus)) <= 0) {
-    return {
-      ok: false,
-      message: input.plus
-        ? `That's ${ORIGINALS_LIMIT.plusPerDay} new recipes today. More tomorrow.`
-        : "You've used your free try. Yumjack Plus makes any recipe your way, every day.",
-    };
-  }
   const v = VERSIONS[input.kind];
-  let made;
-  try {
-    made = await adaptRecipe({
-      dish: input.root.dish,
-      restaurant: input.root.restaurant,
-      servings: input.root.servings,
-      ingredients: input.root.ingredients,
-      steps: input.root.steps,
-      brief: v.brief,
-      label: v.label.toLowerCase(),
-    });
-  } catch (e) {
-    console.error("version failed", e);
-    await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: false });
-    return { ok: false, message: "Couldn't make that version just now. Try again." };
-  }
-  const { result, inputTokens, outputTokens } = made;
-  await recordScan({ userId: input.userId, visitorId: null, ipHash: LEFTOVER_SCAN, ok: true, inputTokens, outputTokens });
+  const made = await originalCall(
+    input,
+    "You've used your free try. Yumjack Plus makes any recipe your way, every day.",
+    "Couldn't make that version just now. Try again.",
+    () =>
+      adaptRecipe({
+        dish: input.root.dish,
+        restaurant: input.root.restaurant,
+        servings: input.root.servings,
+        ingredients: input.root.ingredients,
+        steps: input.root.steps,
+        brief: v.brief,
+        label: v.label.toLowerCase(),
+      }),
+  );
+  if (!made.ok) return made;
+  const { result } = made.made;
 
   const contains = result.contains ?? [];
   const tags = dietTagsFrom(contains, !!result.low_carb);
@@ -216,6 +209,7 @@ export async function createVersion(input: { userId: string; plus: boolean; root
     diet_tags: tags,
     variant_of: input.root.id,
     variant_kind: input.kind,
+    is_public: true, // only public recipes get versions (checked in makeVersion)
   });
   if (error) {
     // Someone else made the same version at the same moment: use theirs.

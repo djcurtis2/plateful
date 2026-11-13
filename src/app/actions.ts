@@ -15,8 +15,8 @@ import { createBuilt, createOriginal, createVersion } from "@/lib/originals";
 import { cleanBuild } from "@/lib/builder";
 import { createOwnRecipe } from "@/lib/own-recipes";
 import { logCook } from "@/lib/savings-server";
-import { RECEIPT_SCAN, siteCapReached } from "@/lib/limits";
-import { getMe, getPantry, getSharedRecipe, toRecipe } from "@/lib/data";
+import { RECEIPT_SCAN, countMarked, guardedCall, siteCapReached } from "@/lib/limits";
+import { getMe, getPantry, getSharedRecipe, getUsableRecipe, toRecipe } from "@/lib/data";
 import { leftoversFor, shareLabel } from "@/lib/leftovers";
 import { LEFTOVER_STYLES, slugify, type Ingredient, type LeftoverStyle } from "@/lib/recipe";
 import { POINTS, VOTE_ERRORS, receiptVerdict, validPublicName } from "@/lib/game";
@@ -123,6 +123,9 @@ export async function postAttempt(formData: FormData): Promise<PostResult> {
   if (!Uuid.safeParse(recipeId).success) {
     return { ok: false, code: "invalid", message: "Unknown recipe." };
   }
+  // Entries are public, so only public recipes take them (never a private one, even with its share link).
+  const target = await getUsableRecipe(user.id, recipeId);
+  if (!target || target.source === "own") return { ok: false, code: "invalid", message: "Unknown recipe." };
   const d = Details.safeParse({
     caption: formData.get("caption") ?? undefined,
     cost: formData.get("cost") ?? undefined,
@@ -280,30 +283,35 @@ async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string,
   const type = sniffImage(bytes);
   if (!type) return { verified: false, message: "Use a JPEG, PNG or WebP photo of the receipt." };
 
-  if (await siteCapReached()) return { verified: false, message: "We've hit today's receipt-check limit. Try again tomorrow." };
   const db = admin();
-  // Receipt checks are paid Claude calls: 5 per person per day.
-  const since = new Date(Date.now() - 86_400_000).toISOString();
-  const { count: tries } = await db.from("scans").select("id", { count: "exact", head: true }).eq("user_id", userId).eq("ip_hash", RECEIPT_SCAN).gte("created_at", since);
-  if ((tries ?? 0) >= 5) return { verified: false, message: "That's 5 receipt checks today. Try again tomorrow." };
-
   const { data: recipe } = await db.from("recipes").select("servings, ingredients").eq("id", recipeId).maybeSingle();
   if (!recipe) return { verified: false, message: "Couldn't find the recipe for this entry." };
   const ingredients = (recipe.ingredients as { name: string; qty: number; unit: string; price: number }[]) ?? [];
   const paid = ingredients.filter((g) => g.price > 0).length;
   const { data: ch } = challengeId ? await db.from("challenges").select("starts_at").eq("id", challengeId).maybeSingle() : { data: null };
 
-  let logged = false;
+  // Receipt checks are paid Claude calls: 5 per person per day, logged under the "receipt" marker. A failed read
+  // may still have been billed, so it counts too.
+  const read = await guardedCall({
+    row: { userId, visitorId: null, ipHash: RECEIPT_SCAN },
+    check: async (before) => {
+      if (await siteCapReached(before)) return "We've hit today's receipt-check limit. Try again tomorrow.";
+      if ((await countMarked(userId, RECEIPT_SCAN, new Date(Date.now() - 86_400_000).toISOString(), before)) >= 5) {
+        return "That's 5 receipt checks today. Try again tomorrow.";
+      }
+      return null;
+    },
+    call: () => readReceipt({ imageBase64: Buffer.from(bytes).toString("base64"), mediaType: type, servings: recipe.servings, ingredients }),
+    ok: (made) => made.result.is_receipt,
+    billedOnError: () => true,
+  });
+  if (!read.ok && "limit" in read) return { verified: false, message: read.limit };
+  if (!read.ok) {
+    console.error("receipt check failed", read.error);
+    return { verified: false, message: "We couldn't read that receipt. Try a clearer, flat photo." };
+  }
+  const { result } = read.made;
   try {
-    const { result, inputTokens, outputTokens } = await readReceipt({
-      imageBase64: Buffer.from(bytes).toString("base64"),
-      mediaType: type,
-      servings: recipe.servings,
-      ingredients,
-    });
-    // Log the paid call for cost tracking ("receipt" marks it apart from dish scans).
-    await db.from("scans").insert({ user_id: userId, ip_hash: RECEIPT_SCAN, ok: result.is_receipt, input_tokens: inputTokens, output_tokens: outputTokens });
-    logged = true;
     const verdict = receiptVerdict(result, paid, ch ? new Date(ch.starts_at) : new Date(Date.now() - 7 * 86_400_000));
     if (!verdict.ok) return { verified: false, message: verdict.why };
     await db
@@ -318,13 +326,8 @@ async function verifyReceipt(receipt: Blob, attemptId: string, recipeId: string,
     await awardPoints(userId, "receipt", POINTS.receipt, attemptId, challengeId);
     return { verified: true, message: `Receipt verified: $${verdict.cost.toFixed(2)} a plate${result.store ? ` at ${result.store}` : ""}.` };
   } catch (e) {
-    console.error("receipt check failed", e);
-    // A failed read may still have been billed: count it toward the person's 5 and the site cap (0 tokens still counts).
-    if (!logged) await db.from("scans").insert({ user_id: userId, ip_hash: RECEIPT_SCAN, ok: false, input_tokens: 0, output_tokens: 0 }).then(
-      () => undefined,
-      () => undefined,
-    );
-    return { verified: false, message: "We couldn't read that receipt. Try a clearer, flat photo." };
+    console.error("receipt save failed", e);
+    return { verified: false, message: "We read the receipt but couldn't save it. Try again." };
   }
 }
 
@@ -384,9 +387,8 @@ export async function makeFromLeftovers(
   if (!Uuid.safeParse(recipeId).success || !(style in LEFTOVER_STYLES)) return { ok: false, code: "invalid", message: "Unknown recipe." };
   const me = await getMe();
   if (!me) return LOGIN;
-  const { data: row } = await admin().from("recipes").select("*").eq("id", recipeId).maybeSingle();
-  if (!row) return { ok: false, code: "invalid", message: "Unknown recipe." };
-  const source = toRecipe(row as unknown as Parameters<typeof toRecipe>[0]);
+  const source = await getUsableRecipe(me.user.id, recipeId);
+  if (!source) return { ok: false, code: "invalid", message: "Unknown recipe." };
   const pantry = (await getPantry(me.user.id)).map(pantryKey);
   const left = leftoversFor(source.ingredients as Ingredient[], pantry);
   if (left.length < 1) return { ok: false, code: "invalid", message: "This recipe doesn't leave much over. Nothing to use up!" };
@@ -396,7 +398,8 @@ export async function makeFromLeftovers(
     leftovers: left.map((l) => ({ name: l.name, share: shareLabel(l) })),
     style,
     avoidDish: source.dish,
-    inspiredBy: source.id,
+    // The new recipe is public: never point it at a private one.
+    inspiredBy: source.source === "own" ? null : source.id,
   });
   if (!r.ok) return { ok: false, code: "failed", message: r.message };
   revalidatePath("/library");
@@ -419,9 +422,9 @@ export async function makeVersion(recipeId: string, kind: VersionKind): Promise<
   if (!Uuid.safeParse(recipeId).success || !(kind in VERSIONS)) return { ok: false, code: "invalid", message: "Unknown recipe." };
   const me = await getMe();
   if (!me) return LOGIN;
-  const { data: row } = await admin().from("recipes").select("*").eq("id", recipeId).maybeSingle();
-  if (!row) return { ok: false, code: "invalid", message: "Unknown recipe." };
-  let root = toRecipe(row as unknown as Parameters<typeof toRecipe>[0]);
+  // Versions are public, so a private recipe (own, or opened through a share link) never gets one.
+  let root = await getUsableRecipe(me.user.id, recipeId);
+  if (!root || root.source === "own") return { ok: false, code: "invalid", message: "Unknown recipe." };
   if (root.variant_of) {
     const { data: orig } = await admin().from("recipes").select("*").eq("id", root.variant_of).maybeSingle();
     if (orig) root = toRecipe(orig as unknown as Parameters<typeof toRecipe>[0]);

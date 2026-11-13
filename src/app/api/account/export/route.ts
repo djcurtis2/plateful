@@ -33,7 +33,7 @@ export async function GET() {
       return [t, rows ?? []] as const;
     }),
   );
-  const { data: recipes } = await db.from("recipes").select("id, slug, dish_name, created_at").eq("user_id", user.id);
+  const { data: recipes } = await db.from("recipes").select("id, slug, dish, created_at").eq("user_id", user.id);
   const { data: referrals } = await db.from("referral_events").select("kind, created_at").eq("referrer_id", user.id);
 
   const body = {
