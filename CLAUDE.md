@@ -10,7 +10,7 @@ Dan likes explanations with a real-life analogy, short summaries, and no jargon 
 - Next.js 16.4 App Router (`src/proxy.ts`, not middleware; `params`/`searchParams` are Promises), React 19, Tailwind 4 (`@theme inline` tokens in `src/app/globals.css`, light + dark).
 - Supabase: Postgres, magic-link auth, storage buckets `dishes` and `attempts`. Server writes use the service-role client in `src/lib/supabase/admin.ts`; RLS is on everywhere.
 - Claude API via `@anthropic-ai/sdk` in `src/lib/claude.ts`. Model from `ANTHROPIC_MODEL` (default `claude-sonnet-5-5`). That model does NOT support forced `tool_choice`: use `output_config: { format: { type: "json_schema", schema } }`. Those schemas need `additionalProperties: false`, every property in `required`, nullable via type arrays, and no min/max (ranges go in descriptions; zod enforces them after).
-- Stripe subscriptions (test mode, account "Plateful"). Plus = $9.99/mo or $59.99/yr (raised from $4.99 before launch; launch code `DUPELAUNCH` = $5 off a first Plus payment, Plus product only) (`STRIPE_PRICE_PLUS_YEARLY`; the yearly button hides until it is set). Shown prices live in `lib/plan.ts`.
+- Stripe subscriptions (test mode, account "Plateful"). Plus = $9.99/mo or $59.99/yr (raised from $4.99 before launch; launch code `YUMLAUNCH` (was `DUPELAUNCH`) = $5 off a first Plus payment, Plus product only) (`STRIPE_PRICE_PLUS_YEARLY`; the yearly button hides until it is set). Shown prices live in `lib/plan.ts`.
 - zod 4, qrcode. No other runtime deps; confetti etc. are hand-written.
 
 ## Commands

@@ -17,7 +17,7 @@ export const PLUS_MONTHLY = "$9.99";
 export const PLUS_YEARLY = "$59.99";
 export const PLUS_YEARLY_SAVES = "50%"; // vs. 12 × $9.99 = $119.88
 /** Stripe promotion code (test and live): $5 off a first Plus payment, Plus only. Checkout has a code field. */
-export const LAUNCH_CODE = "DUPELAUNCH";
+export const LAUNCH_CODE = "YUMLAUNCH";
 
 export const REFERRAL_GOAL = 3; // friends who cook from your link
 export const REFERRAL_BONUS_DAYS = 30;
