@@ -71,16 +71,22 @@ export default async function EntryPage({ params }: Params) {
         <span className="label">
           {challenge ? `${challenge.title} cook-off${open ? ` · ${timeLeft(challenge.ends_at)}` : " · ended"}` : "Who made it"}
         </span>
-        <div className="flex flex-wrap items-center gap-3">
-          <ChefAvatar avatar={entry.chef.avatar} head size={36} uid={`${entry.user_id}-entry`} />
-          <span className="font-semibold">{name}</span>
-          {entry.chef.clubs.slice(0, 2).map((c) => (
-            <ClubBadge key={c} id={c} />
-          ))}
+        <div className="flex items-end gap-4">
+          <span className="shrink-0">
+            <ChefAvatar avatar={entry.chef.avatar} size={130} uid={`${entry.user_id}-entry`} title={`${name}'s chef`} />
+          </span>
+          <div className="flex min-w-0 flex-col gap-2 pb-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-semibold">{name}</span>
+              {entry.chef.clubs.slice(0, 2).map((c) => (
+                <ClubBadge key={c} id={c} />
+              ))}
+            </div>
+            <h1 className="font-display text-3xl font-bold tracking-tight sm:text-5xl">
+              {name}&apos;s {recipe.dish}
+            </h1>
+          </div>
         </div>
-        <h1 className="font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          {name}&apos;s {recipe.dish}
-        </h1>
         {entry.caption && <p className="text-lg text-muted">&ldquo;{entry.caption}&rdquo;</p>}
         {badge && <span className="w-fit rounded-md bg-saffron px-2 py-1 font-mono text-sm font-semibold text-saffron-ink">{badge}</span>}
       </div>

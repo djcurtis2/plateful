@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { saveChef, setClubs } from "@/app/chef/actions";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { LOOK_NAMES } from "@/components/chef/look";
+import { SAYINGS } from "@/components/chef/gear";
 import { CLUBS, MAX_CLUBS } from "@/lib/clubs";
 import {
   BUNDLES, CHEF_TABS, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable, singlesCents,
@@ -15,7 +16,9 @@ const PART_LABELS: Record<LookPart, string> = {
   skin: "Skin", eyes: "Eyes", brows: "Brows", mouth: "Mouth", hair: "Hair", hairColor: "Hair color", facialHair: "Facial hair", glasses: "Glasses",
 };
 const PARTS = Object.keys(LOOK_OPTIONS) as LookPart[];
-const SLOT_LABELS: Record<Slot, string> = { hat: "Hats", outfit: "Outfits", tool: "Tools", background: "Backgrounds" };
+const SLOT_LABELS: Record<Slot, string> = {
+  hat: "Hats", outfit: "Outfits", tool: "Tools", background: "Backgrounds", frame: "Frames", saying: "Sayings",
+};
 // Theme tokens only, so every rarity reads in light and dark mode.
 const RARITY_BORDER: Record<Rarity, string> = {
   common: "border-line",
@@ -36,6 +39,23 @@ function wearing(avatar: Avatar, items: (GearItem | { slot: Slot; id: null })[])
 
 /** A small chef wearing one item, so gear is never picked or bought sight-unseen. Hats read best as a head crop. */
 function TileChef({ avatar, slot, uid }: { avatar: Avatar; slot: Slot; uid: string }) {
+  // A saying is too small to read on a tiny chef, so its tile shows the words themselves.
+  if (slot === "saying") {
+    const lines = avatar.equipped.saying ? SAYINGS[avatar.equipped.saying] : undefined;
+    return (
+      <span className="flex h-16 w-full items-center justify-center rounded-xl bg-sunk">
+        {lines ? (
+          <span className="-rotate-3 rounded-lg border-2 border-ink bg-white px-2 py-1 text-center font-display text-[11px] font-extrabold leading-tight text-[#2b2b2b]">
+            {lines.map((l) => <span key={l} className="block">{l}</span>)}
+          </span>
+        ) : (
+          <span className="text-xs text-muted">No saying</span>
+        )}
+      </span>
+    );
+  }
+  // A frame would crowd a tiny tile, so tiles show one only when picking frames.
+  if (slot !== "frame" && avatar.equipped.frame) avatar = wearing(avatar, [{ slot: "frame", id: null }]);
   return (
     <span className="flex h-16 w-full items-center justify-center rounded-xl bg-sunk">
       <ChefAvatar avatar={avatar} head={slot === "hat"} size={slot === "hat" ? 56 : 60} uid={uid} />
@@ -65,6 +85,8 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
   const [pending, start] = useTransition();
   // Locked gear tried on the big chef only. Never part of `avatar`, so it can't be saved.
   const [preview, setPreview] = useState<string[]>([]);
+  // One wardrobe drawer open at a time, so phones don't scroll past every slot.
+  const [drawer, setDrawer] = useState<Slot>("hat");
   const open = new Set(unlocked);
   const previewItems = preview.map((id) => GEAR_BY_ID[id]).filter((g): g is GearItem => !!g);
   const previewing = previewItems.length > 0;
@@ -94,6 +116,9 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
     document.getElementById("chef-stage")?.scrollIntoView({ behavior: "smooth", block: "nearest" });
   };
 
+  const stageChef = previewing ? wearing(shown, previewItems) : shown;
+  const stageTitle = previewing ? `Your chef previewing ${previewItems.map((g) => g.name).join(", ")}` : "Your chef";
+
   const save = () =>
     start(async () => {
       setMsg("");
@@ -119,25 +144,29 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
     setClubIds((c) => (c.includes(id) ? c.filter((x) => x !== id) : c.length >= MAX_CLUBS ? c : [...c, id]));
 
   return (
-    <div className="flex flex-col gap-6">
-      <div id="chef-stage" className="card flex flex-col items-center gap-3 p-6">
-        <ChefAvatar
-          avatar={previewing ? wearing(shown, previewItems) : shown}
-          size={260}
-          uid="editor"
-          title={previewing ? `Your chef previewing ${previewItems.map((g) => g.name).join(", ")}` : "Your chef"}
-        />
-        {previewing && (
-          <p className="flex flex-wrap items-center justify-center gap-2 text-sm">
-            <span className="rounded-full bg-saffron px-2 py-0.5 text-xs font-bold uppercase text-saffron-ink">Previewing — locked</span>
-            <span className="text-muted">{previewItems.map((g) => g.name).join(", ")}</span>
-            <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview([])}>End preview</button>
-          </p>
-        )}
-        {!everSaved && (
-          <p className="text-sm text-muted">This chef was picked for you. Make it yours, then save.</p>
-        )}
-        <div className="flex flex-col items-center gap-1">
+    <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start lg:gap-6">
+      {/* The chef stays in view while picking: pinned under the header on phones, a side column on big screens. */}
+      <div
+        id="chef-stage"
+        className="card sticky top-14 z-10 flex items-center gap-3 p-3 shadow-md lg:top-20 lg:flex-col lg:gap-3 lg:p-6 lg:shadow-none"
+      >
+        <span className="shrink-0 lg:hidden">
+          <ChefAvatar avatar={stageChef} size={150} uid="editor-sm" title={stageTitle} />
+        </span>
+        <span className="hidden lg:block">
+          <ChefAvatar avatar={stageChef} size={340} uid="editor" title={stageTitle} />
+        </span>
+        <div className="flex min-w-0 flex-1 flex-col items-start gap-2 lg:items-center lg:text-center">
+          {previewing && (
+            <p className="flex flex-wrap items-center gap-1.5 text-sm lg:justify-center">
+              <span className="rounded-full bg-saffron px-2 py-0.5 text-xs font-bold uppercase text-saffron-ink">Previewing</span>
+              <span className="text-muted">{previewItems.map((g) => g.name).join(", ")}</span>
+              <button type="button" className="btn btn-ghost btn-sm" onClick={() => setPreview([])}>End preview</button>
+            </p>
+          )}
+          {!everSaved && !previewing && (
+            <p className="text-sm text-muted">This chef was picked for you. Make it yours, then save.</p>
+          )}
           <button className="btn btn-primary" onClick={save} disabled={pending || !dirty || previewing || !allowed}>
             {pending ? "Saving..." : everSaved ? "Save chef" : "Save my chef"}
           </button>
@@ -147,6 +176,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
         </div>
       </div>
 
+      <div className="flex min-w-0 flex-col gap-4 lg:gap-6">
       <nav aria-label="Chef sections" className="flex gap-1 rounded-2xl bg-sunk p-1">
         {CHEF_TABS.map((t) => (
           <Link
@@ -186,10 +216,23 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
       )}
 
       {tab === "wardrobe" && (
-        <section className="flex flex-col gap-6">
-          {SLOTS.map((slot) => (
-            <div key={slot} className="card flex flex-col gap-3 p-6">
-              <span className="label">{SLOT_LABELS[slot]}</span>
+        <section className="flex flex-col gap-3">
+          <div role="tablist" aria-label="Wardrobe" className="-mx-1 flex gap-1.5 overflow-x-auto px-1 pb-1">
+            {SLOTS.map((slot) => (
+              <button
+                key={slot}
+                type="button"
+                role="tab"
+                aria-selected={drawer === slot}
+                onClick={() => setDrawer(slot)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-semibold ${drawer === slot ? "border-basil bg-basil text-basil-ink" : "border-line text-muted hover:border-basil hover:text-ink"}`}
+              >
+                {SLOT_LABELS[slot]}
+              </button>
+            ))}
+          </div>
+          {SLOTS.filter((slot) => slot === drawer).map((slot) => (
+            <div key={slot} role="tabpanel" aria-label={SLOT_LABELS[slot]} className="card flex flex-col gap-3 p-4 sm:p-6">
               <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 <li>
                   <button
@@ -338,6 +381,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
           </p>
         </section>
       )}
+      </div>
     </div>
   );
 }

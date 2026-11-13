@@ -19,7 +19,7 @@ export default async function ChefPage({ searchParams }: { searchParams: Promise
   const active: ChefTab = CHEF_TABS.find((t) => t.id === tab)?.id ?? "look";
 
   return (
-    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 pt-8">
+    <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 pt-8 lg:max-w-5xl">
       <div>
         <h1 className="font-display text-4xl font-bold tracking-tight">My chef</h1>
         <p className="text-muted">

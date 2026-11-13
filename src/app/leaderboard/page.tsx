@@ -80,6 +80,22 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       ) : rows.length === 0 ? (
         <p className="card p-6 text-muted">No points yet. Enter the cook-off or vote to get on the board.</p>
       ) : (
+        <>
+        {/* Top three stand on a podium, full chef and all; second on the left, third on the right. */}
+        <ol aria-label="Top three" className="card flex items-end justify-center gap-2 px-3 pb-0 pt-5 sm:gap-6">
+          {[rows[1], rows[0], rows[2]].filter((r) => r && r.rank <= 3).map((r) => (
+            <li key={r.userId} className="flex min-w-0 flex-1 flex-col items-center gap-1 sm:flex-none">
+              <ChefAvatar avatar={r.chef.avatar} size={r.rank === 1 ? 150 : 115} uid={`${r.userId}-podium`} title={`${publicName(r.name)}'s chef`} />
+              <span className="max-w-full truncate text-sm font-semibold">{publicName(r.name)}</span>
+              <span className="tabular font-mono text-xs text-muted">{r.points} pts</span>
+              <span
+                className={`flex w-full items-start justify-center rounded-t-xl pt-1.5 font-display text-xl font-bold sm:w-32 ${r.rank === 1 ? "h-14 bg-saffron text-saffron-ink" : r.rank === 2 ? "h-10 bg-basil text-basil-ink" : "h-7 bg-sunk text-ink"}`}
+              >
+                {r.rank}
+              </span>
+            </li>
+          ))}
+        </ol>
         <ol className="card divide-y divide-line">
           {rows.map((r) => {
             const isMe = me?.user.id === r.userId;
@@ -112,6 +128,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             );
           })}
         </ol>
+        </>
       )}
 
       <section className="card flex flex-col gap-3 p-5">

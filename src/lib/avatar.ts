@@ -4,8 +4,10 @@
 import type { BadgeId } from "./database.types.ts";
 import { BADGES, LEVELS, levelFor } from "./game.ts";
 
-export type Slot = "hat" | "outfit" | "tool" | "background";
-export const SLOTS: Slot[] = ["hat", "outfit", "tool", "background"];
+export type Slot = "hat" | "outfit" | "tool" | "background" | "frame" | "saying";
+export const SLOTS: Slot[] = ["hat", "outfit", "tool", "background", "frame", "saying"];
+/** Extras a new chef starts without (their starters are there to pick, not worn by default). */
+const OPTIONAL_SLOTS: Slot[] = ["frame", "saying"];
 export type Rarity = "common" | "rare" | "epic" | "legendary";
 
 export type GearSource =
@@ -70,6 +72,28 @@ export const GEAR: GearItem[] = [
   gear("flame-torch", "tool", "Flame torch", "epic", { kind: "shop", cents: SHOP }),
   gear("beach-day", "background", "Beach day", "common", { kind: "shop", cents: SHOP }),
   gear("disco-floor", "background", "Disco floor", "epic", { kind: "shop", cents: SHOP }),
+
+  // Frames: a border around the chef (around the head in small pictures).
+  gear("simple-frame", "frame", "Simple frame", "common", { kind: "starter" }),
+  gear("herb-wreath", "frame", "Herb wreath", "common", { kind: "points", at: 250 }),
+  gear("flame-frame", "frame", "Flame frame", "rare", { kind: "badge", badge: "streak_4" }),
+  gear("gold-frame", "frame", "Gold frame", "epic", { kind: "level", level: 3 }),
+  gear("champion-laurel", "frame", "Champion laurel", "legendary", { kind: "badge", badge: "top10" }),
+  gear("velvet-frame", "frame", "Velvet frame", "rare", { kind: "plus" }),
+  gear("sprinkle-frame", "frame", "Sprinkles", "common", { kind: "shop", cents: SHOP }),
+  gear("pixel-frame", "frame", "Pixel frame", "rare", { kind: "shop", cents: SHOP }),
+
+  // Sayings: a patch on the chef's front. A fixed list (nobody types their own), most of them earned.
+  gear("yes-chef", "saying", "Yes, chef!", "common", { kind: "starter" }),
+  gear("let-me-cook", "saying", "Let me cook", "common", { kind: "level", level: 1 }),
+  gear("sauce-boss", "saying", "Sauce boss", "common", { kind: "points", at: 250 }),
+  gear("copycat-champ", "saying", "Copycat champ", "rare", { kind: "badge", badge: "first_copycat" }),
+  gear("beat-the-menu", "saying", "Beat the menu", "rare", { kind: "badge", badge: "saved_100" }),
+  gear("hot-streak", "saying", "On a hot streak", "rare", { kind: "badge", badge: "streak_4" }),
+  gear("penny-pincher", "saying", "Penny pincher", "epic", { kind: "badge", badge: "thriftiest" }),
+  gear("head-chef", "saying", "Head chef", "epic", { kind: "level", level: 3 }),
+  gear("crowd-fave", "saying", "Crowd fave", "legendary", { kind: "badge", badge: "crowd_favorite" }),
+  gear("secret-menu", "saying", "Secret menu", "rare", { kind: "plus" }),
 ];
 
 // Null prototype so untrusted ids like "constructor" or "__proto__" never resolve to inherited members.
@@ -125,7 +149,7 @@ export function defaultAvatar(userId: string): Avatar {
       : h % LOOK_OPTIONS[p];
   }
   const equipped: Avatar["equipped"] = {};
-  for (const s of SLOTS) equipped[s] = starterFor(s).id;
+  for (const s of SLOTS) if (!OPTIONAL_SLOTS.includes(s)) equipped[s] = starterFor(s).id;
   return { look, equipped };
 }
 
@@ -203,7 +227,8 @@ export function visibleAvatar(avatar: Avatar, plus: boolean): Avatar {
   for (const s of SLOTS) {
     const id = avatar.equipped[s];
     if (id === undefined) continue;
-    equipped[s] = GEAR_BY_ID[id]?.source.kind === "plus" ? starterFor(s).id : id;
+    if (GEAR_BY_ID[id]?.source.kind !== "plus") equipped[s] = id;
+    else if (!OPTIONAL_SLOTS.includes(s)) equipped[s] = starterFor(s).id; // extras just come off
   }
   return { ...avatar, equipped };
 }

@@ -82,7 +82,19 @@ test("bad saved JSON falls back per field and never throws", () => {
 test("default avatar is steady per user and wears starter gear", () => {
   assert.deepEqual(defaultAvatar("abc"), defaultAvatar("abc"));
   assert.notDeepEqual(defaultAvatar("abc").look, defaultAvatar("xyz").look);
-  for (const s of SLOTS) assert.equal(defaultAvatar("abc").equipped[s], starterFor(s).id);
+  for (const s of ["hat", "outfit", "tool", "background"] as const) assert.equal(defaultAvatar("abc").equipped[s], starterFor(s).id);
+  // Frames and sayings are extras: a new chef starts without them.
+  assert.equal(defaultAvatar("abc").equipped.frame, undefined);
+  assert.equal(defaultAvatar("abc").equipped.saying, undefined);
+});
+
+test("Plus frames and sayings come off when Plus ends; other Plus gear drops to the starter", () => {
+  const a = { ...defaultAvatar("u1"), equipped: { hat: "velvet-toque", frame: "velvet-frame", saying: "secret-menu" } };
+  const seen = visibleAvatar(a, false).equipped;
+  assert.equal(seen.hat, starterFor("hat").id);
+  assert.equal(seen.frame, undefined);
+  assert.equal(seen.saying, undefined);
+  assert.deepEqual(visibleAvatar(a, true).equipped, a.equipped);
 });
 
 test("most default chefs have no facial hair or glasses; other parts spread out", () => {
@@ -190,5 +202,5 @@ test("gear everyone has at zero progress is never a new unlock", () => {
   assert.equal(fresh.has("bandana"), true);
   assert.deepEqual(newUnlocks(fresh, []), []);
   const level1 = unlockedGear({ points: LEVELS[1].min, badges: [], plus: false, owned: [] });
-  assert.deepEqual(newUnlocks(level1, []), ["prep-cap"]);
+  assert.deepEqual(newUnlocks(level1, []), ["prep-cap", "let-me-cook"]);
 });

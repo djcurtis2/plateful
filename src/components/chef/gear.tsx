@@ -599,15 +599,167 @@ export const BACKGROUNDS: Record<string, Draw> = {
   ),
 };
 
-/** Where legendary sparkles go per slot: [x, y, size]. */
+// ---------------------------------------------------------------------------
+// Frames: a border just inside the picture's edge. `box` is the visible area: the whole chef, or the
+// head crop for small pictures, so the frame always hugs what's shown.
+
+export type Box = { x: number; y: number; w: number; h: number };
+type FrameDraw = (c: GearCtx, box: Box) => React.ReactNode;
+
+/** Points every `step` along a rectangle `inset` in from the box edge, with the edge's direction in degrees. */
+function alongEdge(b: Box, inset: number, step: number): [number, number, number][] {
+  const x0 = b.x + inset, y0 = b.y + inset, x1 = b.x + b.w - inset, y1 = b.y + b.h - inset;
+  const out: [number, number, number][] = [];
+  for (let x = x0 + step / 2; x < x1; x += step) out.push([x, y0, 0], [x, y1, 180]);
+  for (let y = y0 + step / 2; y < y1; y += step) out.push([x0, y, 270], [x1, y, 90]);
+  return out;
+}
+
+const ring = (b: Box, inset: number, stroke: string, width: number, rx = 9) => (
+  <rect x={b.x + inset} y={b.y + inset} width={b.w - inset * 2} height={b.h - inset * 2} rx={rx} fill="none" stroke={stroke} strokeWidth={width} />
+);
+
+const SPRINKLE_COLORS = ["#F25F7A", "#2AA7A0", "#F2B630", "#7B6CF6", "#FFFFFF"];
+
+export const FRAMES: Record<string, FrameDraw> = {
+  "simple-frame": (_c, b) => ring(b, 2.5, GREEN, 5),
+
+  "herb-wreath": (_c, b) => (
+    <>
+      {ring(b, 3, "#3F7D3A", 3)}
+      {alongEdge(b, 3, 9).map(([x, y, a], i) => (
+        <ellipse key={i} cx={x} cy={y} rx={4} ry={1.9} fill={i % 2 ? "#6FBF8A" : "#4B8B3B"} transform={`rotate(${a + (i % 2 ? 30 : -30)} ${x} ${y})`} />
+      ))}
+    </>
+  ),
+
+  "flame-frame": (_c, b) => {
+    const bottom = b.y + b.h;
+    return (
+      <>
+        {ring(b, 2.5, "#E4572E", 5)}
+        {Array.from({ length: Math.floor(b.w / 12) }, (_, i) => {
+          const x = b.x + 6 + i * 12;
+          const tall = i % 2 ? 9 : 13;
+          return (
+            <g key={i}>
+              <path d={`M${x} ${bottom}q-1-${tall * 0.6} 6-${tall}q-1 ${tall * 0.5} 6 ${tall}z`} fill="#F9C74F" />
+              <path d={`M${x + 3} ${bottom}q0-${tall * 0.4} 3-${tall * 0.6}q0 ${tall * 0.3} 3 ${tall * 0.6}z`} fill="#FF9F1C" />
+            </g>
+          );
+        })}
+      </>
+    );
+  },
+
+  "gold-frame": (c, b) => (
+    <>
+      <defs>{goldGradient(c.id("frame-gold"))}</defs>
+      {ring(b, 3.5, `url(#${c.id("frame-gold")})`, 7)}
+      {ring(b, 7.5, GOLD_DARK, 1, 6)}
+    </>
+  ),
+
+  "champion-laurel": (c, b) => {
+    const leaves = (side: 1 | -1) => {
+      const x = side === 1 ? b.x + 8 : b.x + b.w - 8;
+      return Array.from({ length: 7 }, (_, i) => {
+        const y = b.y + b.h - 14 - i * (b.h / 10);
+        return <ellipse key={`${side}-${i}`} cx={x} cy={y} rx={2.4} ry={5} fill={`url(#${c.id("laurel-gold")})`} stroke={GOLD_DARK} strokeWidth={0.8} transform={`rotate(${side * -28} ${x} ${y})`} />;
+      });
+    };
+    const cx = b.x + b.w / 2;
+    return (
+      <>
+        <defs>{goldGradient(c.id("laurel-gold"))}</defs>
+        {ring(b, 3, `url(#${c.id("laurel-gold")})`, 5)}
+        {leaves(1)}
+        {leaves(-1)}
+        <path d={`M${cx} ${b.y + 1}l2.4 5 5.4.6-4 3.7 1.1 5.3-4.9-2.7-4.9 2.7 1.1-5.3-4-3.7 5.4-.6z`} fill={GOLD} stroke={GOLD_DARK} strokeWidth={1} />
+      </>
+    );
+  },
+
+  "velvet-frame": (_c, b) => (
+    <>
+      {ring(b, 3, "#5B2A86", 6)}
+      {alongEdge(b, 3, 12).map(([x, y], i) => <circle key={i} cx={x} cy={y} r={1.3} fill={GOLD} />)}
+    </>
+  ),
+
+  "sprinkle-frame": (_c, b) => (
+    <>
+      {ring(b, 3, "#F7A8C4", 6)}
+      {alongEdge(b, 3, 6).map(([x, y], i) => (
+        <rect key={i} x={x - 2} y={y - 0.7} width={4} height={1.4} rx={0.7} fill={SPRINKLE_COLORS[i % SPRINKLE_COLORS.length]} transform={`rotate(${(i * 47) % 180} ${x} ${y})`} />
+      ))}
+    </>
+  ),
+
+  "pixel-frame": (_c, b) => (
+    <>
+      {alongEdge(b, 3.5, 6).map(([x, y], i) => (
+        <rect key={i} x={x - 3} y={y - 3} width={6} height={6} fill={i % 3 === 0 ? "#2B2D42" : i % 3 === 1 ? "#4CC9F0" : "#7B6CF6"} />
+      ))}
+    </>
+  ),
+};
+
+// ---------------------------------------------------------------------------
+// Sayings: a stitched-on patch across the chef's front. One or two short lines each.
+
+export const SAYINGS: Record<string, string[]> = {
+  "yes-chef": ["YES,", "CHEF!"],
+  "let-me-cook": ["LET ME", "COOK"],
+  "sauce-boss": ["SAUCE", "BOSS"],
+  "copycat-champ": ["COPYCAT", "CHAMP"],
+  "beat-the-menu": ["BEAT THE", "MENU"],
+  "hot-streak": ["ON A HOT", "STREAK"],
+  "penny-pincher": ["PENNY", "PINCHER"],
+  "head-chef": ["HEAD", "CHEF"],
+  "crowd-fave": ["CROWD", "FAVE"],
+  "secret-menu": ["SECRET", "MENU"],
+};
+
+const PATCH_TEXT_W = 30;
+
+/** The patch with its saying. Lines too long for the patch are squeezed to fit. */
+export function SayingPatch({ lines, legendary }: { lines: string[]; legendary: boolean }) {
+  const top = lines.length > 1 ? 120 : 123.5;
+  return (
+    <g transform="rotate(-4 60 124)">
+      <rect x={42} y={114} width={36} height={lines.length > 1 ? 19 : 13} rx={4} fill={legendary ? GOLD_LIGHT : WHITE} stroke={OUTLINE} strokeWidth={1.6} />
+      <rect x={44} y={116} width={32} height={lines.length > 1 ? 15 : 9} rx={3} fill="none" stroke={legendary ? GOLD_DARK : "#9AA39C"} strokeWidth={0.7} strokeDasharray="1.6 1.2" />
+      {lines.map((line, i) => (
+        <text
+          key={i}
+          x={60}
+          y={top + i * 6.6}
+          textAnchor="middle"
+          fontSize={5.6}
+          fontWeight={800}
+          fontFamily="Arial Black, Arial, Helvetica, sans-serif"
+          fill={OUTLINE}
+          {...(line.length * 3.9 > PATCH_TEXT_W ? { textLength: PATCH_TEXT_W, lengthAdjust: "spacingAndGlyphs" } : {})}
+        >
+          {line}
+        </text>
+      ))}
+    </g>
+  );
+}
+
+/** Where legendary sparkles go per slot: [x, y, size]. Frames and sayings have their own shine. */
 export const SPARKLES: Record<Slot, [number, number, number][]> = {
   hat: [[94, 12, 5], [26, 20, 3.5], [84, 2.5, 2.5]],
   outfit: [[23, 92, 4], [98, 100, 3]],
   tool: [[113, 62, 4.5], [114, 98, 3]],
   background: [[24, 8, 4], [104, 46, 3], [12, 118, 3.5]],
+  frame: [],
+  saying: [],
 };
 
-const ART_BY_SLOT: Record<Slot, Record<string, unknown>> = { hat: HATS, outfit: OUTFITS, tool: TOOLS, background: BACKGROUNDS };
+const ART_BY_SLOT: Record<Slot, Record<string, unknown>> = { hat: HATS, outfit: OUTFITS, tool: TOOLS, background: BACKGROUNDS, frame: FRAMES, saying: SAYINGS };
 
 /** Whether a catalog item has art (ids without art draw nothing). */
 export function hasGearArt(slot: Slot, id: string): boolean {

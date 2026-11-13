@@ -2,7 +2,7 @@
 // server and client components. Art lives in ./chef/look.tsx (free look parts) and ./chef/gear.tsx
 // (catalog items, keyed by gear id). Layers, back to front, follow the design spec.
 import { GEAR_BY_ID, type Avatar, type GearItem, type Slot } from "@/lib/avatar";
-import { BACKGROUNDS, HATS, OUTFITS, SPARKLES, TOOLS, type GearCtx } from "./chef/gear";
+import { BACKGROUNDS, FRAMES, HATS, OUTFITS, SAYINGS, SPARKLES, SayingPatch, TOOLS, type GearCtx } from "./chef/gear";
 import {
   BROWS, Body, EYES, FACIAL_HAIRS, FaceBase, GLASSES, HAIRS, HAIR_COLORS, Head, MOUTHS, OUTLINE, SKINS, type LookCtx,
 } from "./chef/look";
@@ -50,6 +50,11 @@ export function ChefAvatar({ avatar, size = 160, head = false, uid, title }: Pro
   const outfit = outfitItem && OUTFITS[outfitItem.id];
   const tool = toolItem && TOOLS[toolItem.id];
   const bg = bgItem && BACKGROUNDS[bgItem.id];
+  const frameItem = equippedIn(avatar, "frame");
+  const frame = frameItem && FRAMES[frameItem.id];
+  // The saying sits on the chef's front, so head-only pictures leave it off.
+  const sayingItem = head ? undefined : equippedIn(avatar, "saying");
+  const saying = sayingItem && SAYINGS[sayingItem.id];
 
   const legendary = (item: GearItem | undefined, art: unknown) => !!art && item?.rarity === "legendary";
   const glow = `url(#${id("glow")})`;
@@ -101,6 +106,8 @@ export function ChefAvatar({ avatar, size = 160, head = false, uid, title }: Pro
       <Body skin={ctx.skin} />
       {/* 3. Outfit */}
       {outfit && <g filter={legendary(outfitItem, outfit) ? glow : undefined}>{outfit(gctx)}</g>}
+      {/* 3b. Saying patch on the front */}
+      {saying && <SayingPatch lines={saying} legendary={sayingItem?.rarity === "legendary"} />}
       {/* 4. Head */}
       <Head skin={ctx.skin} />
       {/* 5. Face */}
@@ -118,6 +125,8 @@ export function ChefAvatar({ avatar, size = 160, head = false, uid, title }: Pro
       {hat && <g filter={legendary(hatItem, hat) ? glow : undefined}>{hat.draw(gctx)}</g>}
       {/* 10. Held tool */}
       {tool && <g filter={legendary(toolItem, tool) ? glow : undefined}>{tool(gctx)}</g>}
+      {/* 10b. Frame, on top of everything but the sparkles */}
+      {frame?.(gctx, head ? { x: 10, y: -8, w: 100, h: 100 } : { x: 0, y: 0, w: 120, h: 170 })}
       {/* 11. Effects: legendary sparkle */}
       {sparkleSlots.length > 0 && (
         <g fill="#F2B630" stroke={OUTLINE} strokeWidth={1.2} strokeLinejoin="round">
