@@ -149,8 +149,8 @@ export async function Header() {
                 })()}
               </>
             ) : (
-              <Link href="/login" className="btn btn-ghost btn-sm">
-                Sign in
+              <Link href="/login" className="btn btn-primary btn-sm">
+                Sign up free
               </Link>
             )}
           </nav>
