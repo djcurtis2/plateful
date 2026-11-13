@@ -53,6 +53,11 @@ export default async function TriviaPage() {
           Today&apos;s questions are still in the oven. Check back later, or <Link href="/cookoff" className="font-semibold text-basil underline">vote in the cook-off</Link> meanwhile.
         </p>
       )}
+      {!ready && me?.profile?.is_admin && (
+        <Link href="/admin#trivia" className="card border-chili p-4 text-sm font-semibold text-chili">
+          Only admins see this: today ({day} UTC) has no approved questions. <span className="underline">Approve some in Admin</span>
+        </Link>
+      )}
 
       <p className="text-xs text-muted">
         Questions are written with AI and checked by the Yumjack team.

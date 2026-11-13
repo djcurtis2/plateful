@@ -74,6 +74,15 @@ export default async function AdminPage() {
         <p className="text-muted">Pick the Chef&apos;s pick, finalize winners, hand out prizes, and schedule next week.</p>
       </div>
 
+      {daysReady < 3 && (
+        <a href="#trivia" className="card border-chili p-4 text-sm font-semibold text-chili">
+          {daysReady === 0
+            ? "Daily trivia is empty today: no approved questions."
+            : `Daily trivia runs out after ${daysReady === 1 ? "today" : `${daysReady} days`}.`}{" "}
+          <span className="underline">Write and approve more</span>
+        </a>
+      )}
+
       {boards.length === 0 && <p className="card p-5 text-muted">Nothing to judge right now.</p>}
       {boards.map(({ c, entries }) => {
         const live = isLive(c);
@@ -227,9 +236,9 @@ export default async function AdminPage() {
         )}
       </section>
 
-      <section className="card flex flex-col gap-4 p-5">
+      <section id="trivia" className="card flex scroll-mt-20 flex-col gap-4 p-5">
         <h2 className="font-display text-2xl font-bold">Daily trivia</h2>
-        <p className={`text-sm ${daysReady < 2 ? "font-semibold text-chili" : "text-muted"}`}>
+        <p className={`text-sm ${daysReady < 3 ? "font-semibold text-chili" : "text-muted"}`}>
           {daysReady === 0
             ? "Today has no approved questions, so the trivia page is empty."
             : `Approved questions for the next ${daysReady} ${daysReady === 1 ? "day" : "days"} (UTC).`}{" "}
