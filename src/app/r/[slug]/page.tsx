@@ -7,6 +7,7 @@ import type { Recipe } from "@/lib/recipe";
 import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 import { siteUrl } from "@/lib/env";
+import { jsonLdScript, recipeJsonLd, recipeTitle } from "@/lib/seo";
 import { RecipeView } from "@/components/RecipeView";
 import { krogerConfigured } from "@/lib/kroger-server";
 import { ReferralBeacon } from "@/components/ReferralBeacon";
@@ -33,12 +34,15 @@ export async function generateMetadata({ params, searchParams }: Params): Promis
     return shared ? { title: `${shared.dish} recipe`, robots: { index: false, follow: false } } : { title: "Recipe not found" };
   }
   if (r.source === "own") return { title: `${r.dish} recipe`, robots: { index: false, follow: false } };
-  const s = savings(r);
-  const title = r.restaurant ? `${r.restaurant} ${r.dish} copycat` : `${r.dish} recipe`;
-  const description = s
+  const title = recipeTitle(r);
+  const description = recipeDescription(r);
+  return { title, description, alternates: { canonical: `/r/${r.slug}` }, openGraph: { title, description } };
+}
+
+function recipeDescription(r: Recipe): string {
+  return savings(r)
     ? `${money(menuPlate(r))} a plate at ${r.restaurant}, ${money(r.plate_cost)} a plate at home. ${r.minutes ?? 30} minutes.`
     : `Make ${r.dish} at home in ${r.minutes ?? 30} minutes.`;
-  return { title, description, alternates: { canonical: `/r/${r.slug}` }, openGraph: { title, description } };
 }
 
 export default async function RecipePage({ params, searchParams }: Params) {
@@ -80,6 +84,10 @@ export default async function RecipePage({ params, searchParams }: Params) {
 
   return (
     <main className="flex flex-col gap-14 pt-8">
+      {!own && (
+        // Recipe tags for search engines (recipe cards in Google). Private recipes never get them.
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdScript(recipeJsonLd(recipe, siteUrl, recipeDescription(recipe))) }} />
+      )}
       <Suspense>
         <ReferralBeacon recipeId={recipe.id} />
       </Suspense>
