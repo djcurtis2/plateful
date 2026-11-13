@@ -10,6 +10,8 @@ import { TRIVIA_PER_DAY, triviaDay } from "@/lib/trivia";
 import { bingoFor } from "@/lib/games-server";
 import { BINGO_FULL_POINTS, BINGO_LINE_POINTS, DISH_MAX_POINTS, HL_MAX_POINTS, weekStart } from "@/lib/games";
 import { ChefAvatar } from "@/components/ChefAvatar";
+import { ReferralBeacon } from "@/components/ReferralBeacon";
+import { Suspense } from "react";
 import { ClubBadge } from "@/components/ClubBadge";
 import Link from "next/link";
 import Image from "next/image";
@@ -50,6 +52,10 @@ export default async function Home() {
 
   return (
     <main className="flex flex-col gap-16 pt-8 sm:pt-12">
+      {/* Invite links (/?ref=CODE) count as a share for the inviter's Bingo card. */}
+      <Suspense>
+        <ReferralBeacon />
+      </Suspense>
       {/* Phones read top to bottom: headline, snap box, proof. Wide screens put the snap box in its own column. */}
       <section className="grid items-start gap-x-10 gap-y-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,440px)] lg:grid-rows-[auto_1fr]">
         <div className="flex min-w-0 flex-col gap-4">

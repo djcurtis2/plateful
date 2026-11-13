@@ -24,12 +24,15 @@ export async function referrerIdForCode(code: string | null | undefined): Promis
   return (data as { id: string } | null)?.id ?? null;
 }
 
-/** A link with ?ref= was opened. Counted for the referrer's stats only; never rewarded. */
-export async function recordReferralVisit(code: string, visitorId: string | null, recipeId: string | null) {
+/**
+ * A link with ?ref= was opened. Counts for the referrer's stats and the Bingo "share" square only (no points or
+ * Plus months). `viewerId` is the signed-in person opening it: opening your own link never counts.
+ */
+export async function recordReferralVisit(code: string, visitorId: string | null, recipeId: string | null, viewerId: string | null = null) {
   // Counted once per browser per referrer per day, so replaying the request can't pump the numbers.
   if (!visitorId) return;
   const referrer = await referrerIdForCode(code);
-  if (!referrer) return;
+  if (!referrer || referrer === viewerId) return;
   const db = admin();
   const since = new Date(Date.now() - 86_400_000).toISOString();
   const { count } = await db

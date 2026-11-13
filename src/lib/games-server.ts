@@ -291,13 +291,15 @@ export async function bingoActivity(userId: string, week: string): Promise<Bingo
   const end = addDays(week, 7);
   const from = `${week}T00:00:00Z`;
   const to = `${end}T00:00:00Z`;
-  const [cooks, entries, votes, trivia, mine, plans] = await Promise.all([
+  const [cooks, entries, votes, trivia, mine, plans, shares] = await Promise.all([
     db.from("cook_log").select("recipe_id, home_cost, servings, compare, saved").eq("user_id", userId).gte("cooked_on", week).lt("cooked_on", end),
     db.from("attempts").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", from).lt("created_at", to),
     db.from("attempt_votes").select("attempt_id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", from).lt("created_at", to),
     db.from("trivia_plays").select("day", { count: "exact", head: true }).eq("user_id", userId).not("finished_at", "is", null).gte("day", week).lt("day", end),
     db.from("recipes").select("source, variant_of").eq("user_id", userId).gte("created_at", from).lt("created_at", to),
     db.from("meal_plans").select("id", { count: "exact", head: true }).eq("user_id", userId).gte("created_at", from).lt("created_at", to),
+    // Someone opened (or signed up from) a link this person shared. Their own visits aren't recorded.
+    db.from("referral_events").select("id", { count: "exact", head: true }).eq("referrer_id", userId).in("kind", ["visit", "signup"]).gte("created_at", from).lt("created_at", to),
   ]);
   const cooked = cooks.data ?? [];
   const recipes = await getRecipesByIds([...new Set(cooked.map((c) => c.recipe_id))]);
@@ -318,6 +320,7 @@ export async function bingoActivity(userId: string, week: string): Promise<Bingo
     snaps: made.filter((r) => r.source === "snap" && !r.variant_of).length,
     saved: cooked.reduce((s, c) => s + Number(c.saved), 0),
     plans: plans.count ?? 0,
+    shares: shares.count ?? 0,
   };
 }
 

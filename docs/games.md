@@ -46,6 +46,7 @@ Like the daily newspaper crossword: one puzzle a day, the same for everyone, und
 - A new line or full card since the last visit (per browser, per week, `localStorage`) gets confetti and a share prompt (`components/BingoBoard.tsx`).
 - Rewards: lifetime lines and full cards (`bingoTally` over `bingo:` refs in `points_events`) unlock chef gear with source kind `bingo`: "Called it! Bingo" saying (1 line), Bingo balls frame (5 lines), Full house frame (1 full card). No migration.
 - Signed-in home page shows a small card of this week's ticks.
+- Share square ("Share Yumjack with a friend"): on every card from the week of 2026-11-16 (`SHARE_SQUARE_FROM`; earlier cards unchanged). Ticks when someone opens a link the cook shared that week (`referral_events` visit or signup). Invite links (`/?ref=`), recipe and cook-off pages and shared Bingo cards (`/games/bingo?ref=`) all record visits; opening your own link while signed in never counts.
 
 ## Where things live
 

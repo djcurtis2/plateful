@@ -53,6 +53,7 @@ export function UserMenu({ children, label, nudge, plus }: { children: React.Rea
           <Link role="menuitem" href="/games" className={ITEM}>Daily games</Link>
           <Link role="menuitem" href="/leaderboard" className={ITEM}>Leaderboard</Link>
           <Link role="menuitem" href="/clubs" className={ITEM}>Clubs</Link>
+          {!plus && <Link role="menuitem" href="/pricing" className={`${ITEM} font-semibold text-basil`}>Get Plus</Link>}
           <Link role="menuitem" href="/account" className={ITEM}>{plus ? "Account (Plus)" : "Account"}</Link>
           <div className="my-1 h-px bg-line" />
           <form action="/auth/signout" method="post">

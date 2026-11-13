@@ -13,14 +13,15 @@ import { SEEN_COOKIE, WELCOME_COOKIE } from "@/lib/cookies";
 import { LevelIcon } from "@/components/GameIcons";
 import { StatusToast } from "@/components/StatusToast";
 
-export function Logo() {
+/** `compact`: the word hides on narrow phones (signed-in headers need the room); the plate mark stays. */
+export function Logo({ compact = false }: { compact?: boolean }) {
   return (
     <span className="flex items-center gap-2 whitespace-nowrap font-display text-lg font-bold tracking-tight sm:text-xl">
       <span
         aria-hidden
         className="inline-block size-5 rounded-full bg-saffron shadow-[inset_0_0_0_5px_var(--basil)]"
       />
-      Yumjack
+      <span className={compact ? "hidden min-[390px]:inline" : ""}>Yumjack</span>
     </span>
   );
 }
@@ -86,16 +87,16 @@ export async function Header() {
       <header className="sticky top-0 z-20 border-b border-line bg-bg/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:px-6">
           <Link href="/" aria-label="Yumjack home">
-            <Logo />
+            <Logo compact={!!me} />
           </Link>
-          <nav className="flex items-center gap-1 whitespace-nowrap text-sm font-medium sm:gap-3">
+          <nav className="flex items-center gap-0.5 whitespace-nowrap text-sm font-medium sm:gap-3">
             <Link
               href="/cookoff"
-              className="rounded-lg px-2 py-1.5 text-muted hover:text-ink"
+              className="rounded-lg px-1.5 py-1.5 text-muted hover:text-ink sm:px-2"
             >
               Cook-off
             </Link>
-            <Link href="/games" className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink md:inline">
+            <Link href="/games" className="rounded-lg px-1.5 py-1.5 text-muted hover:text-ink sm:px-2">
               Games
             </Link>
             <Link
@@ -105,7 +106,7 @@ export async function Header() {
               Leaderboard
             </Link>
             {!me?.plus && (
-              <Link href="/pricing" className={`rounded-lg px-2 py-1.5 font-semibold text-basil hover:text-ink ${me ? "" : "hidden min-[400px]:inline"}`}>
+              <Link href="/pricing" className={`hidden rounded-lg px-2 py-1.5 font-semibold text-basil hover:text-ink ${me ? "sm:inline" : "min-[400px]:inline"}`}>
                 Plus
               </Link>
             )}
@@ -113,7 +114,7 @@ export async function Header() {
               <>
                 <Link
                   href="/library"
-                  className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink sm:inline"
+                  className="hidden rounded-lg px-2 py-1.5 text-muted hover:text-ink md:inline"
                 >
                   My recipes
                 </Link>
@@ -155,7 +156,7 @@ export async function Header() {
               </>
             ) : (
               <Link href="/login" className="btn btn-primary btn-sm">
-                Sign up free
+                Sign up<span className="hidden min-[400px]:inline">&nbsp;free</span>
               </Link>
             )}
           </nav>

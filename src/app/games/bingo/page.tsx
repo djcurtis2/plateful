@@ -9,6 +9,8 @@ import { addDays, triviaDay } from "@/lib/trivia";
 import { siteUrl } from "@/lib/env";
 import { BingoBoard, type BingoCell } from "@/components/BingoBoard";
 import { ChefAvatar } from "@/components/ChefAvatar";
+import { ReferralBeacon } from "@/components/ReferralBeacon";
+import { Suspense } from "react";
 
 export const metadata: Metadata = {
   title: "Cooking Bingo",
@@ -50,6 +52,10 @@ export default async function BingoPage() {
 
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col gap-6 pt-8">
+      {/* A shared card carries the sharer's code, so a friend opening it ticks their "share" square. */}
+      <Suspense>
+        <ReferralBeacon />
+      </Suspense>
       <div>
         <Link href="/games" className="label hover:underline">
           ← Daily games
@@ -75,7 +81,7 @@ export default async function BingoPage() {
           lines={lines.length}
           full={full}
           earned={earned}
-          shareText={bingoShareText(week, marks, `${siteUrl}/games/bingo`)}
+          shareText={bingoShareText(week, marks, `${siteUrl}/games/bingo${me?.profile?.referral_code ? `?ref=${me.profile.referral_code}` : ""}`)}
           pointsPerLine={BINGO_LINE_POINTS}
           fullPoints={BINGO_FULL_POINTS}
         />

@@ -140,6 +140,7 @@ export type BingoActivity = {
   snaps: number; // dishes snapped
   saved: number; // dollars saved vs eating out
   plans: number; // weekly plans made
+  shares: number; // times a friend opened a link this person shared
 };
 
 const MADE_IT = "Tap “I made it” on the recipe, tick it in your plan, or post it in the cook-off.";
@@ -169,14 +170,21 @@ export const BINGO_SQUARES: SquareRule[] = [
   { id: "trivia", label: "Play trivia 3 days", how: "Finish the daily food trivia on three different days this week.", href: "/trivia", done: (a) => a.triviaDays >= 3, progress: (a) => upTo(a.triviaDays, 3, "days") },
   { id: "snap", label: "Snap a new dish", how: "Take a photo of a restaurant dish and get its copycat recipe.", href: "/", done: (a) => a.snaps >= 1 },
   { id: "save20", label: "Save $20 vs eating out", how: `Cook enough this week to save $20 vs. eating out. ${MADE_IT}`, href: "/account#savings", done: (a) => a.saved >= 20, progress: (a) => `$${Math.min(a.saved, 20).toFixed(2)} of $20` },
+  { id: "share", label: "Share Yumjack with a friend", how: "Send a friend your invite link, a recipe or your Bingo card. It ticks when they open it.", href: "/account#invite", done: (a) => a.shares >= 1 },
   { id: "plan", label: "Plan your week", how: "Make a meal plan for the week with Plan my week (Plus).", href: "/plan", done: (a) => a.plans >= 1 },
 ];
 export type BingoSquare = (typeof BINGO_SQUARES)[number];
 export const BINGO_FREE = "free";
+/** First week (Monday) whose card always has the share square. */
+export const SHARE_SQUARE_FROM = "2026-11-16";
 
 /** This week's card: 8 squares (same for everyone) around a free centre. */
 export function bingoCard(week: string): (BingoSquare | typeof BINGO_FREE)[] {
-  const picked = seededShuffle(BINGO_SQUARES, `bingo:${week}`).slice(0, 8);
+  // Picked without the share square, so cards from before it existed stay exactly as they were.
+  const share = BINGO_SQUARES.find((s) => s.id === "share")!;
+  let picked = seededShuffle(BINGO_SQUARES.filter((s) => s !== share), `bingo:${week}`).slice(0, 8);
+  // From SHARE_SQUARE_FROM, sharing is on every card, in a different spot each week.
+  if (week >= SHARE_SQUARE_FROM) picked = seededShuffle([share, ...picked.slice(0, 7)], `bingo-share:${week}`);
   return [...picked.slice(0, 4), BINGO_FREE, ...picked.slice(4)];
 }
 

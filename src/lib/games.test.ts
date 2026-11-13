@@ -59,7 +59,7 @@ test("bingo: weeks start Monday, free centre, lines", () => {
   assert.equal(card[4], BINGO_FREE);
   assert.equal(new Set(card.filter((c) => c !== BINGO_FREE).map((c) => (c as { id: string }).id)).size, 8);
   assert.deepEqual(bingoCard("2026-11-02"), card);
-  const none: BingoActivity = { cooked: 0, copycats: 0, cheapest: null, vegetarian: 0, cuisines: 0, versions: 0, originals: 0, entries: 0, votes: 0, triviaDays: 0, snaps: 0, saved: 0, plans: 0 };
+  const none: BingoActivity = { cooked: 0, copycats: 0, cheapest: null, vegetarian: 0, cuisines: 0, versions: 0, originals: 0, entries: 0, votes: 0, triviaDays: 0, snaps: 0, saved: 0, plans: 0, shares: 0 };
   const marks = bingoMarks(card, none);
   assert.deepEqual(marks.map((m, i) => (m ? i : -1)).filter((i) => i >= 0), [4]);
   assert.deepEqual(bingoLines([true, true, true, false, true, false, false, false, false]), [0]);
@@ -73,4 +73,16 @@ test("bingoTally counts lifetime lines and full cards from ledger refs", () => {
     bingoTally(["bingo:2026-11-02:line0", "bingo:2026-11-02:line3", "bingo:2026-11-02:full", "bingo:2026-11-09:line1", "dish:2026-11-02", "trivia:x:line1"]),
     { lines: 3, full: 1 },
   );
+});
+
+test("the share square joins every card from SHARE_SQUARE_FROM and leaves earlier cards alone", () => {
+  const ids = (week: string) => bingoCard(week).map((s) => (s === BINGO_FREE ? "free" : s.id));
+  assert.ok(!ids("2026-11-09").includes("share"));
+  for (const week of ["2026-11-16", "2026-11-23", "2026-11-30"]) {
+    const card = ids(week);
+    assert.ok(card.includes("share"), week);
+    assert.equal(card.length, 9);
+    assert.equal(card[4], "free");
+    assert.equal(new Set(card).size, 9);
+  }
 });

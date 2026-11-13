@@ -206,7 +206,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </div>
       </section>
 
-      <section className="card flex flex-col gap-4 p-6">
+      <section id="invite" className="card flex scroll-mt-20 flex-col gap-4 p-6">
         <div>
           <span className="label">Invite friends</span>
           <h2 className="font-display text-2xl font-bold">Earn a free month for every {stats.goal} friends who cook</h2>

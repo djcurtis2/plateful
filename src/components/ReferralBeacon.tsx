@@ -3,12 +3,12 @@ import { useEffect } from "react";
 import { useSearchParams } from "next/navigation";
 
 /** Counts a referral-link visit once per page load. Rewards depend on cooks, never visits. */
-export function ReferralBeacon({ recipeId }: { recipeId: string }) {
+export function ReferralBeacon({ recipeId = null }: { recipeId?: string | null }) {
   const params = useSearchParams();
   const ref = params.get("ref");
   useEffect(() => {
     if (!ref) return;
-    const key = `pf_ref_seen_${ref}_${recipeId}`;
+    const key = `pf_ref_seen_${ref}_${recipeId ?? location.pathname}`;
     try {
       if (sessionStorage.getItem(key)) return;
       sessionStorage.setItem(key, "1");
