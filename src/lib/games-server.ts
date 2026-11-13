@@ -324,11 +324,12 @@ export async function bingoActivity(userId: string, week: string): Promise<Bingo
 /** This week's card, ticks and lines; awards line and full-card points once each (idempotent). */
 export async function bingoFor(userId: string | null, week: string) {
   const card = bingoCard(week);
-  if (!userId) return { card, marks: card.map((c) => c === "free"), lines: [] as number[], earned: 0 };
-  const marks = bingoMarks(card, await bingoActivity(userId, week));
+  if (!userId) return { card, marks: card.map((c) => c === "free"), lines: [] as number[], earned: 0, activity: null };
+  const activity = await bingoActivity(userId, week);
+  const marks = bingoMarks(card, activity);
   const lines = bingoLines(marks);
   for (const i of lines) await awardPoints(userId, "game", BINGO_LINE_POINTS, `bingo:${week}:line${i}`);
   if (marks.every(Boolean)) await awardPoints(userId, "game", BINGO_FULL_POINTS, `bingo:${week}:full`);
   const earned = lines.length * BINGO_LINE_POINTS + (marks.every(Boolean) ? BINGO_FULL_POINTS : 0);
-  return { card, marks, lines, earned };
+  return { card, marks, lines, earned, activity: activity as BingoActivity | null };
 }

@@ -16,7 +16,8 @@ export type GearSource =
   | { kind: "points"; at: number } // lifetime points milestone
   | { kind: "badge"; badge: BadgeId }
   | { kind: "plus" }
-  | { kind: "shop"; cents: number };
+  | { kind: "shop"; cents: number }
+  | { kind: "bingo"; need: "line" | "full"; count: number }; // lifetime Bingo lines or full cards
 
 export type GearItem = { id: string; slot: Slot; name: string; rarity: Rarity; source: GearSource };
 export type Bundle = { id: string; name: string; cents: number; items: string[] };
@@ -82,6 +83,8 @@ export const GEAR: GearItem[] = [
   gear("velvet-frame", "frame", "Velvet frame", "rare", { kind: "plus" }),
   gear("sprinkle-frame", "frame", "Sprinkles", "common", { kind: "shop", cents: SHOP }),
   gear("pixel-frame", "frame", "Pixel frame", "rare", { kind: "shop", cents: SHOP }),
+  gear("bingo-balls", "frame", "Bingo balls", "rare", { kind: "bingo", need: "line", count: 5 }),
+  gear("full-house", "frame", "Full house", "epic", { kind: "bingo", need: "full", count: 1 }),
 
   // Sayings: a patch on the chef's front. A fixed list (nobody types their own), most of them earned.
   gear("yes-chef", "saying", "Yes, chef!", "common", { kind: "starter" }),
@@ -94,6 +97,7 @@ export const GEAR: GearItem[] = [
   gear("head-chef", "saying", "Head chef", "epic", { kind: "level", level: 3 }),
   gear("crowd-fave", "saying", "Crowd fave", "legendary", { kind: "badge", badge: "crowd_favorite" }),
   gear("secret-menu", "saying", "Secret menu", "rare", { kind: "plus" }),
+  gear("called-it", "saying", "Called it! Bingo", "common", { kind: "bingo", need: "line", count: 1 }),
 ];
 
 // Null prototype so untrusted ids like "constructor" or "__proto__" never resolve to inherited members.
@@ -121,7 +125,8 @@ export const LOOK_OPTIONS: Record<LookPart, number> = { skin: 8, eyes: 6, brows:
 export const LOOK_PARTS = Object.keys(LOOK_OPTIONS) as LookPart[];
 
 export type Avatar = { look: Look; equipped: Partial<Record<Slot, string>> };
-export type GearContext = { points: number; badges: BadgeId[]; plus: boolean; owned: string[] };
+/** `bingo`: lifetime Bingo lines and full cards (from the points ledger). */
+export type GearContext = { points: number; badges: BadgeId[]; plus: boolean; owned: string[]; bingo: { lines: number; full: number } };
 
 export function starterFor(slot: Slot): GearItem {
   return GEAR.find((g) => g.slot === slot && g.source.kind === "starter")!;
@@ -196,7 +201,8 @@ export function unlockedGear(ctx: GearContext): Set<string> {
       (s.kind === "level" && level >= s.level) ||
       (s.kind === "points" && ctx.points >= s.at) ||
       (s.kind === "badge" && ctx.badges.includes(s.badge)) ||
-      (s.kind === "plus" && ctx.plus)
+      (s.kind === "plus" && ctx.plus) ||
+      (s.kind === "bingo" && (s.need === "line" ? ctx.bingo.lines : ctx.bingo.full) >= s.count)
     ) out.add(g.id);
   }
   for (const id of ctx.owned) if (GEAR_BY_ID[id]?.source.kind === "shop") out.add(id);
@@ -258,6 +264,9 @@ export function lockReason(item: GearItem): string {
     case "badge": return `Earn the ${BADGES[s.badge].label} badge`;
     case "plus": return "Plus";
     case "shop": return priceLabel(s.cents);
+    case "bingo":
+      if (s.need === "line") return s.count === 1 ? "Get a Bingo line" : `Get ${s.count} Bingo lines`;
+      return s.count === 1 ? "Fill a Bingo card" : `Fill ${s.count} Bingo cards`;
   }
 }
 

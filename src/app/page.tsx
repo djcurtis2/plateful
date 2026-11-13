@@ -7,7 +7,8 @@ import { publicName, timeLeft } from "@/lib/game";
 import { leaderboard } from "@/lib/game-server";
 import { triviaPlay, triviaQuestions } from "@/lib/trivia-server";
 import { TRIVIA_PER_DAY, triviaDay } from "@/lib/trivia";
-import { BINGO_FULL_POINTS, BINGO_LINE_POINTS, DISH_MAX_POINTS, HL_MAX_POINTS } from "@/lib/games";
+import { bingoFor } from "@/lib/games-server";
+import { BINGO_FULL_POINTS, BINGO_LINE_POINTS, DISH_MAX_POINTS, HL_MAX_POINTS, weekStart } from "@/lib/games";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import Link from "next/link";
@@ -38,6 +39,8 @@ export default async function Home() {
   const today = triviaDay();
   const trivia = await triviaQuestions(today).catch(() => []);
   const triviaDone = me && trivia.length === TRIVIA_PER_DAY ? !!(await triviaPlay(me.user.id, today).catch(() => null))?.finished_at : false;
+  // Signed-in cooks see their Bingo card at a glance (it ticks itself, so this is a nudge, not a chore).
+  const bingo = me ? await bingoFor(me.user.id, weekStart(today)).catch(() => null) : null;
 
   // The proof near the top: the recent copycat with a photo that saves the most per plate.
   const proof = recent
@@ -186,6 +189,31 @@ export default async function Home() {
             {triviaDone ? "See today's answers" : "Play today's trivia →"}
           </Link>
         </section>
+      )}
+
+      {bingo && (
+        <Link
+          href="/games/bingo"
+          className="card flex items-center gap-4 p-4 transition-shadow hover:ring-2 hover:ring-basil sm:p-5"
+          aria-label={`Your Cooking Bingo this week: ${bingo.marks.filter(Boolean).length} of 9 squares, ${bingo.lines.length} ${bingo.lines.length === 1 ? "line" : "lines"}`}
+        >
+          <span className="grid shrink-0 grid-cols-3 gap-1" aria-hidden>
+            {bingo.marks.map((on, i) => (
+              <span key={i} className={`size-5 rounded-md sm:size-6 ${i === 4 ? "bg-saffron" : on ? "bg-basil" : "bg-sunk"}`} />
+            ))}
+          </span>
+          <span className="flex min-w-0 flex-col">
+            <span className="font-display text-lg font-bold">Your Cooking Bingo</span>
+            <span className="text-sm text-muted">
+              {bingo.marks.every(Boolean)
+                ? "Full card this week!"
+                : `${bingo.marks.filter(Boolean).length} of 9 squares · ${bingo.lines.length} ${bingo.lines.length === 1 ? "line" : "lines"}. Squares tick as you cook.`}
+            </span>
+          </span>
+          <span className="ml-auto shrink-0 text-sm font-semibold text-basil" aria-hidden>
+            Open →
+          </span>
+        </Link>
       )}
 
       <section aria-labelledby="home-games" className="flex flex-col gap-3">

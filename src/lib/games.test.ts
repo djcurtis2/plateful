@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
+  bingoTally,
   BINGO_FREE,
   bingoCard,
   bingoLines,
@@ -64,4 +65,12 @@ test("bingo: weeks start Monday, free centre, lines", () => {
   assert.deepEqual(bingoLines([true, true, true, false, true, false, false, false, false]), [0]);
   assert.equal(bingoLines(Array(9).fill(true)).length, 8);
   assert.match(bingoShareText("2026-11-02", Array(9).fill(true), "u"), /Full card/);
+});
+
+test("bingoTally counts lifetime lines and full cards from ledger refs", () => {
+  assert.deepEqual(bingoTally([]), { lines: 0, full: 0 });
+  assert.deepEqual(
+    bingoTally(["bingo:2026-11-02:line0", "bingo:2026-11-02:line3", "bingo:2026-11-02:full", "bingo:2026-11-09:line1", "dish:2026-11-02", "trivia:x:line1"]),
+    { lines: 3, full: 1 },
+  );
 });

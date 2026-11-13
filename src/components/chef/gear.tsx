@@ -620,6 +620,7 @@ const ring = (b: Box, inset: number, stroke: string, width: number, rx = 9) => (
 );
 
 const SPRINKLE_COLORS = ["#F25F7A", "#2AA7A0", "#F2B630", "#7B6CF6", "#FFFFFF"];
+const BALL_COLORS = ["#2F6B46", "#C23B2A", "#F2B630", "#2A6FB0", "#7B4FB0"];
 
 export const FRAMES: Record<string, FrameDraw> = {
   "simple-frame": (_c, b) => ring(b, 2.5, GREEN, 5),
@@ -696,6 +697,35 @@ export const FRAMES: Record<string, FrameDraw> = {
     </>
   ),
 
+  // Bingo balls: little numbered balls all the way round.
+  "bingo-balls": (_c, b) => (
+    <>
+      {ring(b, 3.5, "#E9E2CF", 6)}
+      {alongEdge(b, 3.5, 11).map(([x, y], i) => (
+        <g key={i}>
+          <circle cx={x} cy={y} r={4.2} fill={BALL_COLORS[i % BALL_COLORS.length]} stroke={OUTLINE} strokeWidth={0.8} />
+          <circle cx={x} cy={y} r={2.3} fill="#FFFFFF" />
+          <text x={x} y={y + 1.1} textAnchor="middle" fontSize={2.6} fontWeight={800} fill={OUTLINE}>{((i * 7) % 75) + 1}</text>
+        </g>
+      ))}
+    </>
+  ),
+
+  // Full house: a gold-edged bingo card border with dauber dots, and a FULL HOUSE ribbon along the bottom.
+  "full-house": (c, b) => {
+    const cx = b.x + b.w / 2;
+    const by = b.y + b.h - 9;
+    return (
+      <>
+        <defs>{goldGradient(c.id("fh-gold"))}</defs>
+        {ring(b, 3, `url(#${c.id("fh-gold")})`, 6)}
+        {alongEdge(b, 3, 14).map(([x, y], i) => <circle key={i} cx={x} cy={y} r={2.2} fill={i % 2 ? "#C23B2A" : "#2F6B46"} opacity={0.9} />)}
+        <rect x={cx - 26} y={by - 5} width={52} height={10} rx={3} fill="#C23B2A" stroke={OUTLINE} strokeWidth={1} />
+        <text x={cx} y={by + 2.2} textAnchor="middle" fontSize={6} fontWeight={800} fill="#FFFFFF" letterSpacing={0.4}>FULL HOUSE</text>
+      </>
+    );
+  },
+
   "pixel-frame": (_c, b) => (
     <>
       {alongEdge(b, 3.5, 6).map(([x, y], i) => (
@@ -719,6 +749,7 @@ export const SAYINGS: Record<string, string[]> = {
   "head-chef": ["HEAD", "CHEF"],
   "crowd-fave": ["CROWD", "FAVE"],
   "secret-menu": ["SECRET", "MENU"],
+  "called-it": ["CALLED IT!", "BINGO"],
 };
 
 const PATCH_TEXT_W = 30;

@@ -142,21 +142,35 @@ export type BingoActivity = {
   plans: number; // weekly plans made
 };
 
-export const BINGO_SQUARES = [
-  { id: "cook", label: "Cook a meal at home", href: "/library", done: (a: BingoActivity) => a.cooked >= 1 },
-  { id: "copycat", label: "Cook a restaurant copycat", href: "/", done: (a: BingoActivity) => a.copycats >= 1 },
-  { id: "under3", label: "Cook a plate under $3", href: "/library?sort=cheapest", done: (a: BingoActivity) => a.cheapest != null && a.cheapest < 3 },
-  { id: "veg", label: "Cook something vegetarian", href: "/library?diet=vegetarian", done: (a: BingoActivity) => a.vegetarian >= 1 },
-  { id: "cuisines", label: "Cook two different cuisines", href: "/library", done: (a: BingoActivity) => a.cuisines >= 2 },
-  { id: "version", label: "Make a recipe your way", href: "/library", done: (a: BingoActivity) => a.versions >= 1 },
-  { id: "leftovers", label: "Make a recipe from leftovers", href: "/library", done: (a: BingoActivity) => a.originals >= 1 },
-  { id: "entry", label: "Post a cook-off entry", href: "/cookoff", done: (a: BingoActivity) => a.entries >= 1 },
-  { id: "vote", label: "Vote in the cook-off", href: "/cookoff", done: (a: BingoActivity) => a.votes >= 1 },
-  { id: "trivia", label: "Play trivia 3 days", href: "/trivia", done: (a: BingoActivity) => a.triviaDays >= 3 },
-  { id: "snap", label: "Snap a new dish", href: "/", done: (a: BingoActivity) => a.snaps >= 1 },
-  { id: "save20", label: "Save $20 vs eating out", href: "/account#savings", done: (a: BingoActivity) => a.saved >= 20 },
-  { id: "plan", label: "Plan your week", href: "/plan", done: (a: BingoActivity) => a.plans >= 1 },
-] as const;
+const MADE_IT = "Tap “I made it” on the recipe, tick it in your plan, or post it in the cook-off.";
+const upTo = (n: number, of: number, unit: string) => `${Math.min(n, of)} of ${of} ${unit}`;
+
+type SquareRule = {
+  id: string;
+  label: string;
+  /** What ticks it, in plain words. */
+  how: string;
+  href: string;
+  done: (a: BingoActivity) => boolean;
+  /** How far along, for squares that take more than one go. */
+  progress?: (a: BingoActivity) => string;
+};
+
+export const BINGO_SQUARES: SquareRule[] = [
+  { id: "cook", label: "Cook a meal at home", how: `Cook any recipe. ${MADE_IT}`, href: "/library", done: (a) => a.cooked >= 1 },
+  { id: "copycat", label: "Cook a restaurant copycat", how: `Cook a recipe copied from a restaurant dish. ${MADE_IT}`, href: "/library", done: (a) => a.copycats >= 1 },
+  { id: "under3", label: "Cook a plate under $3", how: `Cook a recipe that costs under $3 a plate (the cheapest are listed first). ${MADE_IT}`, href: "/library?sort=cheapest", done: (a) => a.cheapest != null && a.cheapest < 3 },
+  { id: "veg", label: "Cook something vegetarian", how: `Cook a vegetarian recipe. ${MADE_IT}`, href: "/library?diet=vegetarian", done: (a) => a.vegetarian >= 1 },
+  { id: "cuisines", label: "Cook two different cuisines", how: `Cook recipes from two different cuisines this week, like Mexican and Italian. ${MADE_IT}`, href: "/library", done: (a) => a.cuisines >= 2, progress: (a) => upTo(a.cuisines, 2, "cuisines") },
+  { id: "version", label: "Make a recipe your way", how: "Open any recipe and use “Make it my way” for a vegetarian, lighter, air fryer or other version.", href: "/library", done: (a) => a.versions >= 1 },
+  { id: "leftovers", label: "Make a recipe from leftovers", how: "Open a recipe and use “Use it up” to turn what's left in your kitchen into a new recipe.", href: "/library", done: (a) => a.originals >= 1 },
+  { id: "entry", label: "Post a cook-off entry", how: "Cook this week's cook-off dish and post a photo of your copy.", href: "/cookoff", done: (a) => a.entries >= 1 },
+  { id: "vote", label: "Vote in the cook-off", how: "Vote for a favorite entry in the cook-off.", href: "/cookoff", done: (a) => a.votes >= 1 },
+  { id: "trivia", label: "Play trivia 3 days", how: "Finish the daily food trivia on three different days this week.", href: "/trivia", done: (a) => a.triviaDays >= 3, progress: (a) => upTo(a.triviaDays, 3, "days") },
+  { id: "snap", label: "Snap a new dish", how: "Take a photo of a restaurant dish and get its copycat recipe.", href: "/", done: (a) => a.snaps >= 1 },
+  { id: "save20", label: "Save $20 vs eating out", how: `Cook enough this week to save $20 vs. eating out. ${MADE_IT}`, href: "/account#savings", done: (a) => a.saved >= 20, progress: (a) => `$${Math.min(a.saved, 20).toFixed(2)} of $20` },
+  { id: "plan", label: "Plan your week", how: "Make a meal plan for the week with Plan my week (Plus).", href: "/plan", done: (a) => a.plans >= 1 },
+];
 export type BingoSquare = (typeof BINGO_SQUARES)[number];
 export const BINGO_FREE = "free";
 
@@ -187,6 +201,18 @@ export function bingoMarks(card: ReturnType<typeof bingoCard>, a: BingoActivity)
 /** Indexes (into BINGO_LINES) of every completed line. */
 export function bingoLines(marks: boolean[]): number[] {
   return BINGO_LINES.flatMap((line, i) => (line.every((s) => marks[s]) ? [i] : []));
+}
+
+/** Lifetime Bingo lines and full cards, from points ledger refs (`bingo:<week>:line<i>`, `bingo:<week>:full`). */
+export function bingoTally(refs: string[]): { lines: number; full: number } {
+  let lines = 0;
+  let full = 0;
+  for (const r of refs) {
+    if (!r.startsWith("bingo:")) continue;
+    if (r.endsWith(":full")) full++;
+    else if (/:line\d+$/.test(r)) lines++;
+  }
+  return { lines, full };
 }
 
 export function bingoShareText(week: string, marks: boolean[], url: string) {

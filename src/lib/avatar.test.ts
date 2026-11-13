@@ -30,10 +30,10 @@ test("catalog rules", () => {
 });
 
 test("unlocks follow points, badges, Plus and purchases", () => {
-  const none = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const none = unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   assert.ok(GEAR.filter((g) => g.source.kind === "starter").every((g) => none.has(g.id)));
   assert.ok(!GEAR.some((g) => g.source.kind === "plus" && none.has(g.id)));
-  const sous = unlockedGear({ points: 300, badges: ["crowd_favorite"], plus: true, owned: [SHOP_ITEM] });
+  const sous = unlockedGear({ points: 300, badges: ["crowd_favorite"], plus: true, owned: [SHOP_ITEM], bingo: { lines: 0, full: 0 } });
   const levelHat = (n: number) => GEAR.find((g) => g.source.kind === "level" && g.source.level === n)!.id;
   assert.ok([0, 1, 2].every((n) => sous.has(levelHat(n))));
   assert.ok(!sous.has(levelHat(3)));
@@ -45,12 +45,12 @@ test("unlocks follow points, badges, Plus and purchases", () => {
 
 test("points milestones unlock at the threshold", () => {
   const item = GEAR.find((g) => g.source.kind === "points" && g.source.at === 250)!;
-  assert.ok(!unlockedGear({ points: 249, badges: [], plus: false, owned: [] }).has(item.id));
-  assert.ok(unlockedGear({ points: 250, badges: [], plus: false, owned: [] }).has(item.id));
+  assert.ok(!unlockedGear({ points: 249, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } }).has(item.id));
+  assert.ok(unlockedGear({ points: 250, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } }).has(item.id));
 });
 
 test("saving rejects locked or unknown gear and wrong slots", () => {
-  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   const base = defaultAvatar("u1");
   assert.equal(canSave(base, free).ok, true);
   assert.equal(canSave({ ...base, equipped: { ...base.equipped, hat: PLUS_HAT } }, free).ok, false);
@@ -138,14 +138,14 @@ test("labels", () => {
 test("prototype keys from untrusted input are ignored", () => {
   assert.equal(purchasable({ item: "constructor" }, []), null);
   assert.equal(purchasable({ bundle: "toString" }, []), null);
-  assert.doesNotThrow(() => unlockedGear({ points: 0, badges: [], plus: false, owned: ["constructor", "__proto__"] }));
+  assert.doesNotThrow(() => unlockedGear({ points: 0, badges: [], plus: false, owned: ["constructor", "__proto__"], bingo: { lines: 0, full: 0 } }));
   assert.equal(parseAvatar({ equipped: { hat: "__proto__" } }, "u1").equipped.hat, undefined);
   assert.equal(canSave({ ...defaultAvatar("u1"), equipped: { hat: "constructor" } }, new Set()).ok, false);
   assert.doesNotThrow(() => visibleAvatar({ look: defaultAvatar("u1").look, equipped: { hat: "toString" } }, false));
 });
 
 test("lapsed Plus keeps an unchanged saved Plus item but cannot pick new locked gear", () => {
-  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   const base = defaultAvatar("u1");
   const saved = { ...base, equipped: { ...base.equipped, hat: PLUS_HAT } };
   const edited = { ...saved, look: { ...saved.look, hair: (saved.look.hair + 1) % LOOK_OPTIONS.hair } };
@@ -156,7 +156,7 @@ test("lapsed Plus keeps an unchanged saved Plus item but cannot pick new locked 
 });
 
 test("canSave returns not-ok for malformed avatars instead of throwing", () => {
-  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   for (const bad of [null, undefined, 5, "x", {}, { look: null }, { look: {}, equipped: 3 }]) {
     assert.equal(canSave(bad as never, free).ok, false);
   }
@@ -187,7 +187,7 @@ test("cleanAvatar keeps only known look parts and slots", () => {
 });
 
 test("any slot can be empty", () => {
-  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const free = unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   const base = defaultAvatar("u1");
   assert.equal(canSave({ ...base, equipped: {} }, free).ok, true);
   for (const s of SLOTS) {
@@ -198,9 +198,21 @@ test("any slot can be empty", () => {
 });
 
 test("gear everyone has at zero progress is never a new unlock", () => {
-  const fresh = unlockedGear({ points: 0, badges: [], plus: false, owned: [] });
+  const fresh = unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   assert.equal(fresh.has("bandana"), true);
   assert.deepEqual(newUnlocks(fresh, []), []);
-  const level1 = unlockedGear({ points: LEVELS[1].min, badges: [], plus: false, owned: [] });
+  const level1 = unlockedGear({ points: LEVELS[1].min, badges: [], plus: false, owned: [], bingo: { lines: 0, full: 0 } });
   assert.deepEqual(newUnlocks(level1, []), ["prep-cap", "let-me-cook"]);
+});
+
+test("Bingo gear unlocks from lifetime lines and full cards", () => {
+  const ctx = (lines: number, full: number) => unlockedGear({ points: 0, badges: [], plus: false, owned: [], bingo: { lines, full } });
+  assert.ok(!ctx(0, 0).has("called-it"));
+  assert.ok(ctx(1, 0).has("called-it"));
+  assert.ok(!ctx(4, 0).has("bingo-balls"));
+  assert.ok(ctx(5, 0).has("bingo-balls"));
+  assert.ok(!ctx(8, 0).has("full-house"));
+  assert.ok(ctx(8, 1).has("full-house"));
+  assert.equal(lockReason(GEAR_BY_ID["bingo-balls"]), "Get 5 Bingo lines");
+  assert.equal(lockReason(GEAR_BY_ID["full-house"]), "Fill a Bingo card");
 });

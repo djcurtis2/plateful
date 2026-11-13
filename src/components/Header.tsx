@@ -44,7 +44,7 @@ export async function Header() {
         ownedGear(me.user.id).catch(() => [] as string[]),
       ]);
       // Built from the profile getMe already read plus points/badges from headerStats: no repeat queries.
-      const mine = chefFrom(me.user.id, me.profile, { points: st.points, badges: st.badges, owned });
+      const mine = chefFrom(me.user.id, me.profile, { points: st.points, badges: st.badges, owned, bingo: st.bingo });
       stats = st;
       chef = { name: me.profile?.public_name ?? null, avatar: visibleAvatar(mine.avatar, mine.ctx.plus), clubs: mine.clubs };
       const jar = await cookies();

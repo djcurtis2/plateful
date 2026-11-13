@@ -2,6 +2,7 @@ import "server-only";
 import { admin } from "@/lib/supabase/admin";
 import { hasPlus } from "@/lib/plan";
 import { cleanClubs } from "@/lib/clubs";
+import { bingoTally } from "@/lib/games";
 import { defaultAvatar, parseAvatar, unlockedGear, visibleAvatar, type Avatar, type GearContext } from "@/lib/avatar";
 
 /** What a board or card needs to show one cook: name, display-ready avatar, clubs. */
@@ -34,7 +35,7 @@ export async function chefCards(userIds: string[]): Promise<Record<string, ChefC
 export async function gearContext(userId: string, plus: boolean): Promise<GearContext> {
   const db = admin();
   const [{ data: events }, { data: badges }, { data: gear }] = await Promise.all([
-    db.from("points_events").select("points").eq("user_id", userId).limit(20000),
+    db.from("points_events").select("points, ref").eq("user_id", userId).limit(20000),
     db.from("user_badges").select("badge").eq("user_id", userId),
     db.from("user_gear").select("item_id").eq("user_id", userId),
   ]);
@@ -43,6 +44,7 @@ export async function gearContext(userId: string, plus: boolean): Promise<GearCo
     badges: [...new Set((badges ?? []).map((b) => b.badge))],
     plus,
     owned: (gear ?? []).map((g) => g.item_id),
+    bingo: bingoTally((events ?? []).map((e) => e.ref)),
   };
 }
 
@@ -58,10 +60,10 @@ export async function ownedGear(userId: string): Promise<string[]> {
 export function chefFrom(
   userId: string,
   profile: ProfileChefFields | null | undefined,
-  have: { points: number; badges: string[]; owned: string[] },
+  have: { points: number; badges: string[]; owned: string[]; bingo: GearContext["bingo"] },
 ) {
   const plus = hasPlus(profile);
-  const ctx: GearContext = { points: have.points, badges: [...new Set(have.badges)] as GearContext["badges"], plus, owned: have.owned };
+  const ctx: GearContext = { points: have.points, badges: [...new Set(have.badges)] as GearContext["badges"], plus, owned: have.owned, bingo: have.bingo };
   return {
     avatar: parseAvatar(profile?.avatar ?? null, userId),
     saved: profile?.avatar != null,

@@ -2,6 +2,7 @@ import "server-only";
 import { admin } from "@/lib/supabase/admin";
 import { chefCards } from "@/lib/avatar-server";
 import type { BadgeId, Database, PointsKind } from "@/lib/database.types";
+import { bingoTally } from "@/lib/games";
 import {
   BADGES,
   POINTS,
@@ -132,11 +133,11 @@ export async function playerStats(userId: string, liveChallengeId: string | null
 export async function headerStats(userId: string) {
   const db = admin();
   const [{ data: events }, { data: badges }] = await Promise.all([
-    db.from("points_events").select("points").eq("user_id", userId).limit(20000),
+    db.from("points_events").select("points, ref").eq("user_id", userId).limit(20000),
     db.from("user_badges").select("badge, created_at").eq("user_id", userId).order("created_at", { ascending: false }),
   ]);
   const points = (events ?? []).reduce((s, e) => s + e.points, 0);
-  return { points, level: levelFor(points), badges: (badges ?? []).map((b) => b.badge) };
+  return { points, level: levelFor(points), badges: (badges ?? []).map((b) => b.badge), bingo: bingoTally((events ?? []).map((e) => e.ref)) };
 }
 
 export async function publicNames(userIds: string[]): Promise<Record<string, string | null>> {

@@ -42,6 +42,10 @@ Like the daily newspaper crossword: one puzzle a day, the same for everyone, und
 - Squares tick themselves from what you already do on Yumjack: cook a dinner, cook a copycat, a plate under $3, a vegetarian dish, two cuisines, make a version, make a leftovers recipe, post a cook-off entry, vote, play trivia 3 days, snap a dish, save $20, plan a week.
 - Points: 5 per completed line, 20 for the full card (up to 60 a week, more than a daily game since it takes a week of cooking). Awarded once per week each.
 - Share: an emoji 3×3 grid.
+- Tap a square: what ticks it, progress for multi-step squares (trivia days, cuisines, $ saved) and a "Go do it" link. Copy lives on `BINGO_SQUARES` (`how`, `progress`).
+- A new line or full card since the last visit (per browser, per week, `localStorage`) gets confetti and a share prompt (`components/BingoBoard.tsx`).
+- Rewards: lifetime lines and full cards (`bingoTally` over `bingo:` refs in `points_events`) unlock chef gear with source kind `bingo`: "Called it! Bingo" saying (1 line), Bingo balls frame (5 lines), Full house frame (1 full card). No migration.
+- Signed-in home page shows a small card of this week's ticks.
 
 ## Where things live
 
