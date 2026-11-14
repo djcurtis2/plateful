@@ -4,6 +4,7 @@ import Image from "next/image";
 import type { Attempt } from "@/lib/data";
 import type { Recipe } from "@/lib/recipe";
 import { voteAttempt } from "@/app/actions";
+import { BlockCookButton } from "@/components/BlockCookButton";
 import { ShareCard } from "@/components/ShareCard";
 
 type Props = {
@@ -92,6 +93,11 @@ export function AttemptGallery({ attempts, signedIn, voting = false, myId = null
                   )}
                 </div>
               </div>
+              {!mine && signedIn && (
+                <div className="px-3 pb-3">
+                  <BlockCookButton userId={a.user_id} />
+                </div>
+              )}
             </li>
           );
         })}

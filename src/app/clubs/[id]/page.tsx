@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BlockCookButton } from "@/components/BlockCookButton";
 import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
@@ -69,6 +70,11 @@ export default async function ClubPage({ params }: Params) {
                     </span>
                   </span>
                 </Link>
+                {me && me.user.id !== a.user_id && (
+                  <div className="px-1 pt-1">
+                    <BlockCookButton userId={a.user_id} />
+                  </div>
+                )}
               </li>
             ))}
           </ul>

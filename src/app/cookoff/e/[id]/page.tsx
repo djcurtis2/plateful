@@ -13,6 +13,7 @@ import { ReferralBeacon } from "@/components/ReferralBeacon";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import { EntryChips } from "@/components/EntryChips";
+import { BlockCookButton } from "@/components/BlockCookButton";
 import { blockedIds } from "@/lib/blocks-server";
 import { withoutBlocked } from "@/lib/blocks";
 
@@ -92,6 +93,7 @@ export default async function EntryPage({ params }: Params) {
             </h1>
           </div>
         </div>
+        {me && me.user.id !== entry.user_id && <BlockCookButton userId={entry.user_id} />}
         {entry.caption && <p className="text-lg text-muted">&ldquo;{entry.caption}&rdquo;</p>}
         {badge && <span className="w-fit rounded-md bg-saffron px-2 py-1 font-mono text-sm font-semibold text-saffron-ink">{badge}</span>}
       </div>

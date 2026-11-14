@@ -1,5 +1,5 @@
 "use client";
-import { useTransition } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { blockCook, unblockCook } from "@/app/actions";
 
@@ -7,6 +7,7 @@ import { blockCook, unblockCook } from "@/app/actions";
 export function BlockCookButton({ userId, mode = "block", className }: { userId: string; mode?: "block" | "unblock"; className?: string }) {
   const router = useRouter();
   const [pending, start] = useTransition();
+  const [error, setError] = useState("");
   const unblock = mode === "unblock";
 
   function run() {
@@ -14,10 +15,12 @@ export function BlockCookButton({ userId, mode = "block", className }: { userId:
     start(async () => {
       const r = unblock ? await unblockCook(userId) : await blockCook(userId);
       if (r.ok) router.refresh();
+      else setError(r.message);
     });
   }
 
   return (
+    <span className="flex flex-col items-start gap-0.5">
     <button
       type="button"
       className={className ?? "self-start text-[11px] text-muted underline-offset-2 hover:underline disabled:no-underline"}
@@ -26,5 +29,7 @@ export function BlockCookButton({ userId, mode = "block", className }: { userId:
     >
       {unblock ? "Unblock" : "Block this cook"}
     </button>
+    {error && <span role="alert" className="text-[11px] text-muted">{error}</span>}
+    </span>
   );
 }
