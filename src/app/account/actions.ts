@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { admin } from "@/lib/supabase/admin";
 import { stripe } from "@/lib/stripe";
+import { deleteRevenueCatSubscriber } from "@/lib/apple-billing-server";
 
 type Result = { ok: true } | { ok: false; message: string };
 
@@ -47,6 +48,7 @@ export async function deleteAccount(confirm: string): Promise<Result> {
     console.error("delete account failed", error);
     return { ok: false, message: "Couldn't delete your account. Try again." };
   }
+  await deleteRevenueCatSubscriber(user.id); // Apple purchase records; best effort, never blocks
   await supabase.auth.signOut().catch(() => undefined);
   redirect("/?deleted=1");
 }

@@ -1,7 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import {
-  appleGearRows, applePlusFromSubscriber, applyAppleEvent, appleGearToRevoke, eventUserId, parseRevenueCatEvent,
+  appleGearFromSubscriber, appleGearRows, applePlusFromSubscriber, applyAppleEvent, appleGearToRevoke, eventUserId, parseRevenueCatEvent,
   type RevenueCatEvent,
 } from "./apple-billing.ts";
 
@@ -56,6 +56,14 @@ test("refund CANCELLATION on Plus ends it at the event time", () => {
   assert.deepEqual(applyAppleEvent(ev({ type: "CANCELLATION", cancel_reason: "CUSTOMER_SUPPORT", event_timestamp_ms: at }), { apple_until: iso(JAN1) }), {
     kind: "plus", apple_until: iso(at), apple_status: "refunded", apple_product: "yumjack_plus_monthly",
   });
+});
+
+test("refund CANCELLATION whose expiration is the refund time (earlier than apple_until) still ends Plus", () => {
+  const at = Date.UTC(2026, 11, 20);
+  assert.deepEqual(
+    applyAppleEvent(ev({ type: "CANCELLATION", cancel_reason: "CUSTOMER_SUPPORT", event_timestamp_ms: at, expiration_at_ms: at }), { apple_until: iso(JAN1) }),
+    { kind: "plus", apple_until: iso(at), apple_status: "refunded", apple_product: "yumjack_plus_monthly" },
+  );
 });
 
 test("BILLING_ISSUE keeps access through the grace period", () => {
@@ -115,9 +123,20 @@ test("refresh: Plus from the plus entitlement and its subscription", () => {
   assert.equal(applePlusFromSubscriber(sub({ unsubscribe_detected_at: iso(DEC1) }), now)?.apple_status, "canceled");
   assert.equal(applePlusFromSubscriber(sub({ billing_issues_detected_at: iso(DEC1) }), now)?.apple_status, "billing_issue");
   assert.equal(applePlusFromSubscriber(sub({ refunded_at: iso(DEC1) }), now)?.apple_status, "refunded");
+  assert.equal(applePlusFromSubscriber(sub({ refunded_at: iso(DEC1) }), now)?.apple_until, iso(DEC1)); // ends at the refund
   assert.equal(applePlusFromSubscriber(sub({}), new Date(JAN1 + 1))?.apple_status, "expired");
   assert.equal(applePlusFromSubscriber({ entitlements: {} }, now), null);
   assert.equal(applePlusFromSubscriber({ entitlements: { plus: { expires_date: null, product_identifier: "x" } } }, now), undefined);
+});
+
+test("refresh: gear purchases carry both ids and say whether the store id is there", () => {
+  assert.deepEqual(
+    appleGearFromSubscriber({ non_subscriptions: { gear_tuxedo: [{ id: "rc1", store_transaction_id: "2000000777" }], foo: [{ id: "x" }] } }),
+    [{ target: { item: "tuxedo" }, transactionId: "2000000777", ids: ["2000000777", "rc1"], hasStoreId: true }],
+  );
+  assert.deepEqual(appleGearFromSubscriber({ non_subscriptions: { bundle_party_night: [{ id: "rc2" }] } }), [
+    { target: { bundle: "party-night" }, transactionId: "rc2", ids: ["rc2"], hasStoreId: false },
+  ]);
 });
 
 test("refresh: Apple gear whose purchase is gone is revoked", () => {

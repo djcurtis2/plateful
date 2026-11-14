@@ -108,8 +108,10 @@ export function applyAppleEvent(event: RevenueCatEvent, current: { apple_until: 
       case "TEMPORARY_ENTITLEMENT_GRANT":
         return exp === null ? ignore : plus(later(current.apple_until, exp), "active");
       case "CANCELLATION":
-        if (stale) return ignore;
+        // RevenueCat sends a refund CANCELLATION only for the latest period, and its expiration is often the
+        // refund time itself (earlier than what we have), so a refund is never "stale".
         if (refund) return plus(iso(event.event_timestamp_ms), "refunded");
+        if (stale) return ignore;
         // Turned off auto-renew: they paid through the period, so it stays.
         return plus(current.apple_until ?? (exp === null ? null : iso(exp)), "canceled");
       case "BILLING_ISSUE": {
@@ -188,18 +190,27 @@ export function applePlusFromSubscriber(
         : sub.unsubscribe_detected_at
           ? "canceled"
           : "active";
-  return { apple_until: new Date(ent.expires_date).toISOString(), apple_status, apple_product: ent.product_identifier };
+  // A refund ends Plus at the refund, even if the entitlement still shows the old end date.
+  const end = Math.min(new Date(ent.expires_date).getTime(), sub.refunded_at ? new Date(sub.refunded_at).getTime() : Infinity);
+  return { apple_until: new Date(end).toISOString(), apple_status, apple_product: ent.product_identifier };
 }
 
-/** Gear purchases RevenueCat lists, with every id each one may be stored under (store transaction id, RevenueCat id). */
-export function appleGearFromSubscriber(s: RcSubscriber): { target: GearTarget; transactionId: string; ids: string[] }[] {
-  const out: { target: GearTarget; transactionId: string; ids: string[] }[] = [];
+export type AppleGearPurchase = { target: GearTarget; transactionId: string; ids: string[]; hasStoreId: boolean };
+
+/**
+ * Gear purchases RevenueCat lists, with every id each one may be stored under (store transaction id, RevenueCat id).
+ * `hasStoreId` is false when RevenueCat left out the store transaction id that webhooks use; then the refresh must not
+ * take gear back, because webhook-recorded rows would look missing.
+ */
+export function appleGearFromSubscriber(s: RcSubscriber): AppleGearPurchase[] {
+  const out: AppleGearPurchase[] = [];
+  const present = (x: unknown) => x !== null && x !== undefined && x !== "";
   for (const [product, purchases] of Object.entries(s.non_subscriptions ?? {})) {
     const target = gearForAppleProduct(product);
     if (!target || !Array.isArray(purchases)) continue;
     for (const p of purchases) {
-      const ids = [p.store_transaction_id, p.id].filter((x) => x !== null && x !== undefined && x !== "").map(String);
-      if (ids.length) out.push({ target, transactionId: ids[0], ids });
+      const ids = [p.store_transaction_id, p.id].filter(present).map(String);
+      if (ids.length) out.push({ target, transactionId: ids[0], ids, hasStoreId: present(p.store_transaction_id) });
     }
   }
   return out;

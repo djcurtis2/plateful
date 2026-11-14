@@ -9,9 +9,12 @@ import {
   type RcPackage, type RcResult,
 } from "@/lib/native";
 
-/** Shows its children on the website only (things like Stripe prices and the launch code, which don't apply in the app). */
-export function WebOnly({ children }: { children: ReactNode }) {
-  return useIsApp() ? null : <>{children}</>;
+/**
+ * Shows its children on the website only (things like Stripe prices and the launch code, which don't apply in the app).
+ * `inApp` comes from the request's user agent, so the app's server HTML never contains them either.
+ */
+export function WebOnly({ inApp, children }: { inApp: boolean; children: ReactNode }) {
+  return useIsApp() || inApp ? null : <>{children}</>;
 }
 
 type Props = {
@@ -20,6 +23,8 @@ type Props = {
   source: PlusSource;
   /** Stripe's yearly price is set up. */
   yearlyOn: boolean;
+  /** The request came from the iPhone app (user agent), so even the server HTML must not show the Stripe children. */
+  inApp: boolean;
   /** Account page: who to send to for managing an existing subscription. */
   manage?: { apple: boolean; stripe: boolean };
   /** What the website shows: today's Stripe buttons, unchanged. */
@@ -30,8 +35,8 @@ type Props = {
  * Plus buy buttons. On the website: the children (Stripe forms). In the iPhone app: Subscribe with Apple at Apple's own
  * prices, Pay on yumjack.app (US App Store only), and Restore purchases. Never offers a second way to pay for Plus someone has.
  */
-export function PlusBuyButtons({ userId, source, yearlyOn, manage, children }: Props) {
-  const app = useIsApp();
+export function PlusBuyButtons({ userId, source, yearlyOn, inApp, manage, children }: Props) {
+  const app = useIsApp() || inApp;
   const router = useRouter();
   const [storefront, setStorefront] = useState<string | null>(null);
   const [packages, setPackages] = useState<{ monthly: RcPackage | null; yearly: RcPackage | null } | null | undefined>(undefined);

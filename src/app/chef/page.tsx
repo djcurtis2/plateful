@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { isAppUserAgent } from "@/lib/app-shell";
 import { getMe } from "@/lib/data";
 import { myChef } from "@/lib/avatar-server";
 import { refreshGearPurchase } from "@/lib/gear-billing";
@@ -15,6 +17,8 @@ export default async function ChefPage({ searchParams }: { searchParams: Promise
   // Back from Stripe Checkout: check the session directly in case the webhook is late (safe to repeat).
   const added = typeof bought === "string" ? await refreshGearPurchase(me.user.id, bought) : 0;
   const chef = await myChef(me.user.id);
+  // Inside the iPhone app (user agent): the server HTML must not carry Stripe buy forms or USD prices.
+  const inApp = isAppUserAgent((await headers()).get("user-agent"));
   // No ?tab= (including the first visit) opens on Look.
   const active: ChefTab = CHEF_TABS.find((t) => t.id === tab)?.id ?? "look";
 
@@ -33,7 +37,7 @@ export default async function ChefPage({ searchParams }: { searchParams: Promise
             : "Thanks for your purchase. If your new gear isn't unlocked yet, give it a minute and refresh."}
         </p>
       )}
-      <ChefEditor initial={chef.avatar} unlocked={[...chef.unlocked]} clubs={chef.clubs} saved={chef.saved} plus={chef.ctx.plus} owned={chef.ctx.owned} tab={active} userId={me.user.id} />
+      <ChefEditor initial={chef.avatar} unlocked={[...chef.unlocked]} clubs={chef.clubs} saved={chef.saved} plus={chef.ctx.plus} owned={chef.ctx.owned} tab={active} userId={me.user.id} inApp={inApp} />
     </main>
   );
 }

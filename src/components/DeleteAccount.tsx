@@ -4,7 +4,16 @@ import { deleteAccount } from "@/app/account/actions";
 import { APPLE_SUBSCRIPTIONS, openExternal } from "@/lib/native";
 
 /** Danger zone: type DELETE, then the account and everything tied to it is removed for good. */
-export function DeleteAccount({ plus, appleUntil = null }: { plus: boolean; appleUntil?: string | null }) {
+export function DeleteAccount({
+  plus,
+  stripePlus = false,
+  appleUntil = null,
+}: {
+  plus: boolean;
+  /** A live Stripe subscription, which deleting cancels (even when Apple Plus is live too). */
+  stripePlus?: boolean;
+  appleUntil?: string | null;
+}) {
   const [open, setOpen] = useState(false);
   const [word, setWord] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -55,7 +64,7 @@ export function DeleteAccount({ plus, appleUntil = null }: { plus: boolean; appl
       )}
       <p className="text-sm">
         This permanently deletes your account, saved recipes, pantry, plans, cook-off entries and photos, points, badges and gear
-        {plus && !appleLive ? ", and cancels your Plus subscription" : ""}. Recipes you made stay on Yumjack without your name. This can&apos;t be undone.
+        {stripePlus || (plus && !appleLive) ? ", and cancels your Plus subscription" : ""}. Recipes you made stay on Yumjack without your name. This can&apos;t be undone.
       </p>
       <label htmlFor="delete-word" className="label">
         Type DELETE to confirm

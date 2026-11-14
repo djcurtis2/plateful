@@ -80,9 +80,11 @@ type Props = {
   owned: string[];
   tab: ChefTab;
   userId: string;
+  /** The request came from the iPhone app (user agent): no Stripe forms or USD prices even before the page wakes up. */
+  inApp: boolean;
 };
 
-export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, owned, tab, userId }: Props) {
+export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, owned, tab, userId, inApp }: Props) {
   const router = useRouter();
   const [avatar, setAvatar] = useState<Avatar>(initial);
   const [base, setBase] = useState<Avatar>(initial);
@@ -93,7 +95,7 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
   const [clubMsg, setClubMsg] = useState("");
   const [pending, start] = useTransition();
   // Shop inside the iPhone app: Apple's prices (in the cook's currency) and whether the US-only Stripe link may show.
-  const app = useIsApp();
+  const app = useIsApp() || inApp;
   const [storefront, setStorefront] = useState<string | null>(null);
   const [appleGear, setAppleGear] = useState<Record<string, RcProduct> | null>(null);
   const [buying, setBuying] = useState(false);

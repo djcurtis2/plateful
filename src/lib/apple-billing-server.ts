@@ -76,7 +76,12 @@ export async function recordAppleEvent(event: RevenueCatEvent): Promise<void> {
   switch (change.kind) {
     case "plus": {
       const { kind: _, ...update } = change;
-      const { error: e } = await db.from("profiles").update(update).eq("id", userId);
+      let q = db.from("profiles").update(update).eq("id", userId);
+      // Only a refund or an expiration may pull apple_until back. Anything else writes only if no newer end date
+      // landed since we read the profile (two events at once), so the later date always wins.
+      const pullsBack = update.apple_status === "refunded" || update.apple_status === "expired";
+      if (!pullsBack && update.apple_until) q = q.or(`apple_until.is.null,apple_until.lte."${update.apple_until}"`);
+      const { error: e } = await q;
       if (e) throw e;
       return;
     }
@@ -129,6 +134,11 @@ async function syncFromRevenueCat(userId: string): Promise<boolean> {
     for (const p of purchases) {
       if (await grantAppleGear(userId, p.target, p.transactionId)) changed = true;
     }
+    if (purchases.some((p) => !p.hasStoreId)) {
+      // Webhook rows are keyed by the store transaction id; without it we can't tell refunded gear from kept gear.
+      console.warn("RevenueCat listed gear without store_transaction_id; skipping gear revoke", userId);
+      return changed;
+    }
     const present = new Set(purchases.flatMap((p) => p.ids));
     const { data: rows, error: rowsError } = await db.from("user_gear").select("item_id, apple_transaction_id").eq("user_id", userId).eq("source", "apple");
     if (rowsError) throw rowsError;
@@ -140,6 +150,25 @@ async function syncFromRevenueCat(userId: string): Promise<boolean> {
     }
   }
   return changed;
+}
+
+/**
+ * Account deletion: removes this cook's RevenueCat customer record (purchase history, app user id).
+ * Best effort: logged on failure, never throws, gives up after 5 seconds. Apple subscriptions themselves can't be cancelled here.
+ */
+export async function deleteRevenueCatSubscriber(userId: string): Promise<void> {
+  const key = process.env.REVENUECAT_SECRET_KEY;
+  if (!key || !isUserId(userId)) return;
+  try {
+    const res = await fetch(`https://api.revenuecat.com/v1/subscribers/${encodeURIComponent(userId)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${key}` },
+      signal: AbortSignal.timeout(5000),
+    });
+    if (!res.ok && res.status !== 404) console.error("delete account: RevenueCat delete failed", res.status);
+  } catch (e) {
+    console.error("delete account: RevenueCat delete failed", e);
+  }
 }
 
 /**

@@ -28,7 +28,8 @@ import { CLUB_BY_ID } from "@/lib/clubs";
 import { blockedIds } from "@/lib/blocks-server";
 import { BlockCookButton } from "@/components/BlockCookButton";
 import { PlusBuyButtons } from "@/components/PlusBuyButtons";
-import { plusSource } from "@/lib/app-shell";
+import { isAppUserAgent, plusSource } from "@/lib/app-shell";
+import { headers } from "next/headers";
 import { stripeLive } from "@/lib/plan";
 
 export const metadata: Metadata = { title: "Account" };
@@ -65,6 +66,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const appleOn = !!p.apple_until && new Date(p.apple_until) > new Date();
   const appleUntil = appleOn ? fmtDate(p.apple_until) : null;
   const stripePortal = !!p.stripe_customer_id && paid;
+  // Inside the iPhone app (user agent): the server HTML must not carry Stripe buy buttons.
+  const inApp = isAppUserAgent((await headers()).get("user-agent"));
   const bonusUntil = p.bonus_until && new Date(p.bonus_until) > new Date() ? fmtDate(p.bonus_until) : null;
 
   return (
@@ -226,9 +229,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             userId={me.user.id}
             source={plusSource(p)}
             yearlyOn={!!process.env.STRIPE_PRICE_PLUS_YEARLY}
+            inApp={inApp}
             manage={{ apple: appleOn, stripe: stripePortal }}
           >
-          {stripePortal ? (
+          {inApp ? null : stripePortal ? (
             <form action="/api/stripe/portal" method="post">
               <button className="btn btn-ghost">Manage billing</button>
             </form>
@@ -302,7 +306,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <a href="/api/account/export" className="btn btn-ghost btn-sm self-start" download>
           Download my data
         </a>
-        <DeleteAccount plus={me.plus} appleUntil={p.apple_until} />
+        <DeleteAccount plus={me.plus} stripePlus={stripeLive(p)} appleUntil={p.apple_until} />
       </section>
     </main>
   );
