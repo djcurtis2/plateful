@@ -5,10 +5,15 @@ export type ProfilePlanFields = {
   apple_until: string | null;
 };
 
+/** True while the Stripe subscription is live. */
+export function stripeLive(p: ProfilePlanFields): boolean {
+  return p.plan === "plus" && ["active", "trialing", "past_due"].includes(p.subscription_status ?? "");
+}
+
 /** Plus is active with a live Stripe subscription, an Apple subscription still running, or while referral bonus time remains. Stripe and Apple are tracked separately. */
 export function hasPlus(p: ProfilePlanFields | null | undefined, now = new Date()): boolean {
   if (!p) return false;
-  const paid = p.plan === "plus" && ["active", "trialing", "past_due"].includes(p.subscription_status ?? "");
+  const paid = stripeLive(p);
   const bonus = !!p.bonus_until && new Date(p.bonus_until) > now;
   const apple = !!p.apple_until && new Date(p.apple_until) > now;
   return paid || bonus || apple;
