@@ -11,6 +11,8 @@ import { STORES, STORE_IDS, type StoreId } from "@/lib/stores";
 import { markCooked, toggleSave, updatePantry } from "@/app/actions";
 import { ShareCard } from "@/components/ShareCard";
 import { KrogerCartButton } from "@/components/KrogerCartButton";
+import type { OfflineList } from "@/lib/offline-lists";
+import { isNativeApp, readOfflineTicks, saveOfflineList } from "@/lib/native";
 
 type Props = {
   recipe: Recipe;
@@ -54,6 +56,18 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
     (acc[g.aisle] ??= []).push(g);
     return acc;
   }, {});
+
+  // In the app, keep this cart on the phone for the offline page. Ticks only exist offline: keep any already made.
+  const cartJson = JSON.stringify(items.map((g) => ({ key: g.name, text: g.name, aisle: g.aisle })));
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    const cartLines = JSON.parse(cartJson) as OfflineList["lines"];
+    void (async () => {
+      const id = `recipe:${recipe.id || recipe.slug}`;
+      const ticks = (await readOfflineTicks(id)) ?? [];
+      await saveOfflineList({ id, title: recipe.dish, kind: "recipe", lines: cartLines, ticks, savedAt: new Date().toISOString() });
+    })();
+  }, [cartJson, recipe.id, recipe.slug, recipe.dish]);
 
   function toggleHave(i: number, checked: boolean) {
     const next = new Set(have);

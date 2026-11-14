@@ -3,6 +3,7 @@
 // Plugin packages live only in the mobile project; here we reach them through window.Capacitor.
 // Every function is safe on the plain website: it does nothing or tells the caller to fall back.
 import { useSyncExternalStore } from "react";
+import { OFFLINE_KEY, upsertOfflineList, type OfflineList } from "@/lib/offline-lists";
 
 type CapacitorWindow = Window & {
   Capacitor?: {
@@ -111,6 +112,45 @@ export async function openExternal(url: string): Promise<void> {
     }
   }
   window.location.href = url;
+}
+
+type PreferencesPlugin = {
+  get(o: { key: string }): Promise<{ value: string | null }>;
+  set(o: { key: string; value: string }): Promise<void>;
+};
+
+async function readAllOfflineLists(prefs: PreferencesPlugin): Promise<OfflineList[]> {
+  const { value } = await prefs.get({ key: OFFLINE_KEY });
+  const parsed = value ? JSON.parse(value) : [];
+  return Array.isArray(parsed) ? (parsed as OfflineList[]) : [];
+}
+
+/** Keeps a grocery list on the phone (native storage, shared with the offline page). Never throws. */
+export async function saveOfflineList(list: OfflineList): Promise<void> {
+  const prefs = plugin<PreferencesPlugin>("Preferences");
+  if (!prefs) return;
+  try {
+    const all = await readAllOfflineLists(prefs).catch(() => []);
+    await prefs.set({ key: OFFLINE_KEY, value: JSON.stringify(upsertOfflineList(all, list)) });
+  } catch {
+    // saving for offline is a bonus; never break the page
+  }
+}
+
+/** The list as last saved on the phone (including ticks made offline), or null. */
+export async function readOfflineList(id: string): Promise<OfflineList | null> {
+  const prefs = plugin<PreferencesPlugin>("Preferences");
+  if (!prefs) return null;
+  try {
+    return (await readAllOfflineLists(prefs)).find((l) => l.id === id) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Ticks made on the phone for a saved list, or null when there is none. */
+export async function readOfflineTicks(id: string): Promise<string[] | null> {
+  return (await readOfflineList(id))?.ticks ?? null;
 }
 
 /** Puts a File into a file input and tells React about it, as if the cook had picked it. */

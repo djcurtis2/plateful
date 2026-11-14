@@ -1,5 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { isNativeApp, readOfflineList, saveOfflineList } from "@/lib/native";
+import { mergeTicks } from "@/lib/offline-lists";
 import type { GroceryLine } from "@/lib/planner";
 import { money } from "@/lib/format";
 import { STORES, STORE_IDS, type StoreId } from "@/lib/stores";
@@ -11,13 +13,50 @@ export function GroceryList({ planId, lines, pantry, kroger = false }: { planId:
   const [got, setGot] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [store, setStore] = useState<StoreId>("instacart");
+  const atKey = `${key}_at`;
+  const offlineId = `plan:${planId}`;
+  const saveOffline = useCallback(
+    (ticks: string[], savedAt: string) =>
+      saveOfflineList({
+        id: offlineId,
+        title: "This week's groceries",
+        kind: "plan",
+        lines: lines.map((l) => ({ key: l.key, text: `${l.name} (${l.buy})`, aisle: l.aisle })),
+        ticks,
+        savedAt,
+      }),
+    [offlineId, lines],
+  );
   useEffect(() => {
-    try {
-      setGot(new Set(JSON.parse(localStorage.getItem(key) ?? "[]") as string[]));
-    } catch {
-      /* storage unavailable */
-    }
-  }, [key]);
+    let cancelled = false;
+    (async () => {
+      let ticks: string[] = [];
+      let at: string | null = null;
+      try {
+        ticks = JSON.parse(localStorage.getItem(key) ?? "[]") as string[];
+        at = localStorage.getItem(atKey);
+      } catch {
+        /* storage unavailable */
+      }
+      if (isNativeApp()) {
+        // Ticks made offline in the app win when they are newer than the ones on this page.
+        const offline = await readOfflineList(offlineId);
+        if (offline) ticks = mergeTicks(ticks, offline.ticks, !at || offline.savedAt > at);
+        const now = new Date().toISOString();
+        try {
+          localStorage.setItem(key, JSON.stringify(ticks));
+          localStorage.setItem(atKey, now);
+        } catch {
+          /* storage unavailable */
+        }
+        void saveOffline(ticks, now);
+      }
+      if (!cancelled) setGot(new Set(ticks));
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [key, atKey, offlineId, saveOffline]);
   // Back from Kroger sign-in: open the Kroger tab so the result shows.
   useEffect(() => {
     if (kroger && new URLSearchParams(window.location.search).has("kroger")) setStore("kroger");
@@ -27,11 +66,14 @@ export function GroceryList({ planId, lines, pantry, kroger = false }: { planId:
       const n = new Set(s);
       if (n.has(k)) n.delete(k);
       else n.add(k);
+      const now = new Date().toISOString();
       try {
         localStorage.setItem(key, JSON.stringify([...n]));
+        if (isNativeApp()) localStorage.setItem(atKey, now);
       } catch {
         /* storage unavailable */
       }
+      if (isNativeApp()) void saveOffline([...n], now);
       return n;
     });
   const aisles = [...new Set(lines.map((l) => l.aisle))];
