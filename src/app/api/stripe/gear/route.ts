@@ -8,11 +8,19 @@ import { gearMetadata, purchasable } from "@/lib/avatar";
 /**
  * Starts a one-time Stripe Checkout for a shop item or bundle. Submitted as a form (field `item` or `bundle`).
  * The price and item list come from the catalog and what this person already owns, never from the browser.
+ * With ?mode=json (the iPhone app, whose browser sheet isn't signed in) it answers { url } or { error } instead of redirecting.
  */
 export async function POST(req: NextRequest) {
-  const back = NextResponse.redirect(new URL("/chef?tab=shop", req.url), { status: 303 });
+  const json = req.nextUrl.searchParams.get("mode") === "json";
+  const back = json
+    ? NextResponse.json({ error: "That item can't be bought right now." }, { status: 400 })
+    : NextResponse.redirect(new URL("/chef?tab=shop", req.url), { status: 303 });
   const me = await getMe();
-  if (!me) return NextResponse.redirect(new URL(`/login?next=${encodeURIComponent("/chef?tab=shop")}`, req.url), { status: 303 });
+  if (!me) {
+    return json
+      ? NextResponse.json({ error: "Sign in first." }, { status: 401 })
+      : NextResponse.redirect(new URL(`/login?next=${encodeURIComponent("/chef?tab=shop")}`, req.url), { status: 303 });
+  }
 
   const form = await req.formData().catch(() => null);
   const item = form?.get("item");
@@ -44,5 +52,5 @@ export async function POST(req: NextRequest) {
     cancel_url: `${siteUrl}/chef?tab=shop`,
   });
 
-  return NextResponse.redirect(session.url!, { status: 303 });
+  return json ? NextResponse.json({ url: session.url }) : NextResponse.redirect(session.url!, { status: 303 });
 }

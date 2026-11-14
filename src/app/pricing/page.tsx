@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { getMe } from "@/lib/data";
 import { intEnv } from "@/lib/env";
+import { plusSource } from "@/lib/app-shell";
+import { PlusBuyButtons, WebOnly } from "@/components/PlusBuyButtons";
 import { LAUNCH_CODE, PLUS_MONTHLY, PLUS_YEARLY, PLUS_YEARLY_SAVES, REFERRAL_GOAL, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 
 export const metadata: Metadata = { title: "Pricing" };
@@ -31,14 +33,16 @@ export default async function PricingPage() {
         </section>
         <section className="card flex flex-col gap-4 border-basil p-6">
           <h2 className="font-display text-2xl font-bold">Plus</h2>
-          <p className="tabular font-mono text-4xl">
-            {PLUS_MONTHLY}<span className="text-base text-muted">/month</span>
-          </p>
-          {yearlyOn && (
-            <p className="-mt-3 text-sm text-muted">
-              or {PLUS_YEARLY} a year (save {PLUS_YEARLY_SAVES})
+          <WebOnly>
+            <p className="tabular font-mono text-4xl">
+              {PLUS_MONTHLY}<span className="text-base text-muted">/month</span>
             </p>
-          )}
+            {yearlyOn && (
+              <p className="-mt-3 text-sm text-muted">
+                or {PLUS_YEARLY} a year (save {PLUS_YEARLY_SAVES})
+              </p>
+            )}
+          </WebOnly>
           <ul className="flex flex-col gap-2 text-sm">
             <li>Up to {plusDaily} photo scans a day</li>
             <li>Plan my week: every meal and snack, sharing groceries, one shopping list</li>
@@ -48,6 +52,7 @@ export default async function PricingPage() {
             <li>Everything in Free</li>
             <li>Early access to new features</li>
           </ul>
+          <PlusBuyButtons userId={me?.user.id ?? null} source={me?.profile ? plusSource(me.profile) : null} yearlyOn={yearlyOn}>
           {me?.plus ? (
             <a href="/account" className="btn btn-ghost">
               You have Plus
@@ -69,10 +74,13 @@ export default async function PricingPage() {
               )}
             </div>
           )}
+          </PlusBuyButtons>
           {!me?.plus && (
-            <p className="text-center text-xs text-muted">
-              Launch offer: use code <span className="font-mono font-semibold text-ink">{LAUNCH_CODE}</span> at checkout for $5 off your first payment.
-            </p>
+            <WebOnly>
+              <p className="text-center text-xs text-muted">
+                Launch offer: use code <span className="font-mono font-semibold text-ink">{LAUNCH_CODE}</span> at checkout for $5 off your first payment.
+              </p>
+            </WebOnly>
           )}
         </section>
       </div>

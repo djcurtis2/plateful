@@ -1,5 +1,5 @@
 "use client";
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { saveChef, setClubs } from "@/app/chef/actions";
@@ -11,6 +11,14 @@ import {
   BUNDLES, CHEF_TABS, GEAR, GEAR_BY_ID, canSave, visibleAvatar, LOOK_OPTIONS, SLOTS, lockReason, priceLabel, purchasable, singlesCents,
   type Avatar, type ChefTab, type GearItem, type LookPart, type Rarity, type Slot,
 } from "@/lib/avatar";
+import { appleBundleAllowed, appleProductForGear, stripeLinkAllowed } from "@/lib/app-shell";
+import { appStorefront, openStripeCheckout, rcBuyProduct, rcGearProducts, rcSyncSite, useIsApp, type RcProduct } from "@/lib/native";
+
+/** Every shop item and bundle as an Apple product id, for asking Apple's prices. */
+const APPLE_GEAR_IDS = [
+  ...GEAR.filter((g) => g.source.kind === "shop").map((g) => appleProductForGear({ item: g.id })),
+  ...BUNDLES.map((b) => appleProductForGear({ bundle: b.id })),
+];
 
 const PART_LABELS: Record<LookPart, string> = {
   skin: "Skin", eyes: "Eyes", brows: "Brows", mouth: "Mouth", hair: "Hair", hairColor: "Hair color", facialHair: "Facial hair", glasses: "Glasses",
@@ -71,9 +79,10 @@ type Props = {
   plus: boolean;
   owned: string[];
   tab: ChefTab;
+  userId: string;
 };
 
-export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, owned, tab }: Props) {
+export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus, owned, tab, userId }: Props) {
   const router = useRouter();
   const [avatar, setAvatar] = useState<Avatar>(initial);
   const [base, setBase] = useState<Avatar>(initial);
@@ -83,6 +92,72 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
   const [msg, setMsg] = useState("");
   const [clubMsg, setClubMsg] = useState("");
   const [pending, start] = useTransition();
+  // Shop inside the iPhone app: Apple's prices (in the cook's currency) and whether the US-only Stripe link may show.
+  const app = useIsApp();
+  const [storefront, setStorefront] = useState<string | null>(null);
+  const [appleGear, setAppleGear] = useState<Record<string, RcProduct> | null>(null);
+  const [buying, setBuying] = useState(false);
+  const [buyMsg, setBuyMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  useEffect(() => {
+    if (!app || tab !== "shop") return;
+    let live = true;
+    void appStorefront().then((s) => live && setStorefront(s));
+    void rcGearProducts(APPLE_GEAR_IDS).then((p) => live && setAppleGear(p));
+    return () => {
+      live = false;
+    };
+  }, [app, tab]);
+  const stripeOk = !app || stripeLinkAllowed(storefront);
+
+  async function buyWithApple(product: RcProduct) {
+    setBuying(true);
+    setBuyMsg(null);
+    try {
+      const r = await rcBuyProduct(userId, product);
+      if (r.ok) {
+        await rcSyncSite();
+        setBuyMsg({ ok: true, text: "Thanks! Your new gear is in your wardrobe." });
+        router.refresh();
+      } else if (!r.cancelled) {
+        setBuyMsg({ ok: false, text: r.message });
+      }
+    } finally {
+      setBuying(false);
+    }
+  }
+
+  async function buyOnSite(field: "item" | "bundle", id: string) {
+    setBuying(true);
+    setBuyMsg(null);
+    try {
+      const err = await openStripeCheckout("/api/stripe/gear", { [field]: id }, () => router.refresh());
+      if (err) setBuyMsg({ ok: false, text: err });
+    } finally {
+      setBuying(false);
+    }
+  }
+
+  /** Website: the Stripe form. App: Buy with Apple (bundles only when Apple's one price is fair) and, in the US, Pay on yumjack.app. */
+  const buyButtons = (field: "item" | "bundle", id: string) => {
+    if (!app) return <ShopBuy field={field} id={id} />;
+    const appleOk = field === "item" || appleBundleAllowed(id, owned);
+    const product = appleOk ? appleGear?.[appleProductForGear(field === "item" ? { item: id } : { bundle: id })] : undefined;
+    return (
+      <>
+        {product && (
+          <button type="button" className="btn btn-primary btn-sm w-full" disabled={buying} onClick={() => void buyWithApple(product)}>
+            Buy with Apple · {product.priceString}
+          </button>
+        )}
+        {stripeOk && (
+          <button type="button" className="btn btn-ghost btn-sm w-full" disabled={buying} onClick={() => void buyOnSite(field, id)}>
+            Pay on yumjack.app
+          </button>
+        )}
+        {!appleOk && !stripeOk && <span className="text-xs text-muted">Buy the items you don&apos;t have one by one below.</span>}
+      </>
+    );
+  };
   // Locked gear tried on the big chef only. Never part of `avatar`, so it can't be saved.
   const [preview, setPreview] = useState<string[]>([]);
   // One wardrobe drawer open at a time, so phones don't scroll past every slot.
@@ -319,8 +394,16 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
       {tab === "shop" && (
         <section className="flex flex-col gap-6">
           <p className="text-sm text-muted">
-            Just for fun: shop gear changes how your chef looks, nothing else. Paid once with Stripe, yours to keep on this account.
+            Just for fun: shop gear changes how your chef looks, nothing else. Paid once{app ? "" : " with Stripe"}, yours to keep on this account.
           </p>
+          {app && appleGear !== null && !Object.keys(appleGear).length && (
+            <p className="text-sm text-muted">Apple purchases aren&apos;t available right now. Try again later.</p>
+          )}
+          {buyMsg && (
+            <p role={buyMsg.ok ? "status" : "alert"} className={`text-sm font-semibold ${buyMsg.ok ? "text-basil" : "text-chili"}`}>
+              {buyMsg.text}
+            </p>
+          )}
           <div className="card flex flex-col gap-3 p-6">
             <span className="label">Bundles</span>
             <ul className="grid gap-2 sm:grid-cols-2">
@@ -331,19 +414,21 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                   <li key={b.id} className="flex flex-col gap-2 rounded-2xl border border-saffron p-3">
                     <span className="flex items-start justify-between gap-2">
                       <span className="text-sm font-semibold">{b.name}</span>
-                      <span className="flex flex-col items-end">
-                        <span className="tabular font-mono text-sm">{priceLabel(buy.cents)}</span>
-                        {buy.cents < singlesCents(buy.items) && (
-                          <span className="tabular text-xs text-muted line-through">{priceLabel(singlesCents(buy.items))}</span>
-                        )}
-                      </span>
+                      {stripeOk && (
+                        <span className="flex flex-col items-end">
+                          <span className="tabular font-mono text-sm">{priceLabel(buy.cents)}</span>
+                          {buy.cents < singlesCents(buy.items) && (
+                            <span className="tabular text-xs text-muted line-through">{priceLabel(singlesCents(buy.items))}</span>
+                          )}
+                        </span>
+                      )}
                     </span>
                     <span className="text-xs text-muted">
                       {b.items.map((id) => GEAR_BY_ID[id]?.name).filter(Boolean).join(", ")}
                       {buy.items.length < b.items.length && ` (you get the ${buy.items.length} you don't have)`}
                     </span>
                     <PreviewButton on={preview.join("|") === b.items.join("|")} onClick={() => tryOn(b.items)} />
-                    <ShopBuy field="bundle" id={b.id} />
+                    {buyButtons("bundle", b.id)}
                   </li>
                 );
               })}
@@ -365,9 +450,9 @@ export function ChefEditor({ initial, unlocked, clubs: initialClubs, saved, plus
                       <span className="text-xs font-semibold text-basil">Owned</span>
                     ) : (
                       <>
-                        <span className="tabular font-mono text-sm">{g.source.kind === "shop" && priceLabel(g.source.cents)}</span>
+                        {stripeOk && <span className="tabular font-mono text-sm">{g.source.kind === "shop" && priceLabel(g.source.cents)}</span>}
                         <PreviewButton on={preview.length === 1 && preview[0] === g.id} onClick={() => tryOn([g.id])} />
-                        <ShopBuy field="item" id={g.id} />
+                        {buyButtons("item", g.id)}
                       </>
                     )}
                   </li>

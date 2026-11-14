@@ -1,6 +1,7 @@
 "use client";
 import { useEffect } from "react";
-import { closeExternal, isNativeApp, listenForPushTaps, plugin, type AppPlugin } from "@/lib/native";
+import { closeExternal, isNativeApp, listenForPushTaps, plugin, rcConfigure, rcLogIn, rcLogOut, rcSyncSite, type AppPlugin } from "@/lib/native";
+import { createClient } from "@/lib/supabase/client";
 import { appCallbackToWeb } from "@/lib/auth-links";
 import { isAppUserAgent } from "@/lib/app-shell";
 
@@ -10,6 +11,16 @@ export function AppFlag() {
     if (isNativeApp() || isAppUserAgent(navigator.userAgent)) document.documentElement.dataset.app = "";
     if (!isNativeApp()) return;
     listenForPushTaps();
+    // Apple purchases: RevenueCat starts anonymous, then follows whoever is signed in on the site.
+    void (async () => {
+      await rcConfigure();
+      const { data } = await createClient().auth.getUser().catch(() => ({ data: { user: null } }));
+      if (data.user) {
+        if (await rcLogIn(data.user.id)) void rcSyncSite();
+      } else {
+        await rcLogOut();
+      }
+    })();
     // A tapped yumjack.app link opens the app, but the web view does not move by itself: load it here.
     // Google sign-in comes back as app.yumjack.ios://auth/callback?… from the browser sheet: close the sheet
     // and finish on the site's callback inside the web view, where sign-in started.

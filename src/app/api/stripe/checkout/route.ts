@@ -5,11 +5,21 @@ import { stripe } from "@/lib/stripe";
 import { refreshFromStripe } from "@/lib/billing";
 import { requireEnv, siteUrl } from "@/lib/env";
 
-/** Starts a Stripe Checkout for Plus. Submitted as a form so it works without client JS. */
+/**
+ * Starts a Stripe Checkout for Plus. Submitted as a form so it works without client JS.
+ * With ?mode=json (the iPhone app, which opens checkout in a browser sheet that isn't signed in) it answers
+ * { url } for the checkout page, or { error } instead of sending the cook somewhere else.
+ */
 export async function POST(req: NextRequest) {
+  const json = req.nextUrl.searchParams.get("mode") === "json";
+  const go = (path: string, error: string, status: number) =>
+    json ? NextResponse.json({ error }, { status }) : NextResponse.redirect(new URL(path, req.url), { status: 303 });
+
   const me = await getMe();
-  if (!me) return NextResponse.redirect(new URL("/login?next=/pricing", req.url), { status: 303 });
-  if (me.plus && me.profile?.plan === "plus") return NextResponse.redirect(new URL("/account", req.url), { status: 303 });
+  if (!me) return go("/login?next=/pricing", "Sign in first.", 401);
+  if (me.plus && me.profile?.plan === "plus") return go("/account", "You already have Plus.", 409);
+  // Plus through Apple already: don't start a second subscription here.
+  if (me.profile?.apple_until && new Date(me.profile.apple_until) > new Date()) return go("/account", "You already have Plus through Apple.", 409);
 
   let customer = me.profile?.stripe_customer_id ?? null;
   // Already paying (the profile may just not know yet, e.g. a second checkout tab): don't start a second subscription.
@@ -17,7 +27,7 @@ export async function POST(req: NextRequest) {
     const live = await stripe().subscriptions.list({ customer, status: "all", limit: 10 });
     if (live.data.some((s) => ["active", "trialing", "past_due"].includes(s.status))) {
       await refreshFromStripe(me.user.id, customer);
-      return NextResponse.redirect(new URL("/account", req.url), { status: 303 });
+      return go("/account", "You already have Plus.", 409);
     }
   }
   if (!customer) {
@@ -42,5 +52,5 @@ export async function POST(req: NextRequest) {
     cancel_url: `${siteUrl}/pricing`,
   });
 
-  return NextResponse.redirect(session.url!, { status: 303 });
+  return json ? NextResponse.json({ url: session.url }) : NextResponse.redirect(session.url!, { status: 303 });
 }

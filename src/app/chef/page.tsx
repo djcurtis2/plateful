@@ -33,7 +33,7 @@ export default async function ChefPage({ searchParams }: { searchParams: Promise
             : "Thanks for your purchase. If your new gear isn't unlocked yet, give it a minute and refresh."}
         </p>
       )}
-      <ChefEditor initial={chef.avatar} unlocked={[...chef.unlocked]} clubs={chef.clubs} saved={chef.saved} plus={chef.ctx.plus} owned={chef.ctx.owned} tab={active} />
+      <ChefEditor initial={chef.avatar} unlocked={[...chef.unlocked]} clubs={chef.clubs} saved={chef.saved} plus={chef.ctx.plus} owned={chef.ctx.owned} tab={active} userId={me.user.id} />
     </main>
   );
 }

@@ -27,6 +27,9 @@ import { chefCards } from "@/lib/avatar-server";
 import { CLUB_BY_ID } from "@/lib/clubs";
 import { blockedIds } from "@/lib/blocks-server";
 import { BlockCookButton } from "@/components/BlockCookButton";
+import { PlusBuyButtons } from "@/components/PlusBuyButtons";
+import { plusSource } from "@/lib/app-shell";
+import { stripeLive } from "@/lib/plan";
 
 export const metadata: Metadata = { title: "Account" };
 
@@ -59,6 +62,9 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const link = `${siteUrl}/?ref=${p.referral_code}`;
   const paid = p.plan === "plus";
   const hasApple = !!me.user.identities?.some((i) => i.provider === "apple");
+  const appleOn = !!p.apple_until && new Date(p.apple_until) > new Date();
+  const appleUntil = appleOn ? fmtDate(p.apple_until) : null;
+  const stripePortal = !!p.stripe_customer_id && paid;
   const bonusUntil = p.bonus_until && new Date(p.bonus_until) > new Date() ? fmtDate(p.bonus_until) : null;
 
   return (
@@ -212,13 +218,22 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
             <p className="text-sm text-muted">
               {paid && p.cancel_at ? `Ends ${fmtDate(p.cancel_at)}` : paid && p.current_period_end ? `Renews ${fmtDate(p.current_period_end)}` : null}
               {paid && p.subscription_status === "past_due" ? " · Payment failed, update your card" : null}
-              {!paid && bonusUntil ? `Free Plus from referrals until ${bonusUntil}` : null}
+              {!paid && appleUntil ? `Through Apple · ${p.apple_status === "active" ? "renews" : "ends"} ${appleUntil}` : null}
+              {!paid && !appleUntil && bonusUntil ? `Free Plus from referrals until ${bonusUntil}` : null}
             </p>
           </div>
-          {p.stripe_customer_id && paid ? (
+          <PlusBuyButtons
+            userId={me.user.id}
+            source={plusSource(p)}
+            yearlyOn={!!process.env.STRIPE_PRICE_PLUS_YEARLY}
+            manage={{ apple: appleOn, stripe: stripePortal }}
+          >
+          {stripePortal ? (
             <form action="/api/stripe/portal" method="post">
               <button className="btn btn-ghost">Manage billing</button>
             </form>
+          ) : appleOn ? (
+            <p className="max-w-xs text-sm text-muted">You have Plus through the Yumjack iPhone app. Manage it in iPhone Settings.</p>
           ) : (
             <span className="flex flex-wrap gap-2">
               <form action="/api/stripe/checkout" method="post">
@@ -232,7 +247,13 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
               )}
             </span>
           )}
+          </PlusBuyButtons>
         </div>
+        {appleOn && stripeLive(p) && (
+          <p role="alert" className="rounded-2xl bg-saffron/15 px-4 py-3 text-sm font-medium">
+            You&apos;re paying twice. Cancel one: Apple in iPhone Settings, or yumjack.app in Manage billing.
+          </p>
+        )}
       </section>
 
       <section id="invite" className="card flex scroll-mt-20 flex-col gap-4 p-6">
@@ -281,7 +302,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <a href="/api/account/export" className="btn btn-ghost btn-sm self-start" download>
           Download my data
         </a>
-        <DeleteAccount plus={me.plus} />
+        <DeleteAccount plus={me.plus} appleUntil={p.apple_until} />
       </section>
     </main>
   );

@@ -56,5 +56,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|api/stripe/webhook|\\.well-known/apple-app-site-association|.*\\.(?:png|jpg|jpeg|webp|svg|ico)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|icon.svg|api/stripe/webhook|api/revenuecat/webhook|\\.well-known/apple-app-site-association|.*\\.(?:png|jpg|jpeg|webp|svg|ico)$).*)"],
 };

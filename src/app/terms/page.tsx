@@ -16,6 +16,12 @@ export default function TermsPage() {
         Chef gear bought in the shop is a digital item that only changes how your chef looks. It is tied to your Yumjack account, has no cash value,
         can&apos;t be transferred, sold or exchanged, and is paid once through Stripe. Refunds are at our discretion; contact us if something went wrong.
       </p>
+      <h2 className="font-display text-2xl font-bold">Buying in the iPhone app</h2>
+      <p>
+        In the Yumjack iPhone app you can pay for Plus and chef gear through Apple. Those purchases are billed by Apple to your Apple ID, Plus renews
+        automatically until you cancel it in iPhone Settings, and Apple&apos;s terms apply. Refunds for Apple purchases are handled by Apple
+        (reportaproblem.apple.com); if Apple refunds a purchase, the Plus time or gear it paid for is removed.
+      </p>
       <ContactLine about="these terms or a purchase" />
     </main>
   );

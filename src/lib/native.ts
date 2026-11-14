@@ -41,8 +41,11 @@ type CameraPlugin = {
 };
 type SharePlugin = { share(o: { text?: string; url?: string; files?: string[] }): Promise<unknown> };
 type FilesystemPlugin = { writeFile(o: { path: string; data: string; directory: "CACHE" }): Promise<{ uri: string }> };
-type BrowserPlugin = { open(o: { url: string }): Promise<void>; close(): Promise<void> };
-type PurchasesPlugin = { getStorefront(): Promise<{ countryCode?: string } | null> };
+type BrowserPlugin = {
+  open(o: { url: string }): Promise<void>;
+  close(): Promise<void>;
+  addListener(event: "browserFinished", cb: () => void): Promise<{ remove(): void }>;
+};
 
 const isCancel = (e: unknown) => /cancel|abort|dismiss/i.test(`${(e as Error)?.name ?? ""} ${(e as Error)?.message ?? ""}`);
 
@@ -90,10 +93,10 @@ export async function nativeShare(opts: { text: string; url?: string; file?: Blo
 
 let storefront: Promise<string | null> | undefined;
 
-/** The App Store country (e.g. "USA"), or null on the website or when not available. Cached per page load. */
+/** The App Store country (e.g. "USA"), or null on the website or when not available. Cached once known. */
 export function appStorefront(): Promise<string | null> {
   storefront ??= (async () => {
-    const purchases = plugin<PurchasesPlugin>("Purchases");
+    const purchases = await rcReady();
     if (!purchases) return null;
     try {
       return (await purchases.getStorefront())?.countryCode ?? null;
@@ -101,7 +104,12 @@ export function appStorefront(): Promise<string | null> {
       return null;
     }
   })();
-  return storefront;
+  const p = storefront;
+  // Don't remember a miss (say the phone was offline): ask again next time.
+  void p.then((v) => {
+    if (v === null && storefront === p) storefront = undefined;
+  });
+  return p;
 }
 
 /** Opens a link in the in-app browser, or just navigates on the website. */
@@ -116,6 +124,25 @@ export async function openExternal(url: string): Promise<void> {
     }
   }
   window.location.href = url;
+}
+
+/**
+ * Opens a page in the in-app browser sheet and calls `onClose` once the cook closes it (to reload what changed).
+ * On the website it just navigates there.
+ */
+export async function openExternalThen(url: string, onClose: () => void): Promise<void> {
+  const browser = plugin<BrowserPlugin>("Browser");
+  if (browser) {
+    try {
+      const handle = await browser.addListener("browserFinished", () => {
+        void handle.remove();
+        onClose();
+      });
+    } catch {
+      // no close event; the page still opens
+    }
+  }
+  await openExternal(url);
 }
 
 /** Closes the in-app browser sheet if one is open. Does nothing on the website. */
@@ -232,4 +259,169 @@ export function listenForPushTaps(): void {
     const url = e.notification?.data?.url;
     window.location.href = `https://yumjack.app${safeNext(typeof url === "string" ? url : null, "/")}`;
   });
+}
+
+// ---- Apple in-app purchases (RevenueCat's Capacitor plugin, 11.x API) ----
+
+/** Apple's own page for managing (and cancelling) App Store subscriptions. */
+export const APPLE_SUBSCRIPTIONS = "https://apps.apple.com/account/subscriptions";
+
+/** A RevenueCat package or store product as the plugin hands it over; passed back to it unchanged. */
+export type RcPackage = { identifier: string; product: { identifier: string; priceString: string } };
+export type RcProduct = { identifier: string; priceString: string };
+type PurchasesPlugin = {
+  configure(o: { apiKey: string }): Promise<void>;
+  getAppUserID(): Promise<{ appUserID: string }>;
+  logIn(o: { appUserID: string }): Promise<unknown>;
+  logOut(): Promise<unknown>;
+  getStorefront(): Promise<{ countryCode?: string } | null>;
+  getOfferings(): Promise<{ current: { availablePackages: RcPackage[] } | null }>;
+  getProducts(o: { productIdentifiers: string[]; type?: "NON_SUBSCRIPTION" | "SUBSCRIPTION" }): Promise<{ products: RcProduct[] }>;
+  purchasePackage(o: { aPackage: RcPackage }): Promise<unknown>;
+  purchaseStoreProduct(o: { product: RcProduct }): Promise<unknown>;
+  restorePurchases(): Promise<unknown>;
+};
+
+let rc: Promise<PurchasesPlugin | null> | undefined;
+
+/** Sets up RevenueCat once per app start (anonymous until rcLogIn). Null on the website or when the key isn't set. */
+function rcReady(): Promise<PurchasesPlugin | null> {
+  rc ??= (async () => {
+    const purchases = plugin<PurchasesPlugin>("Purchases");
+    const apiKey = process.env.NEXT_PUBLIC_REVENUECAT_IOS_KEY;
+    if (!purchases || !apiKey) return null;
+    try {
+      await purchases.configure({ apiKey });
+      return purchases;
+    } catch {
+      return null;
+    }
+  })();
+  return rc;
+}
+
+/** Called once when the app starts (AppFlag). Does nothing on the website. */
+export async function rcConfigure(): Promise<void> {
+  await rcReady();
+}
+
+const ANON = "$RCAnonymousID:";
+
+/** Ties Apple purchases on this phone to the signed-in Yumjack account (RevenueCat app user id = Supabase user id). */
+export async function rcLogIn(userId: string): Promise<boolean> {
+  const purchases = await rcReady();
+  if (!purchases) return false;
+  try {
+    const { appUserID } = await purchases.getAppUserID();
+    if (appUserID !== userId) await purchases.logIn({ appUserID: userId });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** After sign-out: back to an anonymous RevenueCat user, so the next account doesn't inherit purchases. */
+export async function rcLogOut(): Promise<void> {
+  const purchases = await rcReady();
+  if (!purchases) return;
+  try {
+    const { appUserID } = await purchases.getAppUserID();
+    if (!appUserID.startsWith(ANON)) await purchases.logOut();
+  } catch {
+    // already anonymous
+  }
+}
+
+/** The Plus monthly and yearly packages with Apple's prices in the cook's own currency. Null when Apple can't be reached. */
+export async function rcPlusPackages(): Promise<{ monthly: RcPackage | null; yearly: RcPackage | null } | null> {
+  const purchases = await rcReady();
+  if (!purchases) return null;
+  try {
+    const packages = (await purchases.getOfferings()).current?.availablePackages ?? [];
+    const find = (id: string) => packages.find((p) => p.product.identifier === id) ?? null;
+    const out = { monthly: find("yumjack_plus_monthly"), yearly: find("yumjack_plus_yearly") };
+    return out.monthly || out.yearly ? out : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Apple's gear products (prices in the cook's currency), by product id. Empty when Apple can't be reached. */
+export async function rcGearProducts(ids: string[]): Promise<Record<string, RcProduct>> {
+  const purchases = await rcReady();
+  if (!purchases || !ids.length) return {};
+  try {
+    const { products } = await purchases.getProducts({ productIdentifiers: ids, type: "NON_SUBSCRIPTION" });
+    return Object.fromEntries(products.map((p) => [p.identifier, p]));
+  } catch {
+    return {};
+  }
+}
+
+export type RcResult = { ok: true } | { ok: false; cancelled: true } | { ok: false; cancelled: false; message: string };
+
+/** RevenueCat error codes (PURCHASES_ERROR_CODE) in plain English. A cancelled purchase says nothing. */
+function rcFailure(e: unknown, fallback: string): RcResult {
+  const err = e as { code?: unknown; userCancelled?: unknown; data?: { userCancelled?: unknown; code?: unknown } } | null;
+  const code = String(err?.code ?? err?.data?.code ?? "");
+  const fail = (message: string): RcResult => ({ ok: false, cancelled: false, message });
+  if (code === "1" || err?.userCancelled === true || err?.data?.userCancelled === true) return { ok: false, cancelled: true };
+  if (code === "2" || code === "10" || code === "35") return fail("Couldn't reach the App Store. Check your connection and try again.");
+  if (code === "3") return fail("Purchases are turned off on this iPhone (check Screen Time settings).");
+  if (code === "6") return fail("You already bought this. Tap Restore purchases.");
+  if (code === "20") return fail("Your purchase is waiting for approval. It will show up once it's approved.");
+  return fail(fallback);
+}
+
+/** Runs an Apple purchase step as the signed-in cook. Never while RevenueCat is anonymous, so nothing lands on a nameless id. */
+async function rcAsCook(userId: string, step: (p: PurchasesPlugin) => Promise<unknown>, fallback: string): Promise<RcResult> {
+  const purchases = await rcReady();
+  if (!purchases) return { ok: false, cancelled: false, message: "Apple purchases aren't available right now." };
+  if (!(await rcLogIn(userId))) return { ok: false, cancelled: false, message: "Couldn't connect to the App Store. Try again." };
+  try {
+    await step(purchases);
+    return { ok: true };
+  } catch (e) {
+    return rcFailure(e, fallback);
+  }
+}
+
+const BUY_FAILED = "The purchase didn't go through, and you weren't charged. Try again.";
+
+export function rcBuyPackage(userId: string, pkg: RcPackage): Promise<RcResult> {
+  return rcAsCook(userId, (p) => p.purchasePackage({ aPackage: pkg }), BUY_FAILED);
+}
+
+export function rcBuyProduct(userId: string, product: RcProduct): Promise<RcResult> {
+  return rcAsCook(userId, (p) => p.purchaseStoreProduct({ product }), BUY_FAILED);
+}
+
+/** Restore purchases: brings this Apple ID's purchases to the signed-in account. */
+export function rcRestore(userId: string): Promise<RcResult> {
+  return rcAsCook(userId, (p) => p.restorePurchases(), "Couldn't restore purchases. Try again.");
+}
+
+/**
+ * "Pay on yumjack.app" in the app: the browser sheet isn't signed in, so the Stripe Checkout page is made here
+ * (signed in, via the route's ?mode=json) and only its address is opened. Returns an error to show, or null.
+ */
+export async function openStripeCheckout(route: "/api/stripe/checkout" | "/api/stripe/gear", fields: Record<string, string>, onClose: () => void): Promise<string | null> {
+  const body = new FormData();
+  for (const [k, v] of Object.entries(fields)) body.set(k, v);
+  try {
+    const res = await fetch(`${route}?mode=json`, { method: "POST", body });
+    const data = (await res.json().catch(() => null)) as { url?: unknown; error?: unknown } | null;
+    if (typeof data?.url === "string" && data.url.startsWith("https://checkout.stripe.com/")) {
+      await openExternalThen(data.url, onClose);
+      return null;
+    }
+    return typeof data?.error === "string" ? data.error : "Couldn't open checkout. Try again.";
+  } catch {
+    return "Couldn't open checkout. Check your connection and try again.";
+  }
+}
+
+/** Asks the site to re-check this cook's Apple purchases with RevenueCat (backup for a late webhook). */
+export async function rcSyncSite(): Promise<void> {
+  await fetch("/api/revenuecat/refresh", { method: "POST" }).catch(() => undefined);
 }

@@ -65,7 +65,7 @@ export function appleBundleAllowed(bundleId: string, owned: string[]): boolean {
 
 /** apple-app-site-association: lets the app open these yumjack.app links. */
 export function aasa(teamId: string, bundleId: string): object {
-  const paths = ["/auth/callback*", "/r/*", "/plan*", "/trivia*", "/games*", "/pricing*", "/account*"];
+  const paths = ["/auth/callback*", "/r/*", "/plan*", "/trivia*", "/games*", "/pricing*", "/account*", "/chef*"];
   return {
     applinks: {
       details: [{ appIDs: [`${teamId}.${bundleId}`], components: paths.map((p) => ({ "/": p })) }],
