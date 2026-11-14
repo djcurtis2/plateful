@@ -4,6 +4,8 @@ import { setNotify } from "@/app/account/actions";
 import { enablePush, useIsApp } from "@/lib/native";
 
 export const PUSH_DENIED = "Notifications are off for Yumjack in your iPhone Settings.";
+export const PUSH_FAILED = "Couldn't turn on notifications. Try again.";
+export const pushError = (r: "denied" | "failed") => (r === "denied" ? PUSH_DENIED : PUSH_FAILED);
 
 type Kind = "daily_games" | "plan_dinner";
 const ROWS: { kind: Kind; label: string }[] = [
@@ -23,8 +25,9 @@ export function NotifyToggles({ initial }: { initial: Record<Kind, boolean> }) {
     setError("");
     start(async () => {
       // Turning one on asks iPhone for permission first; if it says no, nothing is saved.
-      if (next && !(await enablePush())) {
-        setError(PUSH_DENIED);
+      const got = next ? await enablePush() : "ok";
+      if (got !== "ok") {
+        setError(pushError(got));
         return;
       }
       const r = await setNotify(kind, next);

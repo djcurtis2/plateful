@@ -2,7 +2,7 @@
 import { useEffect, useState, useTransition } from "react";
 import { setNotify } from "@/app/account/actions";
 import { enablePush, useIsApp } from "@/lib/native";
-import { PUSH_DENIED } from "@/components/NotifyToggles";
+import { pushError } from "@/components/NotifyToggles";
 
 const KINDS = {
   trivia: { kind: "daily_games", key: "yj_push_prompt_trivia", text: "Want a ping when tomorrow's trivia is ready?" },
@@ -42,7 +42,8 @@ export function PushPrompt({ which, alreadyOn }: { which: keyof typeof KINDS; al
   function yes() {
     setError("");
     start(async () => {
-      if (!(await enablePush())) return setError(PUSH_DENIED);
+      const got = await enablePush();
+      if (got !== "ok") return setError(pushError(got));
       const r = await setNotify(cfg.kind, true);
       if (!r.ok) return setError(r.message);
       close();

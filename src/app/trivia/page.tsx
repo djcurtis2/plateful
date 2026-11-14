@@ -18,8 +18,8 @@ export default async function TriviaPage() {
   const day = triviaDay();
   const [questions, me] = await Promise.all([triviaQuestions(day), getMe()]);
   const ready = questions.length === TRIVIA_PER_DAY;
-  const notifyOn = me ? (await myNotify(me.user.id)).daily_games : false;
-  const [play, streak] = me && ready ? await Promise.all([triviaPlay(me.user.id, day), triviaStreakFor(me.user.id, day)]) : [null, 0];
+  const [play, streak, notify] = me ? await Promise.all([ready ? triviaPlay(me.user.id, day) : null, ready ? triviaStreakFor(me.user.id, day) : 0, myNotify(me.user.id)]) : [null, 0, null];
+  const notifyOn = notify?.daily_games ?? false;
 
   // Only answered questions travel with their answers; the rest go without.
   const picks = play?.picks ?? [];

@@ -184,38 +184,39 @@ type PushPlugin = {
 
 /**
  * Asks iPhone for permission to send notifications, gets this phone's push token and gives it to the site.
- * True when the phone is registered; false when permission is off, it isn't the app, or something failed.
+ * "ok" when the phone is registered, "denied" when iPhone permission is off, "failed" for anything else (including not being the app).
  */
-export async function enablePush(): Promise<boolean> {
+export async function enablePush(): Promise<"ok" | "denied" | "failed"> {
   const push = plugin<PushPlugin>("PushNotifications");
-  if (!push) return false;
+  if (!push) return "failed";
   try {
     const perm = await push.requestPermissions();
-    if (perm.receive !== "granted") return false;
-    const token = await new Promise<string | null>((resolve) => {
-      const timer = setTimeout(() => resolve(null), 10_000);
-      void push.addListener("registration", (e) => {
-        clearTimeout(timer);
-        resolve(e.value);
+    if (perm.receive !== "granted") return "denied";
+    const handles: Promise<{ remove(): void }>[] = [];
+    let token: string | null;
+    try {
+      token = await new Promise<string | null>((resolve) => {
+        const timer = setTimeout(() => resolve(null), 10_000);
+        const done = (v: string | null) => {
+          clearTimeout(timer);
+          resolve(v);
+        };
+        handles.push(push.addListener("registration", (e) => done(e.value)));
+        handles.push(push.addListener("registrationError", () => done(null)));
+        void push.register().catch(() => done(null));
       });
-      void push.addListener("registrationError", () => {
-        clearTimeout(timer);
-        resolve(null);
-      });
-      void push.register().catch(() => {
-        clearTimeout(timer);
-        resolve(null);
-      });
-    });
-    if (!token) return false;
+    } finally {
+      for (const h of handles) void h.then((x) => x.remove()).catch(() => undefined);
+    }
+    if (!token) return "failed";
     const res = await fetch("/api/push/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, storefront: await appStorefront() }),
     });
-    return res.ok;
+    return res.ok ? "ok" : "failed";
   } catch {
-    return false;
+    return "failed";
   }
 }
 

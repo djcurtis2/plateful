@@ -30,7 +30,7 @@ export default async function PlanPage({ searchParams }: Search) {
   if (me && !me.plus && me.profile?.stripe_customer_id && (await refreshFromStripe(me.user.id, me.profile.stripe_customer_id))) me = await getMe({ fresh: true });
   if (!me) redirect(`/login?next=${encodeURIComponent(`/plan${sp.include ? `?new=1&include=${sp.include}` : ""}`)}`);
 
-  const [pool, pantry] = await Promise.all([getSuggestionPool(me.user.id, 400), getPantry(me.user.id)]);
+  const [pool, pantry, notify] = await Promise.all([getSuggestionPool(me.user.id, 400), getPantry(me.user.id), myNotify(me.user.id)]);
   const pantryKeys = pantry.map(pantryKey);
 
   // Free accounts: a real example week, with the parts that make it useful behind Plus.
@@ -131,7 +131,7 @@ export default async function PlanPage({ searchParams }: Search) {
         </span>
       </div>
 
-      <PushPrompt which="plan" alreadyOn={(await myNotify(me.user.id)).plan_dinner} />
+      <PushPrompt which="plan" alreadyOn={notify.plan_dinner} />
 
       <Headline plan={week} servings={s.servings} />
 

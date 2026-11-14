@@ -52,6 +52,7 @@ function apnsSession() {
   s.on("error", drop);
   s.on("close", drop);
   s.on("goaway", drop);
+  s.unref();
   session = s;
   return s;
 }
@@ -74,7 +75,9 @@ export async function sendApns(token: string, payload: Message): Promise<"ok" | 
       let status = 0;
       let body = "";
       const timer = setTimeout(() => {
-        req.close();
+        // A dead socket would hang every later send too: drop it so the next one reconnects.
+        session?.destroy();
+        session = null;
         resolve("error");
       }, 15_000);
       req.setEncoding("utf8");
@@ -95,6 +98,7 @@ export async function sendApns(token: string, payload: Message): Promise<"ok" | 
         } catch {
           // no body
         }
+        if (status === 403 && (reason === "ExpiredProviderToken" || reason === "InvalidProviderToken")) jwtCache = null;
         if (status === 410 || (status === 400 && (reason === "BadDeviceToken" || reason === "Unregistered"))) return resolve("gone");
         console.error("apns rejected", status, reason);
         resolve("error");
@@ -123,6 +127,18 @@ export async function myNotify(userId: string): Promise<Record<PushKind, boolean
  */
 export async function runPushTick(now: Date): Promise<{ sent: number; pruned: number }> {
   if (!apnsConfig()) return { sent: 0, pruned: 0 };
+  try {
+    return await tick(now);
+  } finally {
+    // One connection per tick: a socket kept on a warm serverless instance may be dead by next hour.
+    session?.close();
+    session = null;
+  }
+}
+
+const MAX_DEVICES = 5;
+
+async function tick(now: Date): Promise<{ sent: number; pruned: number }> {
   const db = admin();
 
   const { data: profiles } = await db
@@ -218,7 +234,7 @@ export async function runPushTick(now: Date): Promise<{ sent: number; pruned: nu
       .upsert({ user_id: job.userId, kind: job.kind, day: job.day }, { onConflict: "user_id,kind,day", ignoreDuplicates: true })
       .select("user_id");
     if (error || !claimed?.length) continue;
-    for (const d of byUser.get(job.userId) ?? []) {
+    for (const d of (byUser.get(job.userId) ?? []).slice(0, MAX_DEVICES)) {
       const result = await sendApns(d.token, job.message);
       if (result === "ok") sent++;
       else if (result === "gone") gone.push(d.token);

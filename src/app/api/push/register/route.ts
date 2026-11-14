@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { admin } from "@/lib/supabase/admin";
 import { validTimeZone } from "@/lib/push";
 
-const TOKEN_RE = /^[0-9a-fA-F]{1,200}$/;
+const TOKEN_RE = /^[0-9a-fA-F]{64,200}$/;
 const STOREFRONT_RE = /^[A-Za-z]{3}$/;
 
 /** The app sends its APNs device token here after the cook turns notifications on. Signed-in only. */
@@ -28,5 +28,9 @@ export async function POST(req: NextRequest) {
     console.error("push register failed", error);
     return NextResponse.json({ error: "Couldn't save." }, { status: 500 });
   }
+  // Keep only this cook's newest few phones, so one account can't pile up devices.
+  const { data: rows } = await admin().from("push_devices").select("id").eq("user_id", data.user.id).order("last_seen_at", { ascending: false });
+  const extra = (rows ?? []).slice(5).map((r) => r.id);
+  if (extra.length) await admin().from("push_devices").delete().in("id", extra);
   return NextResponse.json({ ok: true });
 }
