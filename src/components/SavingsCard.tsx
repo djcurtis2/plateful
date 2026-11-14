@@ -1,5 +1,6 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { nativeShare } from "@/lib/native";
 
 const W = 1080;
 const H = 1350;
@@ -66,6 +67,7 @@ export function SavingsCard({ saved, meals, shareUrl }: { saved: number; meals: 
           className="btn btn-primary btn-sm"
           onClick={async () => {
             const f = await file();
+            if (f && (await nativeShare({ text: `${text} ${shareUrl}`, file: f, fileName: f.name })) === "shared") return;
             if (f && navigator.canShare?.({ files: [f] })) {
               try {
                 await navigator.share({ files: [f], text: `${text} ${shareUrl}` });

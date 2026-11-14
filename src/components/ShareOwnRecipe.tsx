@@ -1,5 +1,6 @@
 "use client";
 import { useState, useTransition } from "react";
+import { nativeShare } from "@/lib/native";
 import { shareOwnRecipe, stopSharingOwnRecipe } from "@/app/actions";
 
 /** Share one of your own recipes by private link: only people you send it to can open it. */
@@ -9,6 +10,7 @@ export function ShareOwnRecipe({ recipeId, dish, initialUrl }: { recipeId: strin
   const [pending, start] = useTransition();
 
   async function send(link: string) {
+    if ((await nativeShare({ text: `My recipe for ${dish}`, url: link })) === "shared") return;
     if (navigator.share) {
       try {
         await navigator.share({ title: dish, text: `My recipe for ${dish}`, url: link });

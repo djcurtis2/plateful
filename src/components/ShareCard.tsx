@@ -8,6 +8,7 @@ import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 import type { Avatar } from "@/lib/avatar";
 import { ChefAvatar } from "@/components/ChefAvatar";
+import { isNativeApp, nativePhoto, nativeShare as bridgeShare, useIsApp } from "@/lib/native";
 
 const CHEF_H = 150;
 const CHEF_W = Math.round((CHEF_H * 120) / 170); // the chef canvas is 120x170
@@ -164,13 +165,14 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
   const [busy, setBusy] = useState(false);
   const inputId = useId();
   const [mobile, setMobile] = useState(false);
+  const inApp = useIsApp();
   const [qr, setQr] = useState<string | null>(null);
 
   useEffect(() => {
     // Touch devices with file sharing get the native sheet (TikTok, Instagram...). Desktops get explicit options.
     const coarse = window.matchMedia("(pointer: coarse)").matches;
     const probe = new File([new Blob(["x"], { type: "image/png" })], "x.png", { type: "image/png" });
-    setMobile(coarse && !!navigator.canShare?.({ files: [probe] }));
+    setMobile(isNativeApp() || (coarse && !!navigator.canShare?.({ files: [probe] })));
   }, []);
   const router = useRouter();
   const [toast, setToast] = useState("");
@@ -298,6 +300,15 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
     recipe.menu_price && recipe.plate_cost ? ` for ${money(recipe.plate_cost)} a plate instead of ${money(menuPlate(recipe))}` : ""
   }.`;
 
+  function pickPhoto(f: File | undefined) {
+    if (!f) return;
+    setFile(f);
+    setPosted(false);
+    const url = URL.createObjectURL(f);
+    createdUrls.current.push(url);
+    setAttempt(url);
+  }
+
   /** Runs a share action, posting the photo to "Who made it" first when that box is ticked. */
   async function run(action: (justPosted: boolean) => Promise<void> | void) {
     if (!attempt || busy) return;
@@ -323,6 +334,11 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
       const png = await pngFile();
       if (!png) return flash("Couldn't make the image. Try again.");
       try {
+        const sent = await bridgeShare({ text: shareText, url: shareUrl, file: png, fileName: png.name });
+        if (sent === "shared") {
+          if (justPosted) flash("Shared and posted to Who made it");
+          return;
+        }
         await navigator.share({ files: [png], text: `${shareText} Cook it: ${shareUrl}` });
         if (justPosted) flash("Shared and posted to Who made it");
       } catch (e) {
@@ -402,23 +418,21 @@ export function ShareCard({ recipe, shareUrl, initialAttempt = null, canPost = f
         aria-label={`Share card comparing ${recipe.restaurant ?? "the restaurant"} and homemade ${recipe.dish}`}
       />
       <div className="grid grid-cols-2 gap-2">
-        <label htmlFor={inputId} className={`btn cursor-pointer ${attempt ? "btn-ghost" : "btn-sun"}`}>
-          {attempt ? "Change photo" : "1. Add my photo"}
-        </label>
+        {inApp ? (
+          <button type="button" className={`btn ${attempt ? "btn-ghost" : "btn-sun"}`} onClick={async () => pickPhoto((await nativePhoto()) ?? undefined)}>
+            {attempt ? "Change photo" : "1. Add my photo"}
+          </button>
+        ) : (
+          <label htmlFor={inputId} className={`btn cursor-pointer ${attempt ? "btn-ghost" : "btn-sun"}`}>
+            {attempt ? "Change photo" : "1. Add my photo"}
+          </label>
+        )}
         <input
           id={inputId}
           type="file"
           accept="image/jpeg,image/png,image/webp"
           className="sr-only"
-          onChange={(e) => {
-            const f = e.target.files?.[0];
-            if (!f) return;
-            setFile(f);
-            setPosted(false);
-            const url = URL.createObjectURL(f);
-            createdUrls.current.push(url);
-            setAttempt(url);
-          }}
+          onChange={(e) => pickPhoto(e.target.files?.[0])}
         />
         <button
           className="btn btn-primary"

@@ -176,3 +176,11 @@
 @media (prefers-reduced-motion: reduce) {
   [class*="animate-[toast-in"] { animation: none; }
 }
+
+/* iPhone app only (html[data-app] is set by AppFlag): keep content clear of the notch and home bar. */
+html[data-app] header.sticky {
+  padding-top: env(safe-area-inset-top);
+}
+html[data-app] body {
+  padding-bottom: env(safe-area-inset-bottom);
+}

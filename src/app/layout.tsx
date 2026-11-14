@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, Instrument_Sans, JetBrains_Mono } from "next/font/google";
 import Link from "next/link";
 import Script from "next/script";
+import { AppFlag } from "@/components/AppFlag";
 import { Header } from "@/components/Header";
 import { siteUrl } from "@/lib/env";
 import "./globals.css";
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="impact-site-verification" content={IMPACT_SITE_ID} {...{ value: IMPACT_SITE_ID }} />
       </head>
       <body className="min-h-dvh">
+        <AppFlag />
         <Header />
         <div className="mx-auto w-full max-w-6xl px-4 pb-24 sm:px-6">{children}</div>
         <footer className="border-t border-line">

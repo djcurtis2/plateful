@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { nativeShare } from "@/lib/native";
 
 /** Shares a spoiler-free result: the phone's share sheet, or copies it on desktop. */
 export function ShareButton({ text, label = "Share my result", className = "btn btn-primary" }: { text: string; label?: string; className?: string }) {
@@ -10,6 +11,7 @@ export function ShareButton({ text, label = "Share my result", className = "btn 
       className={className}
       onClick={async () => {
         try {
+          if ((await nativeShare({ text })) === "shared") return;
           if (navigator.share) await navigator.share({ text });
           else {
             await navigator.clipboard.writeText(text);

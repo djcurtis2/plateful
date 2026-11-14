@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { postAttempt } from "@/app/actions";
 import { ShareCard } from "@/components/ShareCard";
 import { POINTS } from "@/lib/game";
+import { nativePhoto, setInputFile, useIsApp } from "@/lib/native";
 import type { Recipe } from "@/lib/recipe";
 import type { Attempt } from "@/lib/data";
 import type { Avatar } from "@/lib/avatar";
@@ -37,6 +38,8 @@ export function AttemptForm({
   chef?: Avatar;
 }) {
   const form = useRef<HTMLFormElement>(null);
+  const fileInput = useRef<HTMLInputElement>(null);
+  const inApp = useIsApp();
   const [open, setOpen] = useState(!existing);
   const [preview, setPreview] = useState<string | null>(null);
   const [receiptName, setReceiptName] = useState("");
@@ -134,6 +137,15 @@ export function AttemptForm({
       <div className="flex flex-col gap-4 sm:flex-row">
         <label
           htmlFor="attempt-file"
+          onClick={
+            inApp
+              ? async (e) => {
+                  e.preventDefault();
+                  const f = await nativePhoto();
+                  if (f && fileInput.current) setInputFile(fileInput.current, f);
+                }
+              : undefined
+          }
           className={`group flex shrink-0 cursor-pointer flex-col items-center gap-1.5 self-start rounded-2xl border-[1.5px] border-dashed p-2 transition-colors hover:border-basil hover:bg-sunk ${error && !preview && !existing ? "border-chili" : "border-basil/60"}`}
         >
           <span className="grid size-24 place-items-center overflow-hidden rounded-xl bg-basil text-basil-ink">
@@ -150,6 +162,7 @@ export function AttemptForm({
           </span>
           <span className="text-xs font-semibold text-basil group-hover:underline">{preview ? "Change photo" : existing ? "New photo" : "Add photo"}</span>
           <input
+            ref={fileInput}
             id="attempt-file"
             name="image"
             type="file"

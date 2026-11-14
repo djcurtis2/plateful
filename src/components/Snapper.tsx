@@ -2,6 +2,7 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { nativePhoto, useIsApp } from "@/lib/native";
 
 const MAX_EDGE = 1280;
 
@@ -30,6 +31,7 @@ export function Snapper({ signedIn }: { signedIn: boolean }) {
   const [restaurant, setRestaurant] = useState("");
   const [phase, setPhase] = useState<Phase>({ kind: "idle" });
   const [over, setOver] = useState(false);
+  const inApp = useIsApp();
 
   async function handle(file: File | undefined) {
     if (!file) return;
@@ -128,6 +130,12 @@ export function Snapper({ signedIn }: { signedIn: boolean }) {
           onChange={(e) => handle(e.target.files?.[0])}
         />
       </label>
+
+      {inApp && (
+        <button type="button" className="btn btn-primary" onClick={async () => handle((await nativePhoto()) ?? undefined)}>
+          Take or choose a photo
+        </button>
+      )}
 
       {phase.kind === "error" && (
         <div role="alert" className="flex flex-col gap-2 rounded-2xl bg-chili/10 px-4 py-3 text-sm text-chili">

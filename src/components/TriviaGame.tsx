@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useTransition } from "react";
 import { answerTrivia } from "@/app/trivia/actions";
 import { celebrate, here } from "@/lib/celebrate";
+import { nativeShare } from "@/lib/native";
 import { TRIVIA_STREAK_EVERY, triviaShareText } from "@/lib/trivia";
 
 type Result = { pick: number; answer: number; why: string };
@@ -53,6 +54,7 @@ export function TriviaGame({
   async function share() {
     const text = triviaShareText(day, rights, shareUrl);
     try {
+      if ((await nativeShare({ text })) === "shared") return;
       if (navigator.share) await navigator.share({ text });
       else {
         await navigator.clipboard.writeText(text);
