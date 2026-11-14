@@ -54,6 +54,10 @@ export type Database = {
           current_period_end: string | null;
           cancel_at: string | null;
           bonus_until: string | null;
+          apple_until: string | null;
+          apple_status: string | null;
+          apple_product: string | null;
+          notify: Json;
           referral_rewards_granted: number;
           public_name: string | null;
           is_admin: boolean;
@@ -71,11 +75,41 @@ export type Database = {
           id: number;
           user_id: string;
           item_id: string;
-          source: "shop" | "grant";
+          source: "shop" | "grant" | "apple";
           stripe_session_id: string | null;
+          apple_transaction_id: string | null;
           created_at: string;
         },
         "user_id" | "item_id" | "source"
+      >;
+      push_devices: Table<
+        {
+          id: number;
+          user_id: string;
+          token: string;
+          platform: "ios" | "android";
+          time_zone: string | null;
+          storefront: string | null;
+          created_at: string;
+          last_seen_at: string;
+        },
+        "user_id" | "token" | "platform"
+      >;
+      push_sends: Table<
+        {
+          user_id: string;
+          kind: "daily_games" | "plan_dinner";
+          day: string;
+        },
+        "user_id" | "kind" | "day"
+      >;
+      blocks: Table<
+        {
+          blocker_id: string;
+          blocked_id: string;
+          created_at: string;
+        },
+        "blocker_id" | "blocked_id"
       >;
       recipes: Table<
         {

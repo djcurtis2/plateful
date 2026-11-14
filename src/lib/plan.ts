@@ -2,14 +2,16 @@ export type ProfilePlanFields = {
   plan: "free" | "plus";
   subscription_status: string | null;
   bonus_until: string | null;
+  apple_until: string | null;
 };
 
-/** Plus is active with a live Stripe subscription, or while referral bonus time remains. */
+/** Plus is active with a live Stripe subscription, an Apple subscription still running, or while referral bonus time remains. Stripe and Apple are tracked separately. */
 export function hasPlus(p: ProfilePlanFields | null | undefined, now = new Date()): boolean {
   if (!p) return false;
   const paid = p.plan === "plus" && ["active", "trialing", "past_due"].includes(p.subscription_status ?? "");
   const bonus = !!p.bonus_until && new Date(p.bonus_until) > now;
-  return paid || bonus;
+  const apple = !!p.apple_until && new Date(p.apple_until) > now;
+  return paid || bonus || apple;
 }
 
 /** Plus prices as shown on the site. The amounts charged come from the Stripe prices in STRIPE_PRICE_PLUS_MONTHLY / _YEARLY. */

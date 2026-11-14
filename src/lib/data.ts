@@ -98,7 +98,7 @@ export async function getMe({ fresh = false } = {}) {
   if (!user) return null;
   const query = supabase
     .from("profiles")
-    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, stripe_customer_id, current_period_end, cancel_at, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
+    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, apple_until, stripe_customer_id, current_period_end, cancel_at, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
     .eq("id", user.id);
   // Next skips its repeat-read memory for requests that carry an abort signal.
   const { data } = await (fresh ? query.abortSignal(new AbortController().signal) : query).maybeSingle();

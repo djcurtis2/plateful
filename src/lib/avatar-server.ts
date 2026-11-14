@@ -14,7 +14,7 @@ export async function chefCards(userIds: string[]): Promise<Record<string, ChefC
   if (!ids.length) return {};
   const { data } = await admin()
     .from("profiles")
-    .select("id, public_name, avatar, clubs, plan, subscription_status, bonus_until")
+    .select("id, public_name, avatar, clubs, plan, subscription_status, bonus_until, apple_until")
     .in("id", ids);
   const rows = new Map((data ?? []).map((p) => [p.id, p]));
   const cards: Record<string, ChefCard> = {};
@@ -78,7 +78,7 @@ export function chefFrom(
 export async function myChef(userId: string) {
   const { data } = await admin()
     .from("profiles")
-    .select("avatar, clubs, gear_seen, plan, subscription_status, bonus_until")
+    .select("avatar, clubs, gear_seen, plan, subscription_status, bonus_until, apple_until")
     .eq("id", userId)
     .maybeSingle();
   const ctx = await gearContext(userId, hasPlus(data));
