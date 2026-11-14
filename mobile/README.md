@@ -70,6 +70,49 @@ Sign-in in the app needs four changes in the Supabase dashboard (Authentication)
 
 Apple's "Hide my email" addresses only receive Yumjack emails once the sending domain is registered in Apple Developer, Certificates, Identifiers, Services, "Sign in with Apple for Email Communication".
 
+## Release steps (App Store)
+
+Do these in order. Anything marked **before deploy** must be done before the new website code goes live, or the site will error.
+
+### 1. Database (before deploy)
+
+In the Supabase SQL editor run `supabase/migrations/0018_mobile_app.sql`, then `0019_push_cron.sql`. Before 0019, add its two Vault secrets (the exact lines are in the file header): `push_tick_url` = `https://yumjack.app/api/push/tick` and `push_cron_secret` = the same value as `PUSH_CRON_SECRET` below.
+
+### 2. Vercel environment variables (then redeploy)
+
+| Name | What it is |
+| --- | --- |
+| `APPLE_TEAM_ID`, `APPLE_BUNDLE_ID` | Team ID and `app.yumjack.ios` (links open the app) |
+| `PUSH_CRON_SECRET` | A long random string you make up; also stored in Supabase Vault |
+| `APNS_KEY_P8` | Full text of the Apple Push key file (`.p8`) |
+| `APNS_KEY_ID` | Key ID of that push key |
+| `APNS_HOST` | Optional. Leave unset for the live Apple server |
+| `NEXT_PUBLIC_REVENUECAT_IOS_KEY` | RevenueCat public iOS key (baked in at build, so redeploy after setting) |
+| `REVENUECAT_WEBHOOK_AUTH` | A long random string you make up; same value goes in RevenueCat's webhook |
+| `REVENUECAT_SECRET_KEY` | RevenueCat secret API key (server only) |
+
+Create the push key in Apple Developer, Keys, with Apple Push Notifications on. Never put the `.p8` in the repo.
+
+### 3. App Store Connect products
+
+Create one subscription group with two subscriptions, `yumjack_plus_monthly` ($9.99) and `yumjack_plus_yearly` ($59.99). Create each shop gear item and bundle as a non-consumable at its shop price, with id `gear_<item id>` or `bundle_<bundle id>`, using `_` where the id has `-` (so `pizza-slice` becomes `gear_pizza_slice`). The items and prices are in `src/lib/avatar.ts`. Join the Small Business Program, then finish agreements, tax and banking.
+
+### 4. RevenueCat
+
+Add the app (bundle id `app.yumjack.ios`) and the App Store Connect in-app purchase key. Import the products above, make an entitlement and an offering holding the two Plus packages, copy the public iOS key into Vercel, and add the webhook: URL `https://yumjack.app/api/revenuecat/webhook` with the Authorization header set to the same value as `REVENUECAT_WEBHOOK_AUTH`. Set it to transfer purchases when the same Apple ID signs into a different account.
+
+### 5. Build and test on your iPhone
+
+Start a Codemagic build (see "Start a build"), install from TestFlight, and check: snap with the camera, share sheet, offline grocery list, notification toggles, Continue with Apple, a sandbox Plus purchase (add a sandbox tester in App Store Connect, Users and Access, Sandbox), and Block this cook. A sandbox purchase gives that account real Plus on the live database, so use a test account.
+
+### 6. Listing and submit
+
+Fill in the listing from `docs/app-store/listing.md` (text, privacy answers, age rating, review notes with a demo account you create, screenshots). Attach the processed TestFlight build and submit for review. The reviewer can buy with a sandbox account, and the US-only Stripe link follows Apple's US link-out rule; both are explained in the review notes.
+
+### After approval
+
+Choose manual or automatic release. Marketing links can go to the App Store page. Website changes keep reaching the app without a new release; only changes inside `mobile/` need a new build and review.
+
 ## Known to-dos
 
 - The icon is made from the 512 px website icon enlarged to 1024 px. It is two flat shapes so it stays sharp, but a proper 1024 px original would be better before App Store review.
