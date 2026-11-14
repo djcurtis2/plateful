@@ -1,6 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
-import { isNativeApp, readOfflineList, saveOfflineList } from "@/lib/native";
+import { appStorefront, isNativeApp, readOfflineList, saveOfflineList } from "@/lib/native";
+import { groceryStoresShown } from "@/lib/app-shell";
 import { mergeTicks } from "@/lib/offline-lists";
 import type { GroceryLine } from "@/lib/planner";
 import { money } from "@/lib/format";
@@ -13,6 +14,18 @@ export function GroceryList({ planId, lines, pantry, kroger = false }: { planId:
   const [got, setGot] = useState<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [store, setStore] = useState<StoreId>("instacart");
+  // In the app outside the US/Canada the US store links are hidden. Decided after mount, so the website and server HTML are unchanged.
+  const [showStores, setShowStores] = useState(true);
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    let cancelled = false;
+    void appStorefront().then((s) => {
+      if (!cancelled) setShowStores(groceryStoresShown(s));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   const atKey = `${key}_at`;
   const offlineId = `plan:${planId}`;
   const saveOffline = useCallback(
@@ -81,19 +94,21 @@ export function GroceryList({ planId, lines, pantry, kroger = false }: { planId:
 
   return (
     <div className="flex flex-col gap-4">
-      <div role="group" aria-label="Store" className="grid grid-cols-3 gap-1 rounded-xl bg-sunk p-1">
-        {STORE_IDS.map((id) => (
-          <button
-            key={id}
-            aria-pressed={store === id}
-            onClick={() => setStore(id)}
-            className={`rounded-lg px-2 py-2 text-sm font-semibold ${store === id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
-          >
-            {STORES[id].name}
-          </button>
-        ))}
-      </div>
-      {kroger && store === "kroger" && (
+      {showStores && (
+        <div role="group" aria-label="Store" className="grid grid-cols-3 gap-1 rounded-xl bg-sunk p-1">
+          {STORE_IDS.map((id) => (
+            <button
+              key={id}
+              aria-pressed={store === id}
+              onClick={() => setStore(id)}
+              className={`rounded-lg px-2 py-2 text-sm font-semibold ${store === id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
+            >
+              {STORES[id].name}
+            </button>
+          ))}
+        </div>
+      )}
+      {showStores && kroger && store === "kroger" && (
         <KrogerCartButton items={lines.filter((l) => !got.has(l.key)).map((l) => l.name)} />
       )}
       <div className="flex items-center justify-between gap-2">
@@ -133,21 +148,25 @@ export function GroceryList({ planId, lines, pantry, kroger = false }: { planId:
                       {l.buy} · {money(l.cost)}
                     </span>
                   </label>
-                  <a
-                    href={STORES[store].searchUrl(l.name)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={`Find ${l.name} at ${STORES[store].name}`}
-                    className="shrink-0 py-2 text-xs font-semibold text-basil hover:underline"
-                  >
-                    Find
-                  </a>
+                  {showStores && (
+                    <a
+                      href={STORES[store].searchUrl(l.name)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={`Find ${l.name} at ${STORES[store].name}`}
+                      className="shrink-0 py-2 text-xs font-semibold text-basil hover:underline"
+                    >
+                      Find
+                    </a>
+                  )}
                 </li>
               ))}
           </ul>
         </div>
       ))}
-      <p className="text-xs text-muted">Tap Find to look up an item at {STORES[store].name}. Prices are estimates and vary by store.</p>
+      <p className="text-xs text-muted">
+        {showStores && <>Tap Find to look up an item at {STORES[store].name}. </>}Prices are estimates and vary by store.
+      </p>
       {pantry.length > 0 && <p className="text-xs text-muted">Already in your pantry: {pantry.join(", ")}.</p>}
     </div>
   );

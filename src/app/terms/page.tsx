@@ -22,6 +22,12 @@ export default function TermsPage() {
         automatically until you cancel it in iPhone Settings, and Apple&apos;s terms apply. Refunds for Apple purchases are handled by Apple
         (reportaproblem.apple.com); if Apple refunds a purchase, the Plus time or gear it paid for is removed.
       </p>
+      <h2 className="font-display text-2xl font-bold">Using Yumjack in other countries</h2>
+      <p>
+        The Yumjack app is available in many countries, but the content is US-focused: recipes are in English, and menu prices, home costs, savings
+        and grocery stores are estimates in US dollars that may not match what you pay where you live. Store links work only in the US and Canada.
+        What you pay in the App Store is set by Apple in your local currency and includes any local taxes Apple collects.
+      </p>
       <ContactLine about="these terms or a purchase" />
     </main>
   );

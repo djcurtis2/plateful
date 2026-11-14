@@ -12,7 +12,8 @@ import { markCooked, toggleSave, updatePantry } from "@/app/actions";
 import { ShareCard } from "@/components/ShareCard";
 import { KrogerCartButton } from "@/components/KrogerCartButton";
 import type { OfflineList } from "@/lib/offline-lists";
-import { isNativeApp, readOfflineTicks, saveOfflineList } from "@/lib/native";
+import { appStorefront, isNativeApp, readOfflineTicks, saveOfflineList } from "@/lib/native";
+import { groceryStoresShown } from "@/lib/app-shell";
 
 type Props = {
   recipe: Recipe;
@@ -37,6 +38,18 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
     () => new Set(recipe.ingredients.flatMap((g, i) => (pantrySet.has(pantryKey(g.name)) ? [i] : []))),
   );
   const [store, setStore] = useState<StoreId>("instacart");
+  // In the app outside the US/Canada the US store links are hidden. Decided after mount, so the website and server HTML are unchanged.
+  const [showStores, setShowStores] = useState(true);
+  useEffect(() => {
+    if (!isNativeApp()) return;
+    let cancelled = false;
+    void appStorefront().then((s) => {
+      if (!cancelled) setShowStores(groceryStoresShown(s));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
   // Back from Kroger sign-in: open the Kroger tab so the result shows.
   useEffect(() => {
     if (kroger && new URLSearchParams(window.location.search).has("kroger")) setStore("kroger");
@@ -255,19 +268,21 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
             <h2 className="font-display text-2xl font-bold">Your cart</h2>
             <span className="text-sm text-muted">{items.length} items</span>
           </div>
-          <div role="group" aria-label="Store" className="grid grid-cols-3 gap-1 rounded-xl bg-sunk p-1">
-            {STORE_IDS.map((id) => (
-              <button
-                key={id}
-                aria-pressed={store === id}
-                onClick={() => setStore(id)}
-                className={`rounded-lg px-2 py-2 text-sm font-semibold ${store === id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
-              >
-                {STORES[id].name}
-              </button>
-            ))}
-          </div>
-          {kroger && store === "kroger" && items.length > 0 && <KrogerCartButton items={items.map((g) => g.name)} />}
+          {showStores && (
+            <div role="group" aria-label="Store" className="grid grid-cols-3 gap-1 rounded-xl bg-sunk p-1">
+              {STORE_IDS.map((id) => (
+                <button
+                  key={id}
+                  aria-pressed={store === id}
+                  onClick={() => setStore(id)}
+                  className={`rounded-lg px-2 py-2 text-sm font-semibold ${store === id ? "bg-surface text-ink shadow-sm" : "text-muted"}`}
+                >
+                  {STORES[id].name}
+                </button>
+              ))}
+            </div>
+          )}
+          {showStores && kroger && store === "kroger" && items.length > 0 && <KrogerCartButton items={items.map((g) => g.name)} />}
           {items.length === 0 ? (
             <p className="py-6 text-center text-muted">You have everything. Go cook.</p>
           ) : (
@@ -277,15 +292,19 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
                   <h3 className="label mt-2">{aisle}</h3>
                   {gs.map((g) => (
                     <div key={g.i} className="flex items-center justify-between gap-3 border-b border-line py-2">
-                      <a
-                        href={STORES[store].searchUrl(g.name)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={() => cook()}
-                        className="min-w-0 break-words hover:text-basil hover:underline"
-                      >
-                        {g.name}
-                      </a>
+                      {showStores ? (
+                        <a
+                          href={STORES[store].searchUrl(g.name)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={() => cook()}
+                          className="min-w-0 break-words hover:text-basil hover:underline"
+                        >
+                          {g.name}
+                        </a>
+                      ) : (
+                        <span className="min-w-0 break-words">{g.name}</span>
+                      )}
                       <span className="tabular font-mono text-sm">{g.cost ? money(g.cost) : "—"}</span>
                     </div>
                   ))}
@@ -298,7 +317,7 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
             <b className="tabular font-mono text-2xl">{money(total)}</b>
           </div>
           <p className="text-xs text-muted">
-            Tap an item to find it at {STORES[store].name}. Prices are estimates and vary by store.
+            {showStores && <>Tap an item to find it at {STORES[store].name}. </>}Prices are US estimates and vary by store.
           </p>
         </section>
 
