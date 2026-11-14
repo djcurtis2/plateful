@@ -107,10 +107,11 @@ Analytics finding: the site does have analytics. `src/app/layout.tsx` loads Verc
 
 Yumjack turns a photo of a restaurant dish into a copycat recipe with a cost per plate. The app is a native frame around our live site plus phone features: camera capture, native share sheet, push notifications, an offline grocery list, Sign in with Apple, and Apple in-app purchases.
 
-DEMO ACCOUNT: **Dan: create one and type its email and how to sign in here.** Sign in with Apple and Google are also offered. If you use email, tap the magic link in the email (it opens in the app). Please keep the demo account signed up and Plus-enabled during review.
+SIGNING IN: No demo account is needed. Tap "Sign up free" (top right) and choose "Continue with Apple" to make a fresh account with your Apple ID (Google and an emailed sign-in link are also offered). To see Plus features, buy Plus in the app with your sandbox Apple account (see Payments): a sandbox purchase gives that account real Plus in our system. If you'd still like a ready-made demo account, reply here and we'll send its email address.
 
 HOW TO TRY EACH PART
-1. Snap: on the home screen tap "Take or choose a photo" (under "Snap or upload the dish"), allow the camera, photograph any dish or choose a photo. A recipe appears with ingredients, steps, cost per plate and the restaurant price per plate. Scans are limited per account; the demo account has Plus so it has plenty.
+0. Plus: tap your chef in the top corner to open the menu, tap "Get Plus", then "Subscribe with Apple" and confirm with your sandbox account. Plus gives more photo scans (a free account gets 3 a week) and Plan my week.
+1. Snap: on the home screen tap "Take or choose a photo" (under "Snap or upload the dish"), allow the camera, photograph any dish or choose a photo. A recipe appears with ingredients, steps, cost per plate and the restaurant price per plate.
 2. Notifications: open the Account page and switch on "Daily trivia and games are ready" or "Tonight's dinner from my plan", then allow the iOS prompt. (The app also offers these after a first trivia round and on the Plan my week page.) They are off until chosen, at most one of each kind a day, and there are no marketing messages.
 3. Offline grocery list: open any recipe and scroll to "Your cart" (the grocery list), then tick an item. Turn on airplane mode and reopen the app: an offline screen shows the saved lists with working check-offs.
 4. Share: on a recipe, in the "Restaurant vs. mine" card tap "1. Add my photo", then "2. Share my card" to see the iPhone share sheet.
@@ -118,7 +119,7 @@ HOW TO TRY EACH PART
 6. Report and block: on another cook's entry on a cook-off board, tap "Report" to report it, or "Block this cook" (next to Report) to hide that person's posts and name from your own view. "Block this cook" also appears on photos in a recipe's "Who made it" gallery, on a single entry page and in club pages. Blocked cooks can be unblocked from the Account page. Blocks are private. Account deletion is on the Account page: "Delete my account".
 
 PAYMENTS
-- "Pay with Apple" (Apple in-app purchase) shows for Yumjack Plus (monthly and yearly) and for chef avatar gear in the shop, in every country. You can test it with a sandbox Apple account. A sandbox purchase gives the account real Plus or gear in our system, which is what lets you see Plus features such as Plan my week.
+- Apple in-app purchase shows in every country: "Subscribe with Apple" for Yumjack Plus (monthly and yearly) on the Get Plus page, and "Buy with Apple" for chef avatar gear in the shop. You can test it with a sandbox Apple account. A sandbox purchase gives the account real Plus or gear in our system, which is what lets you see Plus features such as Plan my week.
 - "Pay on yumjack.app" (our Stripe checkout) shows only when the App Store storefront is the United States. This follows the 2025 US court ruling in Epic v. Apple and App Review Guideline 3.1.1(a), the US exception for links to outside purchase options. It does not show in any other storefront.
 - Plus bought either way works in the app and on the website on the same account. If someone already has Plus through one route, the other buy button is replaced by a note.
 - Gear is cosmetic chef avatar items. Nothing is gambled or random.
@@ -130,7 +131,7 @@ OTHER
 
 ## Screenshot plan
 
-Sizes to upload: 6.9" iPhone (1320 x 2868) and 6.5" iPhone (1284 x 2778). Apple scales these for smaller phones. Take them from a TestFlight build on a real phone (or the simulator) with the demo account, using home-style dishes with no visible brand logos and no real restaurant names.
+Sizes to upload: 6.9" iPhone (1320 x 2868) and 6.5" iPhone (1284 x 2778). Apple scales these for smaller phones. Take them from a TestFlight build on a real phone (or the simulator) with a test account, using home-style dishes with no visible brand logos and no real restaurant names.
 
 | # | Screen | Caption idea |
 | --- | --- | --- |
@@ -144,7 +145,7 @@ Keep captions short and big. Same order on both sizes.
 
 ## Dan's checklist before submitting
 
-1. Create the demo account and put its details in the review notes.
+1. Make sure Sign in with Apple works in the TestFlight build (`NEXT_PUBLIC_APPLE_SIGNIN=1` set in Vercel and redeployed), since the reviewer signs in that way. Keep an email account you can sign in with ready in case Apple asks for a demo account.
 2. Create the in-app products with the exact ids listed in `mobile/README.md` (Release steps) and fill in each product's review screenshot and description.
 3. Fill in the privacy answers above, age rating, support and privacy URLs.
 4. Join the Apple Small Business Program; finish agreements, tax and banking.

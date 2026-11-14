@@ -46,6 +46,7 @@ The settings Apple needs are committed in the project and re-checked in CI by th
 - `NSCameraUsageDescription` and `NSPhotoLibraryUsageDescription`
 - `ITSAppUsesNonExemptEncryption = false`
 - Associated Domains entitlement `applinks:yumjack.app` (`ios/App/App/App.entitlements`)
+- Sign in with Apple entitlement and `aps-environment = production` (push notifications). Push also needs **Push Notifications** ticked on the App ID (step 4 above); without it the app can't get a push token and the notification toggles say "Couldn't turn on notifications".
 
 If `mobile/ios` is ever deleted, the workflow recreates it with `npx cap add ios --packagemanager SPM` and applies those settings. The icon and splash pictures would then need to be put back (see `ios/App/App/Assets.xcassets`).
 
@@ -55,7 +56,7 @@ To work on it locally: `cd mobile && npm install`.
 
 Sign-in in the app needs four changes in the Supabase dashboard (Authentication). Think of it like updating the guest list at a door: Supabase only lets people back in through addresses it knows.
 
-**Order matters:** Turn on the Apple provider and manual linking BEFORE deploying this to the live site (the website shows Continue with Apple and Connect Apple), and change the email templates only AFTER it's deployed.
+**Order matters:** The Apple buttons (Continue with Apple, Connect Apple) stay hidden until `NEXT_PUBLIC_APPLE_SIGNIN=1` is set in Vercel. Turn on the Apple provider and manual linking first, then set that flag and redeploy. Change the email templates only AFTER the new code is deployed.
 
 1. **Email links go straight to Yumjack.** Authentication, Emails (Templates). In both **Magic Link** and **Confirm signup**, replace the link (usually `{{ .ConfirmationURL }}`) with:
 
@@ -74,9 +75,9 @@ Apple's "Hide my email" addresses only receive Yumjack emails once the sending d
 
 Do these in order. Anything marked **before deploy** must be done before the new website code goes live, or the site will error.
 
-### 1. Database (before deploy)
+### 1. Database (before merging to `main`)
 
-In the Supabase SQL editor run `supabase/migrations/0018_mobile_app.sql`, then `0019_push_cron.sql`. Before 0019, add its two Vault secrets (the exact lines are in the file header): `push_tick_url` = `https://yumjack.app/api/push/tick` and `push_cron_secret` = the same value as `PUSH_CRON_SECRET` below.
+Vercel deploys every push to `main`, so run these **before** merging this branch. 0018 only adds things and is safe with today's live code. In the Supabase SQL editor run `supabase/migrations/0018_mobile_app.sql`, then `0019_push_cron.sql`. Before 0019, add its two Vault secrets (the exact lines are in the file header): `push_tick_url` = `https://yumjack.app/api/push/tick` and `push_cron_secret` = the same value as `PUSH_CRON_SECRET` below.
 
 ### 2. Vercel environment variables (then redeploy)
 
@@ -90,6 +91,7 @@ In the Supabase SQL editor run `supabase/migrations/0018_mobile_app.sql`, then `
 | `NEXT_PUBLIC_REVENUECAT_IOS_KEY` | RevenueCat public iOS key (baked in at build, so redeploy after setting) |
 | `REVENUECAT_WEBHOOK_AUTH` | A long random string you make up; same value goes in RevenueCat's webhook |
 | `REVENUECAT_SECRET_KEY` | RevenueCat secret API key (server only) |
+| `NEXT_PUBLIC_APPLE_SIGNIN` | Set to `1` only after the Supabase Apple provider works (see Supabase settings), then redeploy. Until then the Apple buttons are hidden on the website and in the app. It must be on before TestFlight and review: Apple requires Sign in with Apple when Google sign-in is offered |
 
 Create the push key in Apple Developer, Keys, with Apple Push Notifications on. Never put the `.p8` in the repo.
 
@@ -99,7 +101,7 @@ Create one subscription group with two subscriptions, `yumjack_plus_monthly` ($9
 
 ### 4. RevenueCat
 
-Add the app (bundle id `app.yumjack.ios`) and the App Store Connect in-app purchase key. Import the products above, make an entitlement and an offering holding the two Plus packages, copy the public iOS key into Vercel, and add the webhook: URL `https://yumjack.app/api/revenuecat/webhook` with the Authorization header set to the same value as `REVENUECAT_WEBHOOK_AUTH`. Set it to transfer purchases when the same Apple ID signs into a different account.
+Add the app (bundle id `app.yumjack.ios`) and the App Store Connect in-app purchase key. Import the products above, make an entitlement whose identifier is exactly `plus` (lowercase; the site looks for that name) attached to both Plus products, and an offering holding the two Plus packages, copy the public iOS key into Vercel, and add the webhook: URL `https://yumjack.app/api/revenuecat/webhook` with the Authorization header set to the same value as `REVENUECAT_WEBHOOK_AUTH`. Set it to transfer purchases when the same Apple ID signs into a different account.
 
 ### 5. Build and test on your iPhone
 
@@ -107,7 +109,7 @@ Start a Codemagic build (see "Start a build"), install from TestFlight, and chec
 
 ### 6. Listing and submit
 
-Fill in the listing from `docs/app-store/listing.md` (text, privacy answers, age rating, review notes with a demo account you create, screenshots). Attach the processed TestFlight build and submit for review. The reviewer can buy with a sandbox account, and the US-only Stripe link follows Apple's US link-out rule; both are explained in the review notes.
+Fill in the listing from `docs/app-store/listing.md` (text, privacy answers, age rating, review notes, screenshots). The reviewer signs in with Continue with Apple (a fresh account) and buys Plus with their sandbox account; if Apple asks for a demo account, give them an email address you can sign in with. Attach the processed TestFlight build and submit for review. The reviewer can buy with a sandbox account, and the US-only Stripe link follows Apple's US link-out rule; both are explained in the review notes.
 
 ### After approval
 
