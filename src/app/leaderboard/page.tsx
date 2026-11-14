@@ -19,8 +19,11 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   const [challenge, me] = await Promise.all([getCurrentChallenge(), getMe()]);
   const weekId = challenge && isLive(challenge) ? challenge.id : challenge?.id ?? null;
   const blocked = await blockedIds(me?.user.id ?? null);
-  const byRank = <T extends { userId: string }>(list: T[]) => withoutBlocked(list, blocked, (r) => r.userId).map((r, i) => ({ ...r, rank: i + 1 }));
+  // Ranks are counted before blocked cooks are hidden, so everyone keeps their real place.
+  const byRank = <T extends { userId: string }>(list: T[]) => withoutBlocked(list.map((r, i) => ({ ...r, rank: i + 1 })), blocked, (r) => r.userId);
   const rows = byRank(view === "savers" ? [] : view === "all" ? await leaderboard("all", 50) : weekId ? await leaderboard({ challengeId: weekId }, 50) : []);
+  // Second on the left, first in the middle, third on the right (a blocked cook's spot is left out).
+  const podium = [2, 1, 3].flatMap((n) => rows.filter((r) => r.rank === n));
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
   const savers = byRank(view === "savers" ? await topSavers(monthStart, 50) : []);
 
@@ -86,8 +89,9 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
       ) : (
         <>
         {/* Top three stand on a podium, full chef and all; second on the left, third on the right. */}
+        {podium.length > 0 && (
         <ol aria-label="Top three" className="card flex items-end justify-center gap-2 px-3 pb-0 pt-5 sm:gap-6">
-          {[rows[1], rows[0], rows[2]].filter((r) => r && r.rank <= 3).map((r) => (
+          {podium.map((r) => (
             <li key={r.userId} className="flex min-w-0 flex-1 flex-col items-center gap-1 sm:flex-none">
               <ChefAvatar avatar={r.chef.avatar} size={r.rank === 1 ? 150 : 115} uid={`${r.userId}-podium`} title={`${publicName(r.name)}'s chef`} />
               <span className="max-w-full truncate text-sm font-semibold">{publicName(r.name)}</span>
@@ -100,6 +104,7 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
             </li>
           ))}
         </ol>
+        )}
         <ol className="card divide-y divide-line">
           {rows.map((r) => {
             const isMe = me?.user.id === r.userId;

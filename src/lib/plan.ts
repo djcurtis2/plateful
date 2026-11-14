@@ -19,6 +19,24 @@ export function hasPlus(p: ProfilePlanFields | null | undefined, now = new Date(
   return paid || bonus || apple;
 }
 
+const APPLE_COLUMNS = ", apple_until, apple_status";
+
+/**
+ * Runs a profiles select with the Apple columns added (`run` gets ", apple_until, apple_status" to append).
+ * If that errors (say migration 0018 isn't on the database yet), runs it once more without them and fills them
+ * with null, so the site keeps working instead of treating everyone as signed out.
+ */
+export async function selectWithApple<T extends object>(
+  run: (appleColumns: string) => PromiseLike<{ data: T | T[] | null; error: unknown }>,
+): Promise<T | T[] | null> {
+  const first = await run(APPLE_COLUMNS);
+  if (!first.error) return first.data;
+  const { data, error } = await run("");
+  if (error || !data) return null;
+  const fill = (row: T) => ({ ...row, apple_until: null, apple_status: null });
+  return Array.isArray(data) ? data.map(fill) : fill(data);
+}
+
 /** Plus prices as shown on the site. The amounts charged come from the Stripe prices in STRIPE_PRICE_PLUS_MONTHLY / _YEARLY. */
 export const PLUS_MONTHLY = "$9.99";
 export const PLUS_YEARLY = "$59.99";

@@ -21,6 +21,9 @@ import { menuPlate, savings } from "@/lib/recipe";
 import { money } from "@/lib/format";
 import { intEnv } from "@/lib/env";
 import { LAUNCH_CODE, PLUS_MONTHLY, PLUS_YEARLY } from "@/lib/plan";
+import { headers } from "next/headers";
+import { isAppUserAgent } from "@/lib/app-shell";
+import { WebOnly } from "@/components/PlusBuyButtons";
 
 const PLUS_SCANS = intEnv("PLUS_SCANS_PER_DAY", 40);
 
@@ -36,6 +39,7 @@ export default async function Home() {
     getCurrentChallenge().catch(() => null),
     siteSavings(),
   ]);
+  const inApp = isAppUserAgent((await headers()).get("user-agent"));
   // Top chefs strip: this cook-off's points, or all-time when there's no cook-off. Hidden until 3 people have points,
   // so an empty site never shows a lonely podium.
   const blocked = await blockedIds(me?.user.id ?? null).catch(() => new Set<string>());
@@ -150,17 +154,26 @@ export default async function Home() {
             </ul>
           </div>
           <div className="flex flex-col gap-2 lg:items-end lg:text-right">
-            <p className="tabular font-mono text-3xl">
-              {PLUS_MONTHLY}
-              <span className="text-base text-muted">/month</span>
-            </p>
-            <p className="-mt-1 text-sm text-muted">or {PLUS_YEARLY} a year</p>
+            {/* Stripe prices and the launch code: website only. Server-dropped in the app (user agent); WebOnly also hides them if the app is detected later. */}
+            {!inApp && (
+              <WebOnly inApp={inApp}>
+                <p className="tabular font-mono text-3xl">
+                  {PLUS_MONTHLY}
+                  <span className="text-base text-muted">/month</span>
+                </p>
+                <p className="-mt-1 text-sm text-muted">or {PLUS_YEARLY} a year</p>
+              </WebOnly>
+            )}
             <Link href="/pricing" className="btn btn-primary">
               Get Plus
             </Link>
-            <p className="text-xs text-muted">
-              Code <span className="font-mono font-semibold text-ink">{LAUNCH_CODE}</span> takes $5 off your first payment.
-            </p>
+            {!inApp && (
+              <WebOnly inApp={inApp}>
+                <p className="text-xs text-muted">
+                  Code <span className="font-mono font-semibold text-ink">{LAUNCH_CODE}</span> takes $5 off your first payment.
+                </p>
+              </WebOnly>
+            )}
           </div>
         </section>
       )}

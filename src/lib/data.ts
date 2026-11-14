@@ -1,7 +1,7 @@
 import "server-only";
 import { admin, publicImageUrl } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
-import { hasPlus, type ProfilePlanFields } from "@/lib/plan";
+import { hasPlus, selectWithApple, type ProfilePlanFields } from "@/lib/plan";
 import type { Ingredient, Recipe } from "@/lib/recipe";
 import { chefCards, type ChefCard } from "@/lib/avatar-server";
 import { CLUB_MIN_MEMBERS } from "@/lib/clubs";
@@ -97,12 +97,14 @@ export async function getMe({ fresh = false } = {}) {
   const { data: auth } = await supabase.auth.getUser();
   const user = auth.user;
   if (!user) return null;
-  const query = supabase
-    .from("profiles")
-    .select("id, display_name, referral_code, plan, subscription_status, bonus_until, apple_until, apple_status, stripe_customer_id, current_period_end, cancel_at, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs")
-    .eq("id", user.id);
-  // Next skips its repeat-read memory for requests that carry an abort signal.
-  const { data } = await (fresh ? query.abortSignal(new AbortController().signal) : query).maybeSingle();
+  const data = await selectWithApple((apple) => {
+    const query = supabase
+      .from("profiles")
+      .select(`id, display_name, referral_code, plan, subscription_status, bonus_until${apple}, stripe_customer_id, current_period_end, cancel_at, public_name, is_admin, feature_me, diets, avatar, gear_seen, clubs`)
+      .eq("id", user.id);
+    // Next skips its repeat-read memory for requests that carry an abort signal.
+    return (fresh ? query.abortSignal(new AbortController().signal) : query).maybeSingle();
+  });
   const profile = data as Profile | null;
   return { user, profile, plus: hasPlus(profile) };
 }

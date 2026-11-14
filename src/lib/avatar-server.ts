@@ -1,6 +1,6 @@
 import "server-only";
 import { admin } from "@/lib/supabase/admin";
-import { hasPlus } from "@/lib/plan";
+import { hasPlus, selectWithApple, type ProfilePlanFields } from "@/lib/plan";
 import { cleanClubs } from "@/lib/clubs";
 import { bingoTally } from "@/lib/games";
 import { defaultAvatar, parseAvatar, unlockedGear, visibleAvatar, type Avatar, type GearContext } from "@/lib/avatar";
@@ -12,10 +12,10 @@ export type ChefCard = { name: string | null; avatar: Avatar; clubs: string[] };
 export async function chefCards(userIds: string[]): Promise<Record<string, ChefCard>> {
   const ids = [...new Set(userIds)];
   if (!ids.length) return {};
-  const { data } = await admin()
-    .from("profiles")
-    .select("id, public_name, avatar, clubs, plan, subscription_status, bonus_until, apple_until")
-    .in("id", ids);
+  type Row = ProfilePlanFields & { id: string; public_name: string | null; avatar: unknown; clubs: unknown };
+  const data = (await selectWithApple((apple) =>
+    admin().from("profiles").select(`id, public_name, avatar, clubs, plan, subscription_status, bonus_until${apple}`).in("id", ids),
+  )) as Row[] | null;
   const rows = new Map((data ?? []).map((p) => [p.id, p]));
   const cards: Record<string, ChefCard> = {};
   for (const id of ids) {
@@ -76,11 +76,9 @@ export function chefFrom(
 
 /** The signed-in person's own avatar editor data. */
 export async function myChef(userId: string) {
-  const { data } = await admin()
-    .from("profiles")
-    .select("avatar, clubs, gear_seen, plan, subscription_status, bonus_until, apple_until")
-    .eq("id", userId)
-    .maybeSingle();
+  const data = (await selectWithApple((apple) =>
+    admin().from("profiles").select(`avatar, clubs, gear_seen, plan, subscription_status, bonus_until${apple}`).eq("id", userId).maybeSingle(),
+  )) as ProfileChefFields | null;
   const ctx = await gearContext(userId, hasPlus(data));
   return chefFrom(userId, data, ctx);
 }

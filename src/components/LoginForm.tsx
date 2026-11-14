@@ -5,6 +5,9 @@ import { openExternal, useIsApp } from "@/lib/native";
 import { appOAuthRedirect } from "@/lib/auth-links";
 import { signInWithApple } from "@/lib/apple-signin";
 
+/** Apple sign-in shows only once the Supabase Apple provider works (set NEXT_PUBLIC_APPLE_SIGNIN=1, then redeploy). */
+const APPLE_SIGNIN = process.env.NEXT_PUBLIC_APPLE_SIGNIN === "1";
+
 export function LoginForm({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
@@ -115,10 +118,12 @@ export function LoginForm({ next }: { next: string }) {
       <button onClick={google} className="btn btn-ghost" disabled={state === "sending"}>
         Continue with Google
       </button>
-      <button onClick={apple} className="btn btn-ghost" disabled={state === "sending"}>
-        Continue with Apple
-      </button>
-      {inApp && <p className="text-sm text-muted">Already use Yumjack? Sign in with email or Google first, then connect Apple in your account.</p>}
+      {APPLE_SIGNIN && (
+        <button onClick={apple} className="btn btn-ghost" disabled={state === "sending"}>
+          Continue with Apple
+        </button>
+      )}
+      {APPLE_SIGNIN && inApp && <p className="text-sm text-muted">Already use Yumjack? Sign in with email or Google first, then connect Apple in your account.</p>}
     </div>
   );
 }

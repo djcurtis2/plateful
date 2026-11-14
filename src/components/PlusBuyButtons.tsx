@@ -94,11 +94,15 @@ export function PlusBuyButtons({ userId, source, yearlyOn, inApp, manage, childr
           Manage in Apple
         </button>
       )}
-      {manage?.stripe && (
-        <form action="/api/stripe/portal" method="post">
-          <button className="btn btn-ghost w-full">Manage billing</button>
-        </form>
-      )}
+      {/* Stripe's billing page is an outside payment page: in the app, US App Store only. */}
+      {manage?.stripe &&
+        (storefront === "USA" ? (
+          <form action="/api/stripe/portal" method="post">
+            <button className="btn btn-ghost w-full">Manage billing</button>
+          </form>
+        ) : (
+          <p className="text-center text-sm text-muted">Manage it on yumjack.app in a browser.</p>
+        ))}
       {offers.note && !managing && <p className="text-center text-sm font-semibold text-basil">{offers.note}</p>}
 
       {!userId ? (

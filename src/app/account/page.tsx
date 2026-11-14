@@ -292,7 +292,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         </dl>
       </section>
       <NotifyToggles initial={notify} />
-      {!hasApple && (
+      {/* Hidden until the Supabase Apple provider works (NEXT_PUBLIC_APPLE_SIGNIN=1, then redeploy). */}
+      {!hasApple && process.env.NEXT_PUBLIC_APPLE_SIGNIN === "1" && (
         <section className="card p-6">
           <ConnectApple />
         </section>
