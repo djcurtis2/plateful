@@ -1,11 +1,7 @@
 "use client";
 import { useEffect } from "react";
-import { isNativeApp, plugin } from "@/lib/native";
+import { isNativeApp, plugin, type AppPlugin } from "@/lib/native";
 import { isAppUserAgent } from "@/lib/app-shell";
-
-type AppPlugin = {
-  addListener(event: "appUrlOpen", cb: (e: { url: string }) => void): Promise<{ remove(): void }>;
-};
 
 /** Marks <html data-app> inside the iPhone app so CSS can add phone-only touches (safe areas), and opens tapped yumjack.app links. Does nothing on the website. */
 export function AppFlag() {

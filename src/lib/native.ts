@@ -32,6 +32,9 @@ export function plugin<T>(name: string): T | null {
   return (cap()?.Plugins?.[name] as T | undefined) ?? null;
 }
 
+export type AppPlugin = {
+  addListener(event: "appUrlOpen", cb: (e: { url: string }) => void): Promise<{ remove(): void }>;
+};
 type CameraPlugin = {
   getPhoto(o: { resultType: "uri"; source: "PROMPT"; quality: number; correctOrientation: boolean }): Promise<{ webPath?: string }>;
 };

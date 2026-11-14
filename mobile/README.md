@@ -16,7 +16,8 @@ You do not need a Mac. A cloud service called Codemagic has the Macs and builds 
 1. **Apple Developer account** (paid) with an App Store Connect app record for bundle id `app.yumjack.ios` named Yumjack.
 2. **App Store Connect API key**: in App Store Connect, Users and Access, Integrations, create a key with "App Manager" access. Download the `.p8` file once (keep it private; never put it in this repo).
 3. **Codemagic**: sign in at codemagic.io with GitHub and add the plateful repo. Under Teams, Integrations, App Store Connect, add the key and name the integration exactly `yumjack_asc`.
-4. **Vercel settings** so tapped links open the app. In Vercel, add two environment variables to the Yumjack project and redeploy:
+4. **Turn on four App ID capabilities, once**: in Apple Developer, Certificates, Identifiers, open `app.yumjack.ios`, tick **Associated Domains**, **Push Notifications**, **Sign in with Apple** and **In-App Purchase**, then Save. Associated Domains is needed for the first build (the app asks for it, and signing fails without it); the other three are needed by later features, and doing them now means you only visit this page once.
+5. **Vercel settings** so tapped links open the app. In Vercel, add two environment variables to the Yumjack project and redeploy:
    - `APPLE_TEAM_ID`: your 10-character Team ID (Apple Developer, Membership).
    - `APPLE_BUNDLE_ID`: `app.yumjack.ios`
    Then open `https://yumjack.app/.well-known/apple-app-site-association`. You should see a short block of text that includes your Team ID.
