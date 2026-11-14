@@ -1,0 +1,23 @@
+{
+  "name": "yumjack-mobile",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Capacitor iPhone shell that loads https://yumjack.app",
+  "dependencies": {
+    "@capacitor-community/apple-sign-in": "7.1.0",
+    "@capacitor/app": "7.1.2",
+    "@capacitor/browser": "7.0.5",
+    "@capacitor/camera": "7.0.5",
+    "@capacitor/cli": "7.6.10",
+    "@capacitor/core": "7.6.10",
+    "@capacitor/filesystem": "7.1.9",
+    "@capacitor/ios": "7.6.10",
+    "@capacitor/preferences": "7.0.4",
+    "@capacitor/push-notifications": "7.0.7",
+    "@capacitor/share": "7.0.4",
+    "@revenuecat/purchases-capacitor": "11.3.3"
+  },
+  "devDependencies": {
+    "@capacitor/assets": "3.0.5"
+  }
+}

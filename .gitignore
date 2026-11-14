@@ -10,3 +10,11 @@ supabase/.temp
 
 # Brainstorm mockups and build notes
 .superpowers/
+
+# Mobile app
+mobile/node_modules
+mobile/ios/App/Pods
+DerivedData
+*.p8
+*.mobileprovision
+*.p12
