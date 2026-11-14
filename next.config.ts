@@ -8,6 +8,13 @@ const nextConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: "https", hostname: supabaseHost, pathname: "/storage/v1/object/public/**" }],
   },
+  // Short bio links: forward to the home page with a source tag (counted as a "Visit from" event in layout.tsx).
+  async redirects() {
+    return [
+      { source: "/tiktok", destination: "/?utm_source=tiktok", permanent: false },
+      { source: "/instagram", destination: "/?utm_source=instagram", permanent: false },
+    ];
+  },
   experimental: {
     serverActions: { bodySizeLimit: "6mb" },
   },
