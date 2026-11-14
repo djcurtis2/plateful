@@ -473,6 +473,6 @@ export async function openStripeCheckout(route: "/api/stripe/checkout" | "/api/s
 }
 
 /** Asks the site to re-check this cook's Apple purchases with RevenueCat (backup for a late webhook). */
-export async function rcSyncSite(): Promise<void> {
-  await fetch("/api/revenuecat/refresh", { method: "POST" }).catch(() => undefined);
+export async function rcSyncSite(on: "open" | "purchase" = "purchase"): Promise<void> {
+  await fetch(`/api/revenuecat/refresh?on=${on}`, { method: "POST" }).catch(() => undefined);
 }

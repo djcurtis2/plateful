@@ -17,7 +17,7 @@ export function AppFlag() {
       await rcConfigure();
       const { data } = await createClient().auth.getUser().catch(() => ({ data: { user: null } }));
       if (data.user) {
-        if (await rcLogIn(data.user.id)) void rcSyncSite();
+        if (await rcLogIn(data.user.id)) void rcSyncSite("open");
       } else {
         await rcLogOut();
       }
