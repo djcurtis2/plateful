@@ -50,3 +50,19 @@ export async function deleteAccount(confirm: string): Promise<Result> {
   await supabase.auth.signOut().catch(() => undefined);
   redirect("/?deleted=1");
 }
+
+/** Turns one kind of push notification on or off for the signed-in cook. */
+export async function setNotify(kind: "daily_games" | "plan_dinner", on: boolean): Promise<Result> {
+  if (kind !== "daily_games" && kind !== "plan_dinner") return { ok: false, message: "Unknown notification." };
+  const { data } = await (await createClient()).auth.getUser();
+  if (!data.user) return { ok: false, message: "Sign in again, then try." };
+  const db = admin();
+  const { data: profile } = await db.from("profiles").select("notify").eq("id", data.user.id).maybeSingle();
+  const current = (profile?.notify ?? {}) as Record<string, boolean>;
+  const { error } = await db.from("profiles").update({ notify: { ...current, [kind]: !!on } }).eq("id", data.user.id);
+  if (error) {
+    console.error("set notify failed", error);
+    return { ok: false, message: "Couldn't save that. Try again." };
+  }
+  return { ok: true };
+}

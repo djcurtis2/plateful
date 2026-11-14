@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { answerTrivia } from "@/app/trivia/actions";
 import { celebrate, here } from "@/lib/celebrate";
 import { nativeShare } from "@/lib/native";
+import { PushPrompt } from "@/components/PushPrompt";
 import { TRIVIA_STREAK_EVERY, triviaShareText } from "@/lib/trivia";
 
 type Result = { pick: number; answer: number; why: string };
@@ -17,7 +18,9 @@ export function TriviaGame({
   shareUrl,
   questions,
   finished: initialFinished,
+  notifyOn = false,
 }: {
+  notifyOn?: boolean;
   day: string;
   signedIn: boolean;
   streak: number;
@@ -108,6 +111,7 @@ export function TriviaGame({
             Review answers
           </button>
         </div>
+        {signedIn && finished && <PushPrompt which="trivia" alreadyOn={notifyOn} />}
         <p className="text-sm text-muted">New questions tomorrow.</p>
       </section>
     );

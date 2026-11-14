@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { closeExternal, isNativeApp, plugin, type AppPlugin } from "@/lib/native";
+import { closeExternal, isNativeApp, listenForPushTaps, plugin, type AppPlugin } from "@/lib/native";
 import { appCallbackToWeb } from "@/lib/auth-links";
 import { isAppUserAgent } from "@/lib/app-shell";
 
@@ -9,6 +9,7 @@ export function AppFlag() {
   useEffect(() => {
     if (isNativeApp() || isAppUserAgent(navigator.userAgent)) document.documentElement.dataset.app = "";
     if (!isNativeApp()) return;
+    listenForPushTaps();
     // A tapped yumjack.app link opens the app, but the web view does not move by itself: load it here.
     // Google sign-in comes back as app.yumjack.ios://auth/callback?… from the browser sheet: close the sheet
     // and finish on the site's callback inside the web view, where sign-in started.

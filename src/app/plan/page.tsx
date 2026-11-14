@@ -16,6 +16,8 @@ import { krogerConfigured } from "@/lib/kroger-server";
 import { AdminButton } from "@/components/AdminButton";
 import { clearPlanSlot, fillPlanGap, markPlanMealCooked, swapPlanMeal } from "./actions";
 import { cookedSince } from "@/lib/savings-server";
+import { PushPrompt } from "@/components/PushPrompt";
+import { myNotify } from "@/lib/push-server";
 
 export const metadata: Metadata = { title: "Plan my week" };
 export const dynamic = "force-dynamic";
@@ -128,6 +130,8 @@ export default async function PlanPage({ searchParams }: Search) {
           </Link>
         </span>
       </div>
+
+      <PushPrompt which="plan" alreadyOn={(await myNotify(me.user.id)).plan_dinner} />
 
       <Headline plan={week} servings={s.servings} />
 

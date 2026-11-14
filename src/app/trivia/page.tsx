@@ -1,3 +1,4 @@
+import { myNotify } from "@/lib/push-server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getMe } from "@/lib/data";
@@ -17,6 +18,7 @@ export default async function TriviaPage() {
   const day = triviaDay();
   const [questions, me] = await Promise.all([triviaQuestions(day), getMe()]);
   const ready = questions.length === TRIVIA_PER_DAY;
+  const notifyOn = me ? (await myNotify(me.user.id)).daily_games : false;
   const [play, streak] = me && ready ? await Promise.all([triviaPlay(me.user.id, day), triviaStreakFor(me.user.id, day)]) : [null, 0];
 
   // Only answered questions travel with their answers; the rest go without.
@@ -47,6 +49,7 @@ export default async function TriviaPage() {
             result: i < picks.length ? { pick: picks[i], answer: q.answer, why: q.why } : null,
           }))}
           finished={finished}
+          notifyOn={notifyOn}
         />
       ) : (
         <p className="card p-6 text-muted">

@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { DietForm } from "@/components/DietForm";
 import { DeleteAccount } from "@/components/DeleteAccount";
 import { ConnectApple } from "@/components/ConnectApple";
+import { NotifyToggles } from "@/components/NotifyToggles";
+import { myNotify } from "@/lib/push-server";
 import { BadgeIcon, LevelIcon, LevelLadder } from "@/components/GameIcons";
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/data";
@@ -41,7 +43,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     me = (await getMe({ fresh: true }))!;
   }
   const p = me.profile!;
-  const [stats, game, { data: prizes }, savings, cards] = await Promise.all([
+  const [notify, stats, game, { data: prizes }, savings, cards] = await Promise.all([
+    myNotify(me.user.id),
     referralStats(me.user.id),
     playerStats(me.user.id, null),
     admin().from("prize_awards").select("id, kind, reason, detail, status, created_at").eq("user_id", me.user.id).order("created_at", { ascending: false }),
@@ -263,6 +266,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           ))}
         </dl>
       </section>
+      <NotifyToggles initial={notify} />
       {!hasApple && (
         <section className="card p-6">
           <ConnectApple />

@@ -3,6 +3,7 @@
 // Plugin packages live only in the mobile project; here we reach them through window.Capacitor.
 // Every function is safe on the plain website: it does nothing or tells the caller to fall back.
 import { useSyncExternalStore } from "react";
+import { safeNext } from "@/lib/auth-links";
 import { OFFLINE_KEY, upsertOfflineList, type OfflineList } from "@/lib/offline-lists";
 
 type CapacitorWindow = Window & {
@@ -171,4 +172,63 @@ export function setInputFile(input: HTMLInputElement, file: File) {
   dt.items.add(file);
   input.files = dt.files;
   input.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+type PushPlugin = {
+  requestPermissions(): Promise<{ receive: string }>;
+  register(): Promise<void>;
+  addListener(event: "registration", cb: (e: { value: string }) => void): Promise<{ remove(): void }>;
+  addListener(event: "registrationError", cb: (e: unknown) => void): Promise<{ remove(): void }>;
+  addListener(event: "pushNotificationActionPerformed", cb: (e: { notification?: { data?: { url?: unknown } } }) => void): Promise<{ remove(): void }>;
+};
+
+/**
+ * Asks iPhone for permission to send notifications, gets this phone's push token and gives it to the site.
+ * True when the phone is registered; false when permission is off, it isn't the app, or something failed.
+ */
+export async function enablePush(): Promise<boolean> {
+  const push = plugin<PushPlugin>("PushNotifications");
+  if (!push) return false;
+  try {
+    const perm = await push.requestPermissions();
+    if (perm.receive !== "granted") return false;
+    const token = await new Promise<string | null>((resolve) => {
+      const timer = setTimeout(() => resolve(null), 10_000);
+      void push.addListener("registration", (e) => {
+        clearTimeout(timer);
+        resolve(e.value);
+      });
+      void push.addListener("registrationError", () => {
+        clearTimeout(timer);
+        resolve(null);
+      });
+      void push.register().catch(() => {
+        clearTimeout(timer);
+        resolve(null);
+      });
+    });
+    if (!token) return false;
+    const res = await fetch("/api/push/register", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, storefront: await appStorefront() }),
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+let tapListening = false;
+
+/** A tapped notification opens the page it names (a path on yumjack.app only). Add once per app start. */
+export function listenForPushTaps(): void {
+  if (tapListening) return;
+  const push = plugin<PushPlugin>("PushNotifications");
+  if (!push) return;
+  tapListening = true;
+  void push.addListener("pushNotificationActionPerformed", (e) => {
+    const url = e.notification?.data?.url;
+    window.location.href = `https://yumjack.app${safeNext(typeof url === "string" ? url : null, "/")}`;
+  });
 }
