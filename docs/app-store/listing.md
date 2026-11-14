@@ -110,12 +110,12 @@ Yumjack turns a photo of a restaurant dish into a copycat recipe with a cost per
 DEMO ACCOUNT: **Dan: create one and type its email and how to sign in here.** Sign in with Apple and Google are also offered. If you use email, tap the magic link in the email (it opens in the app). Please keep the demo account signed up and Plus-enabled during review.
 
 HOW TO TRY EACH PART
-1. Snap: on the home screen tap the snap button, allow the camera, photograph any dish or choose a photo. A recipe appears with ingredients, steps, cost per plate and the restaurant price per plate. Scans are limited per account; the demo account has Plus so it has plenty.
-2. Notifications: open Account and switch on "Daily games" or "Tonight's dinner", then allow the iOS prompt. They are off until chosen, at most one of each kind a day, and there are no marketing messages.
-3. Offline grocery list: open any recipe and open its grocery list, then tick an item. Turn on airplane mode and reopen the app: an offline screen shows the saved lists with working check-offs.
-4. Share: on a recipe tap Share to see the iPhone share sheet.
+1. Snap: on the home screen tap "Take or choose a photo" (under "Snap or upload the dish"), allow the camera, photograph any dish or choose a photo. A recipe appears with ingredients, steps, cost per plate and the restaurant price per plate. Scans are limited per account; the demo account has Plus so it has plenty.
+2. Notifications: open the Account page and switch on "Daily trivia and games are ready" or "Tonight's dinner from my plan", then allow the iOS prompt. (The app also offers these after a first trivia round and on the Plan my week page.) They are off until chosen, at most one of each kind a day, and there are no marketing messages.
+3. Offline grocery list: open any recipe and scroll to "Your cart" (the grocery list), then tick an item. Turn on airplane mode and reopen the app: an offline screen shows the saved lists with working check-offs.
+4. Share: on a recipe, in the "Restaurant vs. mine" card tap "1. Add my photo", then "2. Share my card" to see the iPhone share sheet.
 5. Payments, two ways (see below).
-6. Report and block: on a cook-off entry or attempt photo from another cook, use "Report" to report it, or "Block this cook" to hide that person's posts and name from your own view. Blocks are private. Account deletion is in Account.
+6. Report and block: on another cook's entry on a cook-off board, tap "Report" to report it, or "Block this cook" (next to Report) to hide that person's posts and name from your own view. "Block this cook" also appears on photos in a recipe's "Who made it" gallery, on a single entry page and in club pages. Blocked cooks can be unblocked from the Account page. Blocks are private. Account deletion is on the Account page: "Delete my account".
 
 PAYMENTS
 - "Pay with Apple" (Apple in-app purchase) shows for Yumjack Plus (monthly and yearly) and for chef avatar gear in the shop, in every country. You can test it with a sandbox Apple account. A sandbox purchase gives the account real Plus or gear in our system, which is what lets you see Plus features such as Plan my week.
