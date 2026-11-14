@@ -56,9 +56,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </div>
         </footer>
-        {/* Vercel Web Analytics (no cookies, no personal data). Served from our own domain; does nothing on localhost. */}
+        {/* Vercel Web Analytics (no cookies, no personal data). Served from our own domain; does nothing on localhost.
+            Bio links carry ?utm_source=tiktok etc.; the UTM tab is a paid add-on, so we log a "Visit from" event instead (once per tab). */}
         <Script id="vercel-analytics-queue" strategy="afterInteractive">
-          {"window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};"}
+          {`window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};
+try{var s=(new URLSearchParams(location.search).get("utm_source")||"").toLowerCase().replace(/[^a-z0-9_-]/g,"").slice(0,30);
+if(s&&!sessionStorage.getItem("yj-src")){sessionStorage.setItem("yj-src",s);window.va("event",{name:"Visit from",data:{source:s}});}}catch(e){}`}
         </Script>
         <Script src="/_vercel/insights/script.js" strategy="afterInteractive" />
       </body>
