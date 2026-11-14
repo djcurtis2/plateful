@@ -12,7 +12,9 @@ const config: CapacitorConfig = {
   },
   ios: {
     appendUserAgent: "YumjackApp/1",
-    contentInset: "automatic",
+    // The page draws its own space for the clock and home bar (html[data-app] CSS + viewport-fit=cover set by AppFlag),
+    // so the sticky header stays solid behind the clock instead of the page scrolling under it.
+    contentInset: "never",
   },
 };
 

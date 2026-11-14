@@ -10,6 +10,10 @@ export function AppFlag() {
   useEffect(() => {
     if (isNativeApp() || isAppUserAgent(navigator.userAgent)) document.documentElement.dataset.app = "";
     if (!isNativeApp()) return;
+    // Let the page reach under the clock and home bar, so the safe-area CSS (env(...)) gets real values.
+    // Only in the app: the website's viewport is unchanged.
+    const viewport = document.querySelector<HTMLMetaElement>('meta[name="viewport"]');
+    if (viewport && !viewport.content.includes("viewport-fit")) viewport.content += ", viewport-fit=cover";
     listenForPushTaps();
     addPushTokenToSignOut();
     // Apple purchases: RevenueCat starts anonymous, then follows whoever is signed in on the site.
