@@ -1,6 +1,6 @@
 "use client";
 import { useEffect } from "react";
-import { closeExternal, isNativeApp, listenForPushTaps, plugin, rcConfigure, rcLogIn, rcLogOut, rcSyncSite, type AppPlugin } from "@/lib/native";
+import { addPushTokenToSignOut, closeExternal, isNativeApp, listenForPushTaps, plugin, rcConfigure, rcLogIn, rcLogOut, rcSyncSite, type AppPlugin } from "@/lib/native";
 import { createClient } from "@/lib/supabase/client";
 import { appCallbackToWeb } from "@/lib/auth-links";
 import { isAppUserAgent } from "@/lib/app-shell";
@@ -11,6 +11,7 @@ export function AppFlag() {
     if (isNativeApp() || isAppUserAgent(navigator.userAgent)) document.documentElement.dataset.app = "";
     if (!isNativeApp()) return;
     listenForPushTaps();
+    addPushTokenToSignOut();
     // Apple purchases: RevenueCat starts anonymous, then follows whoever is signed in on the site.
     void (async () => {
       await rcConfigure();

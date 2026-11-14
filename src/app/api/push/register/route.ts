@@ -1,9 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { admin } from "@/lib/supabase/admin";
-import { validTimeZone } from "@/lib/push";
+import { PUSH_TOKEN_RE as TOKEN_RE, validTimeZone } from "@/lib/push";
 
-const TOKEN_RE = /^[0-9a-fA-F]{64,200}$/;
 const STOREFRONT_RE = /^[A-Za-z]{3}$/;
 
 /** The app sends its APNs device token here after the cook turns notifications on. Signed-in only. */

@@ -8,6 +8,9 @@ export type PushKind = "daily_games" | "plan_dinner";
 export const PUSH_KINDS: readonly PushKind[] = ["daily_games", "plan_dinner"];
 
 export const FALLBACK_TIME_ZONE = "America/New_York";
+
+/** An APNs device token as the app sends it (hex). */
+export const PUSH_TOKEN_RE = /^[0-9a-fA-F]{64,200}$/;
 /** Local hour of day each kind goes out. */
 export const DAILY_GAMES_HOUR = 9;
 export const PLAN_DINNER_HOUR = 16;

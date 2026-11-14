@@ -63,6 +63,8 @@ workflows:
           $PB -c "Print :com.apple.developer.applesignin" "$ENT" 2>/dev/null | grep -q "Default" \
             || { $PB -c "Add :com.apple.developer.applesignin array" "$ENT" 2>/dev/null || true; \
                  $PB -c "Add :com.apple.developer.applesignin:0 string Default" "$ENT"; }
+          # Push notifications (the App ID's Push Notifications capability must be ticked too).
+          $PB -c "Print :aps-environment" "$ENT" >/dev/null 2>&1             || $PB -c "Add :aps-environment string production" "$ENT"
           # Point the app target at the entitlements file if the project does not already.
           grep -q "CODE_SIGN_ENTITLEMENTS" "$XCODE_PROJECT/project.pbxproj" \
             || sed -i '' 's|CODE_SIGN_STYLE = Automatic;|CODE_SIGN_ENTITLEMENTS = App/App.entitlements; CODE_SIGN_STYLE = Automatic;|' "$XCODE_PROJECT/project.pbxproj"

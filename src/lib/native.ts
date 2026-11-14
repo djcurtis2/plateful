@@ -241,10 +241,49 @@ export async function enablePush(): Promise<"ok" | "denied" | "failed"> {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone, storefront: await appStorefront() }),
     });
+    if (res.ok) {
+      try {
+        localStorage.setItem(PUSH_TOKEN_KEY, token); // sent with sign-out, so this phone stops getting this account's notifications
+      } catch {
+        // storage blocked: sign-out just can't unhook the phone
+      }
+    }
     return res.ok ? "ok" : "failed";
   } catch {
     return "failed";
   }
+}
+
+const PUSH_TOKEN_KEY = "yj_push_token";
+let signOutHooked = false;
+
+/**
+ * In the app, every sign-out form (posting to /auth/signout) also sends this phone's push token, so the server can
+ * remove this phone from the account being signed out. Add once per app start. Does nothing on the website.
+ */
+export function addPushTokenToSignOut(): void {
+  if (signOutHooked || !isNativeApp()) return;
+  signOutHooked = true;
+  document.addEventListener(
+    "submit",
+    (e) => {
+      const form = e.target;
+      if (!(form instanceof HTMLFormElement) || new URL(form.action, location.href).pathname !== "/auth/signout") return;
+      let token: string | null = null;
+      try {
+        token = localStorage.getItem(PUSH_TOKEN_KEY);
+      } catch {
+        return;
+      }
+      if (!token || form.querySelector('input[name="push_token"]')) return;
+      const input = document.createElement("input");
+      input.type = "hidden";
+      input.name = "push_token";
+      input.value = token;
+      form.appendChild(input);
+    },
+    true,
+  );
 }
 
 let tapListening = false;
