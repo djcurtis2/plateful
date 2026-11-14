@@ -4,6 +4,7 @@ import {
   aasa, appleBundleAllowed, appleProductForGear, gearForAppleProduct, groceryStoresShown,
   isAppUserAgent, plusOffers, plusSource, stripeLinkAllowed,
 } from "./app-shell.ts";
+import { GEAR } from "./avatar.ts";
 
 test("user agent marker", () => {
   assert.equal(isAppUserAgent("Mozilla/5.0 ... YumjackApp/1"), true);
@@ -64,4 +65,17 @@ test("aasa lists the app and the callback", () => {
   const j = aasa("TEAM123", "app.yumjack.ios") as any;
   assert.equal(j.applinks.details[0].appIDs[0], "TEAM123.app.yumjack.ios");
   assert.ok(JSON.stringify(j).includes("/auth/callback"));
+  assert.deepEqual(
+    j.applinks.details[0].components.map((c: { "/": string }) => c["/"]),
+    ["/auth/callback*", "/r/*", "/plan*", "/trivia*", "/games*", "/pricing*", "/account*", "/chef*"],
+  );
+});
+
+test("earned, legendary and Plus gear never maps to an Apple product (never sold)", () => {
+  for (const g of GEAR) {
+    if (g.source.kind === "shop") continue;
+    assert.equal(gearForAppleProduct(appleProductForGear({ item: g.id })), null, g.id);
+  }
+  assert.equal(gearForAppleProduct("gear_golden_toque"), null); // legendary, earned at level 4
+  assert.equal(gearForAppleProduct("gear_copper_pan"), null); // earned with points
 });

@@ -90,6 +90,8 @@ export async function recordAppleEvent(event: RevenueCatEvent): Promise<void> {
       return;
     case "gear_revoke":
       await revokeAppleGear(change.transactionId);
+      // Rows saved by the refresh may carry RevenueCat's own id instead of the store's: a full re-sync catches those.
+      await refreshFromRevenueCat(userId);
       return;
     case "ignore":
       return;

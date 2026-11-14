@@ -129,6 +129,35 @@ test("refresh: Plus from the plus entitlement and its subscription", () => {
   assert.equal(applePlusFromSubscriber({ entitlements: { plus: { expires_date: null, product_identifier: "x" } } }, now), undefined);
 });
 
+test("refresh: a live Plus subscription counts even when the entitlement is missing or misnamed", () => {
+  const now = new Date(Date.UTC(2026, 11, 10));
+  const subs = (s: object) => ({ yumjack_plus_monthly: { expires_date: iso(JAN1), unsubscribe_detected_at: null, billing_issues_detected_at: null, ...s } });
+  // Entitlement called "pro" instead of "plus": Plus still stays on while Apple says the product is live.
+  assert.deepEqual(applePlusFromSubscriber({ entitlements: { pro: { expires_date: iso(JAN1), product_identifier: "yumjack_plus_monthly" } }, subscriptions: subs({}) }, now), {
+    apple_until: iso(JAN1), apple_status: "active", apple_product: "yumjack_plus_monthly",
+  });
+  assert.equal(applePlusFromSubscriber({ subscriptions: subs({ unsubscribe_detected_at: iso(DEC1) }) }, now)?.apple_status, "canceled");
+  assert.equal(applePlusFromSubscriber({ subscriptions: subs({ billing_issues_detected_at: iso(DEC1) }) }, now)?.apple_status, "billing_issue");
+  // The later of two live products wins.
+  assert.equal(
+    applePlusFromSubscriber({ subscriptions: { ...subs({}), yumjack_plus_yearly: { expires_date: iso(JAN1 + 86_400_000) } } }, now)?.apple_product,
+    "yumjack_plus_yearly",
+  );
+  // Not live: expired, refunded, or not a Plus product.
+  assert.equal(applePlusFromSubscriber({ subscriptions: subs({ expires_date: iso(DEC1) }) }, now), null);
+  assert.equal(applePlusFromSubscriber({ subscriptions: subs({ refunded_at: iso(DEC1) }) }, now), null);
+  assert.equal(applePlusFromSubscriber({ subscriptions: { gear_tuxedo: { expires_date: iso(JAN1) } } }, now), null);
+});
+
+test("refresh: an expired plus entitlement gives way to another live Plus subscription", () => {
+  const now = new Date(Date.UTC(2026, 11, 10));
+  const s = {
+    entitlements: { plus: { expires_date: iso(DEC1), product_identifier: "yumjack_plus_monthly" } },
+    subscriptions: { yumjack_plus_monthly: { expires_date: iso(DEC1) }, yumjack_plus_yearly: { expires_date: iso(JAN1) } },
+  };
+  assert.deepEqual(applePlusFromSubscriber(s, now), { apple_until: iso(JAN1), apple_status: "active", apple_product: "yumjack_plus_yearly" });
+});
+
 test("refresh: gear purchases carry both ids and say whether the store id is there", () => {
   assert.deepEqual(
     appleGearFromSubscriber({ non_subscriptions: { gear_tuxedo: [{ id: "rc1", store_transaction_id: "2000000777" }], foo: [{ id: "x" }] } }),

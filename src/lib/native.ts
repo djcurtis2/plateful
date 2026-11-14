@@ -49,7 +49,11 @@ type BrowserPlugin = {
 
 const isCancel = (e: unknown) => /cancel|abort|dismiss/i.test(`${(e as Error)?.name ?? ""} ${(e as Error)?.message ?? ""}`);
 
-/** Opens the iPhone camera / photo picker. Null when cancelled, on the website, or if it fails. */
+/** The camera plugin rejects with "User denied access to camera" / "… to photos" when iPhone permission is off. */
+const isDenied = (e: unknown) => /denied access/i.test(`${(e as Error)?.message ?? ""}`);
+const CAMERA_OFF = "Camera access is off for Yumjack. Turn it on in Settings.";
+
+/** Opens the iPhone camera / photo picker. Null when cancelled, on the website, or if it fails; tells the cook when access is off. */
 export async function nativePhoto(): Promise<File | null> {
   const camera = plugin<CameraPlugin>("Camera");
   if (!camera) return null;
@@ -58,7 +62,8 @@ export async function nativePhoto(): Promise<File | null> {
     if (!photo.webPath) return null;
     const blob = await fetch(photo.webPath).then((r) => r.blob());
     return new File([blob], "photo.jpg", { type: blob.type || "image/jpeg" });
-  } catch {
+  } catch (e) {
+    if (isDenied(e)) window.alert(CAMERA_OFF);
     return null;
   }
 }
@@ -162,19 +167,26 @@ type PreferencesPlugin = {
 async function readAllOfflineLists(prefs: PreferencesPlugin): Promise<OfflineList[]> {
   const { value } = await prefs.get({ key: OFFLINE_KEY });
   const parsed = value ? JSON.parse(value) : [];
-  return Array.isArray(parsed) ? (parsed as OfflineList[]) : [];
+  // Skip anything garbled, so one bad entry never blocks saving.
+  return Array.isArray(parsed) ? (parsed as OfflineList[]).filter((l) => l && typeof l.id === "string" && Array.isArray(l.lines)) : [];
 }
 
+// Saves run one at a time, so two lists saved together (recipe page + grocery list) never overwrite each other.
+let saving: Promise<void> = Promise.resolve();
+
 /** Keeps a grocery list on the phone (native storage, shared with the offline page). Never throws. */
-export async function saveOfflineList(list: OfflineList): Promise<void> {
+export function saveOfflineList(list: OfflineList): Promise<void> {
   const prefs = plugin<PreferencesPlugin>("Preferences");
-  if (!prefs) return;
-  try {
-    const all = await readAllOfflineLists(prefs).catch(() => []);
-    await prefs.set({ key: OFFLINE_KEY, value: JSON.stringify(upsertOfflineList(all, list)) });
-  } catch {
-    // saving for offline is a bonus; never break the page
-  }
+  if (!prefs) return Promise.resolve();
+  saving = saving.then(async () => {
+    try {
+      const all = await readAllOfflineLists(prefs).catch(() => []);
+      await prefs.set({ key: OFFLINE_KEY, value: JSON.stringify(upsertOfflineList(all, list)) });
+    } catch {
+      // saving for offline is a bonus; never break the page
+    }
+  });
+  return saving;
 }
 
 /** The list as last saved on the phone (including ticks made offline), or null. */

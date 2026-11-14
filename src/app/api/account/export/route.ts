@@ -16,6 +16,8 @@ const BY_USER = [
   "cook_log",
   "user_gear",
   "trivia_plays",
+  "push_devices",
+  "push_sends",
 ] as const;
 
 /** "Download my data": a JSON file of the signed-in person's account and activity. */
@@ -35,6 +37,7 @@ export async function GET() {
   );
   const { data: recipes } = await db.from("recipes").select("id, slug, dish, created_at").eq("user_id", user.id);
   const { data: referrals } = await db.from("referral_events").select("kind, created_at").eq("referrer_id", user.id);
+  const { data: blocks } = await db.from("blocks").select("*").eq("blocker_id", user.id);
 
   const body = {
     exported_at: new Date().toISOString(),
@@ -42,6 +45,7 @@ export async function GET() {
     profile,
     recipes_you_made: recipes ?? [],
     referrals: referrals ?? [],
+    blocks: blocks ?? [], // cooks you blocked
     ...Object.fromEntries(tables),
   };
   return new NextResponse(JSON.stringify(body, null, 2), {

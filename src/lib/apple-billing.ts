@@ -177,6 +177,28 @@ export function applePlusFromSubscriber(
   s: RcSubscriber,
   now = new Date(),
 ): { apple_until: string; apple_status: string; apple_product: string } | null | undefined {
+  const fromEntitlement = plusFromEntitlement(s, now);
+  if (fromEntitlement === undefined || (fromEntitlement && fromEntitlement.apple_status !== "expired")) return fromEntitlement;
+  // Backup: a live Plus subscription counts even if the "plus" entitlement is missing or misnamed in RevenueCat,
+  // so a setup slip never switches off Plus for someone still paying.
+  return livePlusSubscription(s, now) ?? fromEntitlement;
+}
+
+/** The latest Plus subscription that hasn't ended and wasn't refunded, or null. */
+function livePlusSubscription(s: RcSubscriber, now: Date): { apple_until: string; apple_status: string; apple_product: string } | null {
+  let best: { apple_until: string; apple_status: string; apple_product: string } | null = null;
+  for (const product of PLUS_PRODUCTS) {
+    const sub = s.subscriptions?.[product];
+    if (!sub?.expires_date || sub.refunded_at) continue;
+    const end = new Date(sub.expires_date);
+    if (!(end > now) || (best && end <= new Date(best.apple_until))) continue;
+    const apple_status = sub.billing_issues_detected_at ? "billing_issue" : sub.unsubscribe_detected_at ? "canceled" : "active";
+    best = { apple_until: end.toISOString(), apple_status, apple_product: product };
+  }
+  return best;
+}
+
+function plusFromEntitlement(s: RcSubscriber, now: Date): { apple_until: string; apple_status: string; apple_product: string } | null | undefined {
   const ent = s.entitlements?.[PLUS_ENTITLEMENT];
   if (!ent) return null;
   if (!ent.expires_date || !ent.product_identifier) return undefined;

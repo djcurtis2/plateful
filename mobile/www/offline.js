@@ -20,7 +20,10 @@
     return prefs.get({ key: KEY }).then(function (r) {
       try {
         var all = r && r.value ? JSON.parse(r.value) : [];
-        return Array.isArray(all) ? all : [];
+        // Skip anything garbled (no id or no lines), so one bad entry never hides the rest.
+        return Array.isArray(all)
+          ? all.filter(function (l) { return l && typeof l.id === "string" && Array.isArray(l.lines); })
+          : [];
       } catch (e) {
         return [];
       }
@@ -46,9 +49,10 @@
     var h = document.createElement("h2");
     h.textContent = list.title;
     card.appendChild(h);
-    var ticks = (list.ticks || []).slice();
+    var ticks = Array.isArray(list.ticks) ? list.ticks.slice() : [];
+    var lines = list.lines.filter(function (l) { return l && typeof l.text === "string"; });
     var aisles = [];
-    (list.lines || []).forEach(function (l) {
+    lines.forEach(function (l) {
       var a = l.aisle || "";
       if (aisles.indexOf(a) < 0) aisles.push(a);
     });
@@ -59,7 +63,7 @@
         card.appendChild(h3);
       }
       var ul = document.createElement("ul");
-      list.lines.filter(function (l) { return (l.aisle || "") === aisle; }).forEach(function (l) {
+      lines.filter(function (l) { return (l.aisle || "") === aisle; }).forEach(function (l) {
         var li = document.createElement("li");
         var label = document.createElement("label");
         var box = document.createElement("input");
