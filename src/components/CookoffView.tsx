@@ -9,6 +9,8 @@ import { siteUrl } from "@/lib/env";
 import { parseAvatar, visibleAvatar } from "@/lib/avatar";
 import { AttemptForm } from "@/components/AttemptForm";
 import { CookoffBoard } from "@/components/CookoffBoard";
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 import { NameForm } from "@/components/NameForm";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
@@ -16,7 +18,9 @@ import { LevelIcon } from "@/components/GameIcons";
 
 /** One cook-off: live (enter, vote, rally) or ended (results). Used by /cookoff and past cook-off pages. */
 export async function CookoffView({ challenge, isCurrent }: { challenge: Challenge; isCurrent: boolean }) {
-  const [me, entries] = await Promise.all([getMe(), getAttempts({ challengeId: challenge.id }, 200)]);
+  const [me, allEntries] = await Promise.all([getMe(), getAttempts({ challengeId: challenge.id }, 200)]);
+  const blocked = await blockedIds(me?.user.id ?? null);
+  const entries = withoutBlocked(allEntries, blocked, (e) => e.user_id);
   const live = isLive(challenge);
   const r = challenge.recipe;
   const s = savings(r);

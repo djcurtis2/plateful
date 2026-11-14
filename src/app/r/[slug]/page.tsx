@@ -11,6 +11,8 @@ import { jsonLdScript, recipeJsonLd, recipeTitle } from "@/lib/seo";
 import { RecipeView } from "@/components/RecipeView";
 import { krogerConfigured } from "@/lib/kroger-server";
 import { ReferralBeacon } from "@/components/ReferralBeacon";
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 import { AttemptGallery } from "@/components/AttemptGallery";
 import { UseItUp } from "@/components/UseItUp";
 import { VersionMaker } from "@/components/VersionMaker";
@@ -56,11 +58,14 @@ export default async function RecipePage({ params, searchParams }: Params) {
   }
 
   const me = await getMe();
-  const [pantry, savedState, attempts] = await Promise.all([
+  const blocked = await blockedIds(me?.user.id ?? null);
+  const [pantry, savedState, allAttempts] = await Promise.all([
     me ? getPantry(me.user.id) : Promise.resolve([]),
     me ? isSaved(me.user.id, recipe.id) : Promise.resolve({ saved: false, cooked: false }),
     getAttempts({ recipeId: recipe.id }, 12),
   ]);
+
+  const attempts = withoutBlocked(allAttempts, blocked, (a) => a.user_id);
 
   // Versions ("Make it my way"): this recipe's original and its sibling versions.
   const rootId = recipe.variant_of ?? recipe.id;

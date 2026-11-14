@@ -11,6 +11,7 @@ import { ShareCard } from "@/components/ShareCard";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import { EntryChips } from "@/components/EntryChips";
+import { BlockCookButton } from "@/components/BlockCookButton";
 
 type Props = {
   entries: Attempt[];
@@ -202,18 +203,21 @@ export function CookoffBoard({ entries, recipe, myId, myVotes, open, chefPickId,
                   </span>
                 </div>
                 {!isMine && myId && (
-                  <button
-                    className="self-start text-[11px] text-muted underline-offset-2 hover:underline disabled:no-underline"
-                    disabled={reported.has(a.id)}
-                    onClick={() =>
-                      start(async () => {
-                        const r = await reportAttempt(a.id, "");
-                        if (r.ok) setReported((s) => new Set(s).add(a.id));
-                      })
-                    }
-                  >
-                    {reported.has(a.id) ? "Reported. Thanks" : "Report"}
-                  </button>
+                  <div className="flex flex-wrap gap-x-3 gap-y-1">
+                    <button
+                      className="self-start text-[11px] text-muted underline-offset-2 hover:underline disabled:no-underline"
+                      disabled={reported.has(a.id)}
+                      onClick={() =>
+                        start(async () => {
+                          const r = await reportAttempt(a.id, "");
+                          if (r.ok) setReported((s) => new Set(s).add(a.id));
+                        })
+                      }
+                    >
+                      {reported.has(a.id) ? "Reported. Thanks" : "Report"}
+                    </button>
+                    <BlockCookButton userId={a.user_id} />
+                  </div>
                 )}
               </div>
             </li>

@@ -13,6 +13,8 @@ import { ReferralBeacon } from "@/components/ReferralBeacon";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { ClubBadge } from "@/components/ClubBadge";
 import { EntryChips } from "@/components/EntryChips";
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -42,11 +44,14 @@ export default async function EntryPage({ params }: Params) {
   if (!d) notFound();
   const { entry, recipe, challenge } = d;
   const me = await getMe();
+  const blocked = await blockedIds(me?.user.id ?? null);
+  if (blocked.has(entry.user_id)) notFound();
   const open = !!challenge && isLive(challenge);
-  const [all, votes] = await Promise.all([
+  const [allEntries, votes] = await Promise.all([
     challenge ? getAttempts({ challengeId: challenge.id }, 200) : Promise.resolve([entry]),
     me && challenge ? myVotes(me.user.id, challenge.id) : Promise.resolve([] as string[]),
   ]);
+  const all = withoutBlocked(allEntries, blocked, (e) => e.user_id);
   const stand = standing(all, entry.id);
   const s = savings(recipe);
   const name = publicName(entry.name);

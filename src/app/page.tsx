@@ -1,3 +1,5 @@
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 import { Snapper } from "@/components/Snapper";
 import { RecipeTile } from "@/components/RecipeTile";
 import { WaitlistForm } from "@/components/WaitlistForm";
@@ -36,7 +38,11 @@ export default async function Home() {
   ]);
   // Top chefs strip: this cook-off's points, or all-time when there's no cook-off. Hidden until 3 people have points,
   // so an empty site never shows a lonely podium.
-  const top = (await leaderboard(challenge ? { challengeId: challenge.id } : "all", 3).catch(() => [])).filter((r) => r.points > 0);
+  const blocked = await blockedIds(me?.user.id ?? null).catch(() => new Set<string>());
+  const top = withoutBlocked(await leaderboard(challenge ? { challengeId: challenge.id } : "all", 3 + blocked.size).catch(() => []), blocked, (r) => r.userId)
+    .slice(0, 3)
+    .map((r, i) => ({ ...r, rank: i + 1 }))
+    .filter((r) => r.points > 0);
   // Daily trivia teaser: today's first question (never the answers), once the day's set is approved.
   const today = triviaDay();
   const trivia = await triviaQuestions(today).catch(() => []);

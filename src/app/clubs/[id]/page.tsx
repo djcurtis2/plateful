@@ -3,7 +3,9 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { CLUB_BY_ID, CLUB_MIN_MEMBERS } from "@/lib/clubs";
-import { clubEntries, clubPopular, getRecipesByIds } from "@/lib/data";
+import { clubEntries, clubPopular, getMe, getRecipesByIds } from "@/lib/data";
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 import { publicName } from "@/lib/game";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { RecipeTile } from "@/components/RecipeTile";
@@ -21,7 +23,8 @@ export default async function ClubPage({ params }: Params) {
   const club = CLUB_BY_ID[(await params).id];
   if (!club) notFound();
 
-  const [popular, entries] = await Promise.all([clubPopular(club.id, 12), clubEntries(club.id, 12)]);
+  const [popular, allEntries, me] = await Promise.all([clubPopular(club.id, 12), clubEntries(club.id, 12), getMe()]);
+  const entries = withoutBlocked(allEntries, await blockedIds(me?.user.id ?? null), (e) => e.user_id);
   const recipes = await getRecipesByIds([...new Set(entries.map((e) => e.recipe_id))]);
   const dishOf = new Map(recipes.map((r) => [r.id, r]));
 

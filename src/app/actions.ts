@@ -391,6 +391,28 @@ export async function reportAttempt(attemptId: string, reason: string): Promise<
   return { ok: true };
 }
 
+/** Hides one cook's posts, photos and name from you. Private: they aren't told. Safe to repeat. */
+export async function blockCook(userId: string): Promise<Result> {
+  if (!Uuid.safeParse(userId).success) return { ok: false, code: "invalid", message: "Unknown cook." };
+  const { user } = await currentUser();
+  if (!user) return LOGIN;
+  if (user.id === userId) return { ok: false, code: "invalid", message: "You can't block yourself." };
+  const { error } = await admin().from("blocks").upsert({ blocker_id: user.id, blocked_id: userId });
+  if (error) return { ok: false, code: "failed", message: "Couldn't block this cook. Try again." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+export async function unblockCook(userId: string): Promise<Result> {
+  if (!Uuid.safeParse(userId).success) return { ok: false, code: "invalid", message: "Unknown cook." };
+  const { user } = await currentUser();
+  if (!user) return LOGIN;
+  const { error } = await admin().from("blocks").delete().eq("blocker_id", user.id).eq("blocked_id", userId);
+  if (error) return { ok: false, code: "failed", message: "Couldn't unblock this cook. Try again." };
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
 /**
  * "Make something new with my leftovers": Claude writes an original recipe (not a copycat)
  * around what's left from this one, saves it as a public recipe page and adds it to your library.

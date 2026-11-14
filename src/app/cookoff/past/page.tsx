@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
-import { getAttempts, getPastChallenges } from "@/lib/data";
+import { getAttempts, getMe, getPastChallenges } from "@/lib/data";
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 import { publicName } from "@/lib/game";
 
 export const metadata: Metadata = { title: "Hall of fame" };
 export const dynamic = "force-dynamic";
 
 export default async function HallOfFame() {
-  const past = await getPastChallenges();
+  const [past, me] = await Promise.all([getPastChallenges(), getMe()]);
+  const blocked = await blockedIds(me?.user.id ?? null);
   const rows = await Promise.all(
     past.map(async (c) => {
-      const entries = await getAttempts({ challengeId: c.id }, 200);
+      const entries = withoutBlocked(await getAttempts({ challengeId: c.id }, 200), blocked, (e) => e.user_id);
       return {
         c,
         count: entries.length,

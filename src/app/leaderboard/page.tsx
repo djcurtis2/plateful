@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getCurrentChallenge, getMe, isLive } from "@/lib/data";
 import { leaderboard } from "@/lib/game-server";
+import { blockedIds } from "@/lib/blocks-server";
+import { withoutBlocked } from "@/lib/blocks";
 import { topSavers } from "@/lib/savings-server";
 import { POINTS, publicName, streakBonus } from "@/lib/game";
 import { ChefAvatar } from "@/components/ChefAvatar";
@@ -16,9 +18,11 @@ export default async function LeaderboardPage({ searchParams }: { searchParams: 
   const view = v === "all" ? "all" : v === "savers" ? "savers" : "week";
   const [challenge, me] = await Promise.all([getCurrentChallenge(), getMe()]);
   const weekId = challenge && isLive(challenge) ? challenge.id : challenge?.id ?? null;
-  const rows = view === "savers" ? [] : view === "all" ? await leaderboard("all", 50) : weekId ? await leaderboard({ challengeId: weekId }, 50) : [];
+  const blocked = await blockedIds(me?.user.id ?? null);
+  const byRank = <T extends { userId: string }>(list: T[]) => withoutBlocked(list, blocked, (r) => r.userId).map((r, i) => ({ ...r, rank: i + 1 }));
+  const rows = byRank(view === "savers" ? [] : view === "all" ? await leaderboard("all", 50) : weekId ? await leaderboard({ challengeId: weekId }, 50) : []);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-  const savers = view === "savers" ? await topSavers(monthStart, 50) : [];
+  const savers = byRank(view === "savers" ? await topSavers(monthStart, 50) : []);
 
   return (
     <main className="mx-auto flex w-full max-w-3xl flex-col gap-6 pt-8">

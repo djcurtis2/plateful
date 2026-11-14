@@ -17,12 +17,14 @@ import { CopyField } from "@/components/CopyField";
 import { NameForm } from "@/components/NameForm";
 import { playerStats } from "@/lib/game-server";
 import { admin } from "@/lib/supabase/admin";
-import { BADGES } from "@/lib/game";
+import { BADGES, publicName } from "@/lib/game";
 import type { BadgeId } from "@/lib/database.types";
 import Link from "next/link";
 import { ChefAvatar } from "@/components/ChefAvatar";
 import { chefCards } from "@/lib/avatar-server";
 import { CLUB_BY_ID } from "@/lib/clubs";
+import { blockedIds } from "@/lib/blocks-server";
+import { BlockCookButton } from "@/components/BlockCookButton";
 
 export const metadata: Metadata = { title: "Account" };
 
@@ -47,6 +49,8 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     chefCards([me.user.id]),
   ]);
   const chef = cards[me.user.id];
+  const blockedList = [...(await blockedIds(me.user.id))];
+  const blockedChefs = blockedList.length ? await chefCards(blockedList) : {};
   const goal = nextMilestone(savings.saved);
   const earned = new Set(game.badges.map((b) => b.badge));
   const link = `${siteUrl}/?ref=${p.referral_code}`;
@@ -102,6 +106,26 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           {savings.saved > 0 && <SavingsCard saved={savings.saved} meals={savings.meals} shareUrl={link} />}
         </div>
       </section>
+
+      {blockedList.length > 0 && (
+        <section className="card flex flex-col gap-3 p-6">
+          <div>
+            <span className="label">Blocked cooks</span>
+            <p className="text-sm text-muted">You don&apos;t see their posts, photos or name. They aren&apos;t told.</p>
+          </div>
+          <ul className="divide-y divide-line">
+            {blockedList.map((id) => (
+              <li key={id} className="flex items-center justify-between gap-3 py-2">
+                <span className="flex min-w-0 items-center gap-2">
+                  <ChefAvatar avatar={blockedChefs[id]?.avatar ?? null} head size={36} uid={`${id}-blocked`} />
+                  <span className="truncate font-semibold">{publicName(blockedChefs[id]?.name ?? null)}</span>
+                </span>
+                <BlockCookButton userId={id} mode="unblock" className="btn btn-ghost btn-sm" />
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <section className="card flex flex-col gap-5 p-6">
         <div className="flex flex-wrap items-center gap-4">
