@@ -34,10 +34,9 @@ workflows:
         script: |
           set -e
           cd build/Build/Products/Release-iphonesimulator
-          ditto -c -k --sequesterRsrc --keepParent App.app "$CM_BUILD_DIR/mobile/yumjack-simulator.zip"
-          ls -lh "$CM_BUILD_DIR/mobile/yumjack-simulator.zip"
-    artifacts:
-      - mobile/yumjack-simulator.zip
+          # Files in CM_EXPORT_DIR show up as downloads on the build page.
+          ditto -c -k --sequesterRsrc --keepParent App.app "$CM_EXPORT_DIR/yumjack-simulator.zip"
+          ls -lh "$CM_EXPORT_DIR/yumjack-simulator.zip"
 
   ios-testflight:
     name: Yumjack iOS to TestFlight
@@ -121,6 +120,8 @@ workflows:
             --project "$XCODE_PROJECT" \
             --scheme "$XCODE_SCHEME"
     artifacts:
+      # Artifact paths are read from the working directory (mobile/); the second line covers the repo root too.
+      - ios/App/build/ios/ipa/*.ipa
       - mobile/ios/App/build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
     publishing:
