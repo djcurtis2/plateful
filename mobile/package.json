@@ -16,5 +16,8 @@
     "@capacitor/push-notifications": "7.0.7",
     "@capacitor/share": "7.0.4",
     "@revenuecat/purchases-capacitor": "11.3.3"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
   }
 }
