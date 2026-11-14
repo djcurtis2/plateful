@@ -2,6 +2,7 @@ import { PLUS_MONTHLY, PLUS_YEARLY, REFERRAL_MAX_REWARDS } from "@/lib/plan";
 import type { Metadata } from "next";
 import { DietForm } from "@/components/DietForm";
 import { DeleteAccount } from "@/components/DeleteAccount";
+import { ConnectApple } from "@/components/ConnectApple";
 import { BadgeIcon, LevelIcon, LevelLadder } from "@/components/GameIcons";
 import { redirect } from "next/navigation";
 import { getMe } from "@/lib/data";
@@ -50,6 +51,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   const earned = new Set(game.badges.map((b) => b.badge));
   const link = `${siteUrl}/?ref=${p.referral_code}`;
   const paid = p.plan === "plus";
+  const hasApple = !!me.user.identities?.some((i) => i.provider === "apple");
   const bonusUntil = p.bonus_until && new Date(p.bonus_until) > new Date() ? fmtDate(p.bonus_until) : null;
 
   return (
@@ -237,6 +239,11 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           ))}
         </dl>
       </section>
+      {!hasApple && (
+        <section className="card p-6">
+          <ConnectApple />
+        </section>
+      )}
       <section className="card flex flex-col gap-4 p-6">
         <div>
           <span className="label">Your data</span>

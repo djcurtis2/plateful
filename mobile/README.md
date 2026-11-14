@@ -51,6 +51,23 @@ If `mobile/ios` is ever deleted, the workflow recreates it with `npx cap add ios
 
 To work on it locally: `cd mobile && npm install`.
 
+## Supabase settings
+
+Sign-in in the app needs four changes in the Supabase dashboard (Authentication). Think of it like updating the guest list at a door: Supabase only lets people back in through addresses it knows.
+
+1. **Email links go straight to Yumjack.** Authentication, Emails (Templates). In both **Magic Link** and **Confirm signup**, replace the link (usually `{{ .ConfirmationURL }}`) with:
+
+   ```html
+   <a href="{{ .RedirectTo }}&token_hash={{ .TokenHash }}&type=email">Sign in to Yumjack</a>
+   ```
+
+   `{{ .RedirectTo }}` is the `https://yumjack.app/auth/callback?next=…` address the sign-in form sends, so the link opens yumjack.app directly (and the app, on an iPhone). It works on any device or browser, not only the one the link was asked from. Old emails sent before the change still work.
+2. **Redirect allow-list.** Authentication, URL Configuration, Redirect URLs: add `app.yumjack.ios://auth/callback**` (Google sign-in in the app comes back on the app's own link). Keep the existing yumjack.app entries (they must allow `https://yumjack.app/auth/callback?next=…`; if an address is not allowed, Supabase falls back to the Site URL and the email link breaks).
+3. **Apple provider.** Authentication, Sign In / Providers, Apple: turn it on. Under "Client IDs" list both `app.yumjack.ios` (the app) and the Services ID used for the website. The website also needs the Services ID, Team ID, key ID and Sign in with Apple key filled in.
+4. **Manual linking.** Authentication, Sign In / Providers (or Auth settings): turn on **Allow manual linking**, so "Connect Apple" on the account page works.
+
+Apple's "Hide my email" addresses only receive Yumjack emails once the sending domain is registered in Apple Developer, Certificates, Identifiers, Services, "Sign in with Apple for Email Communication".
+
 ## Known to-dos
 
 - The icon is made from the 512 px website icon enlarged to 1024 px. It is two flat shapes so it stays sharp, but a proper 1024 px original would be better before App Store review.

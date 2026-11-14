@@ -42,16 +42,28 @@ workflows:
             || $PB -c "Add :NSPhotoLibraryUsageDescription string 'Yumjack lets you pick a photo of a dish from your library.'" $PLIST
           $PB -c "Set :ITSAppUsesNonExemptEncryption false" $PLIST 2>/dev/null \
             || $PB -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
+          # The app's own link (app.yumjack.ios://), used to come back from Google sign-in.
+          $PB -c "Print :CFBundleURLTypes:0:CFBundleURLSchemes:0" $PLIST 2>/dev/null | grep -qx "app.yumjack.ios" \
+            || { $PB -c "Delete :CFBundleURLTypes" $PLIST 2>/dev/null || true; \
+                 $PB -c "Add :CFBundleURLTypes array" $PLIST; \
+                 $PB -c "Add :CFBundleURLTypes:0 dict" $PLIST; \
+                 $PB -c "Add :CFBundleURLTypes:0:CFBundleURLName string app.yumjack.ios" $PLIST; \
+                 $PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" $PLIST; \
+                 $PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string app.yumjack.ios" $PLIST; }
           if [ ! -f "$ENT" ]; then
             printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict/></plist>\n' > "$ENT"
           fi
           $PB -c "Print :com.apple.developer.associated-domains" "$ENT" 2>/dev/null | grep -q "applinks:yumjack.app" \
             || { $PB -c "Add :com.apple.developer.associated-domains array" "$ENT" 2>/dev/null || true; \
                  $PB -c "Add :com.apple.developer.associated-domains:0 string applinks:yumjack.app" "$ENT"; }
+          # Sign in with Apple (the App ID capability must be ticked too).
+          $PB -c "Print :com.apple.developer.applesignin" "$ENT" 2>/dev/null | grep -q "Default" \
+            || { $PB -c "Add :com.apple.developer.applesignin array" "$ENT" 2>/dev/null || true; \
+                 $PB -c "Add :com.apple.developer.applesignin:0 string Default" "$ENT"; }
           # Point the app target at the entitlements file if the project does not already.
           grep -q "CODE_SIGN_ENTITLEMENTS" "$XCODE_PROJECT/project.pbxproj" \
             || sed -i '' 's|CODE_SIGN_STYLE = Automatic;|CODE_SIGN_ENTITLEMENTS = App/App.entitlements; CODE_SIGN_STYLE = Automatic;|' "$XCODE_PROJECT/project.pbxproj"
-          $PB -c "Print" $PLIST | grep -E "NSCameraUsageDescription|NSPhotoLibraryUsageDescription|ITSAppUsesNonExemptEncryption"
+          $PB -c "Print" $PLIST | grep -E "NSCameraUsageDescription|NSPhotoLibraryUsageDescription|ITSAppUsesNonExemptEncryption|app.yumjack.ios"
           $PB -c "Print" "$ENT"
       - name: Set up signing
         script: xcode-project use-profiles

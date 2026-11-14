@@ -1,11 +1,15 @@
 "use client";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { openExternal, useIsApp } from "@/lib/native";
+import { appOAuthRedirect } from "@/lib/auth-links";
+import { signInWithApple } from "@/lib/apple-signin";
 
 export function LoginForm({ next }: { next: string }) {
   const [email, setEmail] = useState("");
   const [state, setState] = useState<"idle" | "sending" | "sent" | "error">("idle");
   const [message, setMessage] = useState("");
+  const inApp = useIsApp();
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -30,6 +34,18 @@ export function LoginForm({ next }: { next: string }) {
     setState("sending");
     try {
       const supabase = createClient();
+      if (inApp) {
+        // Google blocks sign-in inside the app's web view: open it in the browser sheet. It comes back on the
+        // app's own link, and AppFlag finishes it here, where the sign-in started.
+        const { data, error } = await supabase.auth.signInWithOAuth({
+          provider: "google",
+          options: { skipBrowserRedirect: true, redirectTo: appOAuthRedirect(next) },
+        });
+        if (error || !data.url) throw error ?? new Error("no url");
+        await openExternal(data.url);
+        setState("idle");
+        return;
+      }
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: { redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(next)}` },
@@ -39,6 +55,17 @@ export function LoginForm({ next }: { next: string }) {
     } catch {
       setState("error");
       setMessage("Google sign-in isn't working right now. Use the email link instead.");
+    }
+  }
+
+  async function apple() {
+    setState("sending");
+    const { error } = await signInWithApple(next);
+    if (error) {
+      setState("error");
+      setMessage(error);
+    } else if (inApp) {
+      setState("idle"); // cancelled, or already heading to `next`
     }
   }
 
@@ -88,6 +115,10 @@ export function LoginForm({ next }: { next: string }) {
       <button onClick={google} className="btn btn-ghost" disabled={state === "sending"}>
         Continue with Google
       </button>
+      <button onClick={apple} className="btn btn-ghost" disabled={state === "sending"}>
+        Continue with Apple
+      </button>
+      {inApp && <p className="text-sm text-muted">Already use Yumjack? Sign in with email or Google first, then connect Apple in your account.</p>}
     </div>
   );
 }

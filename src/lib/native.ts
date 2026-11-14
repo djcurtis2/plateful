@@ -40,7 +40,7 @@ type CameraPlugin = {
 };
 type SharePlugin = { share(o: { text?: string; url?: string; files?: string[] }): Promise<unknown> };
 type FilesystemPlugin = { writeFile(o: { path: string; data: string; directory: "CACHE" }): Promise<{ uri: string }> };
-type BrowserPlugin = { open(o: { url: string }): Promise<void> };
+type BrowserPlugin = { open(o: { url: string }): Promise<void>; close(): Promise<void> };
 type PurchasesPlugin = { getStorefront(): Promise<{ countryCode?: string } | null> };
 
 const isCancel = (e: unknown) => /cancel|abort|dismiss/i.test(`${(e as Error)?.name ?? ""} ${(e as Error)?.message ?? ""}`);
@@ -115,6 +115,15 @@ export async function openExternal(url: string): Promise<void> {
     }
   }
   window.location.href = url;
+}
+
+/** Closes the in-app browser sheet if one is open. Does nothing on the website. */
+export async function closeExternal(): Promise<void> {
+  try {
+    await plugin<BrowserPlugin>("Browser")?.close();
+  } catch {
+    // nothing open
+  }
 }
 
 type PreferencesPlugin = {
