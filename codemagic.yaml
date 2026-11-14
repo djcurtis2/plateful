@@ -2,6 +2,43 @@
 # Start it by hand in Codemagic: Start new build -> workflow "ios-testflight". See mobile/README.md.
 # No secrets live in this file: signing uses the App Store Connect integration named "yumjack_asc".
 workflows:
+  # A test copy for a pretend iPhone (Appetize). No Apple account or signing needed.
+  # Start it by hand: Start new build -> workflow "ios-simulator", then upload the
+  # yumjack-simulator.zip it makes to appetize.io (Upload -> iOS).
+  ios-simulator:
+    name: Yumjack iOS simulator test copy
+    instance_type: mac_mini_m2
+    max_build_duration: 45
+    working_directory: mobile
+    environment:
+      node: 22
+      xcode: latest
+    scripts:
+      - name: Install packages
+        script: npm ci
+      - name: Sync web files and plugins into the iOS project
+        script: npx cap sync ios
+      - name: Build for the simulator
+        script: |
+          set -e
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+      - name: Pack it for Appetize
+        script: |
+          set -e
+          cd build/Build/Products/Release-iphonesimulator
+          ditto -c -k --sequesterRsrc --keepParent App.app "$CM_BUILD_DIR/mobile/yumjack-simulator.zip"
+          ls -lh "$CM_BUILD_DIR/mobile/yumjack-simulator.zip"
+    artifacts:
+      - mobile/yumjack-simulator.zip
+
   ios-testflight:
     name: Yumjack iOS to TestFlight
     instance_type: mac_mini_m2

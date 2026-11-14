@@ -22,6 +22,14 @@ You do not need a Mac. A cloud service called Codemagic has the Macs and builds 
    - `APPLE_BUNDLE_ID`: `app.yumjack.ios`
    Then open `https://yumjack.app/.well-known/apple-app-site-association`. You should see a short block of text that includes your Team ID.
 
+## Try it on a pretend iPhone (no Apple account needed)
+
+1. In Codemagic open the Yumjack app, press **Start new build**, pick this branch and the workflow **ios-simulator**.
+2. When it finishes (about 10 to 15 minutes), download **yumjack-simulator.zip** from the build's Artifacts.
+3. At appetize.io, upload that zip as an iOS app. Open the link it gives you and tap around with your mouse.
+
+The camera, notifications, Apple purchases and Sign in with Apple don't work there; they need the real phone.
+
 ## Start a build
 
 1. In Codemagic open the Yumjack app, press **Start new build**.
