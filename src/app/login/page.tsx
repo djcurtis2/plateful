@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/LoginForm";
 import { getMe } from "@/lib/data";
+import { safeNext } from "@/lib/auth-links";
 
 export const metadata: Metadata = { title: "Sign up or sign in" };
 
@@ -12,7 +13,7 @@ const ERRORS: Record<string, string> = {
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; error?: string }> }) {
   const { next, error } = await searchParams;
-  const dest = next && next.startsWith("/") && !next.startsWith("//") ? next : "/library";
+  const dest = safeNext(next);
   // Already signed in: skip the form and go where they were headed.
   if (await getMe().catch(() => null)) redirect(dest);
   return (

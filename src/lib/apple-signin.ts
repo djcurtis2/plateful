@@ -3,7 +3,7 @@
 // On the website: Apple's sign-in page, back through /auth/callback.
 import { createClient } from "@/lib/supabase/client";
 import { isNativeApp, plugin } from "@/lib/native";
-import { randomNonce, sha256Hex } from "@/lib/auth-links";
+import { randomNonce, safeNext, sha256Hex } from "@/lib/auth-links";
 import { finishSignIn } from "@/app/auth/actions";
 
 type SignInWithApplePlugin = {
@@ -51,7 +51,7 @@ export async function signInWithApple(next: string): Promise<{ error: string | n
     const { error } = await supabase.auth.signInWithIdToken({ provider: "apple", token: apple.token, nonce: apple.nonce });
     if (error) throw error;
     await finishSignIn().catch(() => {}); // referral credit + welcome card; never block signing in
-    window.location.assign(next);
+    window.location.assign(safeNext(next));
     return { error: null };
   } catch {
     return { error: "Apple sign-in isn't working right now. Use the email link instead." };

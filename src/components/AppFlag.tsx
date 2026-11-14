@@ -13,7 +13,7 @@ export function AppFlag() {
     // Google sign-in comes back as app.yumjack.ios://auth/callback?… from the browser sheet: close the sheet
     // and finish on the site's callback inside the web view, where sign-in started.
     const handle = plugin<AppPlugin>("App")?.addListener("appUrlOpen", ({ url }) => {
-      const callback = appCallbackToWeb(url, window.location.origin);
+      const callback = appCallbackToWeb(url); // always https://yumjack.app, even from the offline page
       if (callback) {
         void closeExternal();
         window.location.href = callback;

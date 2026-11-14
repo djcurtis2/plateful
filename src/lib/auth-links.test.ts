@@ -9,6 +9,19 @@ test("safeNext keeps same-site paths and blocks other sites", () => {
   assert.equal(safeNext("https://evil.example"), "/library");
   assert.equal(safeNext("//evil.example"), "/library");
   assert.equal(safeNext("/\\evil.example"), "/library");
+  assert.equal(safeNext("/\t/evil.example"), "/library");
+  assert.equal(safeNext("/\n/evil.example"), "/library");
+  assert.equal(safeNext("/ /evil.example"), "/library");
+  assert.equal(safeNext("/x\u007f"), "/library");
+  assert.equal(safeNext("/plan\\x"), "/library");
+  // Decoded forms of %5C, %09 and %2F%2F, as they arrive from searchParams.
+  assert.equal(safeNext(decodeURIComponent("/%5Cevil.example")), "/library");
+  assert.equal(safeNext(decodeURIComponent("/%09/evil.example")), "/library");
+  assert.equal(safeNext(decodeURIComponent("%2F%2Fevil.example")), "/library");
+  // Every accepted path stays on the site.
+  for (const p of ["/library", "/plan?week=2", "/r/tacos?k=abc", "/a/b#c"]) {
+    assert.equal(new URL(safeNext(p), "https://yumjack.app").origin, "https://yumjack.app");
+  }
 });
 
 test("app OAuth redirect uses the app's own link with next", () => {

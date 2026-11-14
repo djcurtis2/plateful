@@ -55,6 +55,8 @@ To work on it locally: `cd mobile && npm install`.
 
 Sign-in in the app needs four changes in the Supabase dashboard (Authentication). Think of it like updating the guest list at a door: Supabase only lets people back in through addresses it knows.
 
+**Order matters:** Turn on the Apple provider and manual linking BEFORE deploying this to the live site (the website shows Continue with Apple and Connect Apple), and change the email templates only AFTER it's deployed.
+
 1. **Email links go straight to Yumjack.** Authentication, Emails (Templates). In both **Magic Link** and **Confirm signup**, replace the link (usually `{{ .ConfirmationURL }}`) with:
 
    ```html

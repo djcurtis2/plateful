@@ -43,13 +43,16 @@ workflows:
           $PB -c "Set :ITSAppUsesNonExemptEncryption false" $PLIST 2>/dev/null \
             || $PB -c "Add :ITSAppUsesNonExemptEncryption bool false" $PLIST
           # The app's own link (app.yumjack.ios://), used to come back from Google sign-in.
-          $PB -c "Print :CFBundleURLTypes:0:CFBundleURLSchemes:0" $PLIST 2>/dev/null | grep -qx "app.yumjack.ios" \
-            || { $PB -c "Delete :CFBundleURLTypes" $PLIST 2>/dev/null || true; \
-                 $PB -c "Add :CFBundleURLTypes array" $PLIST; \
-                 $PB -c "Add :CFBundleURLTypes:0 dict" $PLIST; \
-                 $PB -c "Add :CFBundleURLTypes:0:CFBundleURLName string app.yumjack.ios" $PLIST; \
-                 $PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes array" $PLIST; \
-                 $PB -c "Add :CFBundleURLTypes:0:CFBundleURLSchemes:0 string app.yumjack.ios" $PLIST; }
+          # Adds it at the end if missing; other URL types are left alone.
+          if ! $PB -c "Print :CFBundleURLTypes" $PLIST 2>/dev/null | grep -q "app.yumjack.ios"; then
+            $PB -c "Add :CFBundleURLTypes array" $PLIST 2>/dev/null || true
+            i=0
+            while $PB -c "Print :CFBundleURLTypes:$i" $PLIST >/dev/null 2>&1; do i=$((i+1)); done
+            $PB -c "Add :CFBundleURLTypes:$i dict" $PLIST
+            $PB -c "Add :CFBundleURLTypes:$i:CFBundleURLName string app.yumjack.ios" $PLIST
+            $PB -c "Add :CFBundleURLTypes:$i:CFBundleURLSchemes array" $PLIST
+            $PB -c "Add :CFBundleURLTypes:$i:CFBundleURLSchemes:0 string app.yumjack.ios" $PLIST
+          fi
           if [ ! -f "$ENT" ]; then
             printf '<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0"><dict/></plist>\n' > "$ENT"
           fi

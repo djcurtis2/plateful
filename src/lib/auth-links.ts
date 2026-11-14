@@ -4,9 +4,13 @@
 export const APP_SCHEME = "app.yumjack.ios";
 export const APP_CALLBACK = `${APP_SCHEME}://auth/callback`;
 
-/** Where to go after signing in: a path on this site only, never another site. */
+/**
+ * Where to go after signing in: a path on this site only, never another site.
+ * Browsers drop tabs/newlines and treat `\` like `/`, so "/\evil.com" or "/\t/evil.com" would leave the site:
+ * any backslash, whitespace or control character is refused.
+ */
 export function safeNext(raw: string | null | undefined, fallback = "/library"): string {
-  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/\\")) return fallback;
+  if (!raw || !raw.startsWith("/") || raw.startsWith("//") || /[\\\s\u0000-\u001f\u007f]/.test(raw)) return fallback;
   return raw;
 }
 
