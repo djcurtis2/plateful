@@ -317,7 +317,7 @@ export function RecipeView({ recipe, shareUrl, signedIn, pantry, initiallySaved,
             <b className="tabular font-mono text-2xl">{money(total)}</b>
           </div>
           <p className="text-xs text-muted">
-            {showStores && <>Tap an item to find it at {STORES[store].name}. </>}Prices are US estimates and vary by store.
+            {showStores && <>Tap an item to find it at {STORES[store].name}. </>}Prices are {showStores ? "" : "US "}estimates and vary by store.
           </p>
         </section>
 

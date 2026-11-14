@@ -43,6 +43,14 @@ export async function deleteAccount(confirm: string): Promise<Result> {
     if (error) console.error("delete account: photo cleanup failed", error); // orphaned files only; carry on
   }
 
+  // Scans and recipes keep their row when the login goes (user_id becomes null), so drop the IP hash and browser ID first:
+  // what's left is an anonymous count. Best effort; a failure is logged, never blocks the deletion.
+  const [scrubScans, scrubRecipes] = await Promise.all([
+    db.from("scans").update({ ip_hash: null, visitor_id: null }).eq("user_id", user.id),
+    db.from("recipes").update({ visitor_id: null }).eq("user_id", user.id),
+  ]);
+  if (scrubScans.error || scrubRecipes.error) console.error("delete account: anonymize failed", scrubScans.error ?? scrubRecipes.error);
+
   const { error } = await db.auth.admin.deleteUser(user.id);
   if (error) {
     console.error("delete account failed", error);
