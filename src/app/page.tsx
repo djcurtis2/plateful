@@ -1,9 +1,9 @@
 import { blockedIds } from "@/lib/blocks-server";
 import { withoutBlocked } from "@/lib/blocks";
-import { Snapper } from "@/components/Snapper";
+import { Snapper, type SampleDish } from "@/components/Snapper";
 import { RecipeTile } from "@/components/RecipeTile";
 import { WaitlistForm } from "@/components/WaitlistForm";
-import { getCurrentChallenge, getMe, getRecentPublicRecipes, isLive } from "@/lib/data";
+import { getCurrentChallenge, getMe, getRecentPublicRecipes, getRecipeBySlug, isLive } from "@/lib/data";
 import { siteSavings } from "@/lib/savings-server";
 import { publicName, timeLeft } from "@/lib/game";
 import { leaderboard } from "@/lib/game-server";
@@ -32,12 +32,16 @@ export const dynamic = "force-dynamic";
 /** The site-wide savings line stays hidden until the number helps rather than hurts. */
 const SHOW_SAVINGS_FROM = 1000;
 
+/** The rigatoni from the first video and Meta ad, so ad visitors land on the dish they just saw. */
+const SAMPLE_SLUG = "carbone-spicy-rigatoni-vodka-sample";
+
 export default async function Home() {
-  const [me, recent, challenge, community] = await Promise.all([
+  const [me, recent, challenge, community, rigatoni] = await Promise.all([
     getMe().catch(() => null),
     getRecentPublicRecipes(6).catch(() => []),
     getCurrentChallenge().catch(() => null),
     siteSavings(),
+    getRecipeBySlug(SAMPLE_SLUG).catch(() => null),
   ]);
   const inApp = isAppUserAgent((await headers()).get("user-agent"));
   // Top chefs strip: this cook-off's points, or all-time when there's no cook-off. Hidden until 3 people have points,
@@ -59,6 +63,11 @@ export default async function Home() {
     .filter((r) => r.image_url && savings(r))
     .sort((a, b) => savings(b)!.saved - savings(a)!.saved)[0];
   const proofPct = proof ? savings(proof)!.pct : 0;
+  // "No photo handy?" in the snap box: the dish from the ads, else the proof dish.
+  const sampleRecipe = rigatoni ?? proof;
+  const sample: SampleDish | null = sampleRecipe
+    ? { slug: sampleRecipe.slug, dish: sampleRecipe.dish, image: sampleRecipe.image_url, menu: menuPlate(sampleRecipe), plate: sampleRecipe.plate_cost }
+    : null;
 
   return (
     <main className="flex flex-col gap-16 pt-8 sm:pt-12">
@@ -75,7 +84,7 @@ export default async function Home() {
           <p className="max-w-[58ch] text-lg text-muted">Get the copycat recipe, the cost per plate and your grocery list from one photo.</p>
         </div>
         <div className="min-w-0 lg:col-start-2 lg:row-span-2 lg:row-start-1">
-          <Snapper signedIn={!!me} />
+          <Snapper signedIn={!!me} sample={sample} />
         </div>
         <div className="flex min-w-0 flex-col gap-6 lg:col-start-1 lg:row-start-2">
           {proof && (

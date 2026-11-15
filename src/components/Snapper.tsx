@@ -2,6 +2,8 @@
 import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
+import { money } from "@/lib/format";
 import { nativePhoto, useIsApp } from "@/lib/native";
 
 const MAX_EDGE = 1280;
@@ -25,7 +27,10 @@ async function downscale(file: File): Promise<Blob> {
 
 type Phase = { kind: "idle" } | { kind: "working"; preview: string } | { kind: "error"; message: string; code?: string };
 
-export function Snapper({ signedIn }: { signedIn: boolean }) {
+/** A finished copycat to show people who have no restaurant photo on hand (most visitors arriving from an ad). */
+export type SampleDish = { slug: string; dish: string; image: string | null; menu: number | null; plate: number | null };
+
+export function Snapper({ signedIn, sample = null }: { signedIn: boolean; sample?: SampleDish | null }) {
   const router = useRouter();
   const input = useRef<HTMLInputElement>(null);
   const [restaurant, setRestaurant] = useState("");
@@ -135,6 +140,30 @@ export function Snapper({ signedIn }: { signedIn: boolean }) {
         <button type="button" className="btn btn-primary" onClick={async () => handle((await nativePhoto()) ?? undefined)}>
           Take or choose a photo
         </button>
+      )}
+
+      {sample && (
+        <Link
+          href={`/r/${sample.slug}`}
+          onClick={() => (window as unknown as { va?: (...a: unknown[]) => void }).va?.("event", { name: "Tried sample" })}
+          className="group flex items-center gap-3 rounded-2xl border border-line p-2.5 pr-4 text-left hover:border-basil"
+        >
+          {sample.image && (
+            <span className="relative size-14 shrink-0 overflow-hidden rounded-xl bg-sunk">
+              <Image src={sample.image} alt="" fill sizes="56px" className="object-cover" />
+            </span>
+          )}
+          <span className="flex min-w-0 flex-1 flex-col">
+            <span className="text-sm font-semibold">No photo handy? See one we already made</span>
+            <span className="truncate text-sm text-muted">{sample.dish}</span>
+          </span>
+          {sample.menu != null && sample.plate != null && (
+            <span className="tabular shrink-0 text-right font-mono text-sm leading-tight">
+              <s className="block text-muted">{money(sample.menu)}</s>
+              <b className="text-basil">{money(sample.plate)}</b>
+            </span>
+          )}
+        </Link>
       )}
 
       {phase.kind === "error" && (
